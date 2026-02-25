@@ -1,0 +1,65 @@
+syntax = "proto3";
+
+package auth.v1;
+
+option go_package = "github.com/FibrinLab/open-nucleus/gen/proto/auth/v1;authv1";
+
+service AuthService {
+  rpc Login(LoginRequest) returns (LoginResponse);
+  rpc Refresh(RefreshRequest) returns (RefreshResponse);
+  rpc Logout(LogoutRequest) returns (LogoutResponse);
+  rpc Whoami(WhoamiRequest) returns (WhoamiResponse);
+}
+
+message ChallengeResponse {
+  string nonce = 1;
+  string signature = 2;
+  string timestamp = 3;
+}
+
+message RoleInfo {
+  string code = 1;
+  string display = 2;
+  repeated string permissions = 3;
+}
+
+message LoginRequest {
+  string device_id = 1;
+  string public_key = 2;
+  ChallengeResponse challenge_response = 3;
+  string practitioner_id = 4;
+}
+
+message LoginResponse {
+  string token = 1;
+  string expires_at = 2;
+  string refresh_token = 3;
+  RoleInfo role = 4;
+  string site_id = 5;
+  string node_id = 6;
+}
+
+message RefreshRequest {
+  string refresh_token = 1;
+}
+
+message RefreshResponse {
+  string token = 1;
+  string expires_at = 2;
+  string refresh_token = 3;
+}
+
+message LogoutRequest {
+  string token = 1;
+}
+
+message LogoutResponse {}
+
+message WhoamiRequest {}
+
+message WhoamiResponse {
+  string subject = 1;
+  string node_id = 2;
+  string site_id = 3;
+  RoleInfo role = 4;
+}

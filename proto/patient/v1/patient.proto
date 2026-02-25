@@ -1,0 +1,367 @@
+syntax = "proto3";
+
+package patient.v1;
+
+option go_package = "github.com/FibrinLab/open-nucleus/gen/proto/patient/v1;patientv1";
+
+import "common/v1/metadata.proto";
+import "common/v1/fhir.proto";
+
+service PatientService {
+  rpc ListPatients(ListPatientsRequest) returns (ListPatientsResponse);
+  rpc GetPatient(GetPatientRequest) returns (GetPatientResponse);
+  rpc CreatePatient(CreatePatientRequest) returns (CreatePatientResponse);
+  rpc UpdatePatient(UpdatePatientRequest) returns (UpdatePatientResponse);
+  rpc DeletePatient(DeletePatientRequest) returns (DeletePatientResponse);
+  rpc SearchPatients(SearchPatientsRequest) returns (SearchPatientsResponse);
+  rpc MatchPatients(MatchPatientsRequest) returns (MatchPatientsResponse);
+  rpc GetPatientHistory(GetPatientHistoryRequest) returns (GetPatientHistoryResponse);
+  rpc GetPatientTimeline(GetPatientTimelineRequest) returns (GetPatientTimelineResponse);
+
+  // Clinical sub-resources
+  rpc ListEncounters(ListEncountersRequest) returns (ListEncountersResponse);
+  rpc GetEncounter(GetEncounterRequest) returns (GetEncounterResponse);
+  rpc CreateEncounter(CreateEncounterRequest) returns (CreateEncounterResponse);
+  rpc UpdateEncounter(UpdateEncounterRequest) returns (UpdateEncounterResponse);
+
+  rpc ListObservations(ListObservationsRequest) returns (ListObservationsResponse);
+  rpc GetObservation(GetObservationRequest) returns (GetObservationResponse);
+  rpc CreateObservation(CreateObservationRequest) returns (CreateObservationResponse);
+
+  rpc ListConditions(ListConditionsRequest) returns (ListConditionsResponse);
+  rpc CreateCondition(CreateConditionRequest) returns (CreateConditionResponse);
+  rpc UpdateCondition(UpdateConditionRequest) returns (UpdateConditionResponse);
+
+  rpc ListMedicationRequests(ListMedicationRequestsRequest) returns (ListMedicationRequestsResponse);
+  rpc CreateMedicationRequest(CreateMedicationRequestRequest) returns (CreateMedicationRequestResponse);
+  rpc UpdateMedicationRequest(UpdateMedicationRequestRequest) returns (UpdateMedicationRequestResponse);
+
+  rpc ListAllergyIntolerances(ListAllergyIntolerancesRequest) returns (ListAllergyIntolerancesResponse);
+  rpc CreateAllergyIntolerance(CreateAllergyIntoleranceRequest) returns (CreateAllergyIntoleranceResponse);
+  rpc UpdateAllergyIntolerance(UpdateAllergyIntoleranceRequest) returns (UpdateAllergyIntoleranceResponse);
+}
+
+// Patient CRUD
+message ListPatientsRequest {
+  common.v1.PaginationRequest pagination = 1;
+  string gender = 2;
+  string birth_date_from = 3;
+  string birth_date_to = 4;
+  string site_id = 5;
+  string status = 6;
+  bool has_alerts = 7;
+}
+
+message ListPatientsResponse {
+  repeated common.v1.FHIRResource patients = 1;
+  common.v1.PaginationResponse pagination = 2;
+}
+
+message GetPatientRequest {
+  string patient_id = 1;
+}
+
+message GetPatientResponse {
+  common.v1.FHIRResource patient = 1;
+  repeated common.v1.FHIRResource encounters = 2;
+  repeated common.v1.FHIRResource observations = 3;
+  repeated common.v1.FHIRResource conditions = 4;
+  repeated common.v1.FHIRResource medication_requests = 5;
+  repeated common.v1.FHIRResource allergy_intolerances = 6;
+  repeated common.v1.FHIRResource flags = 7;
+}
+
+message CreatePatientRequest {
+  bytes fhir_json = 1;
+  string author = 2;
+  string node_id = 3;
+  string site_id = 4;
+}
+
+message CreatePatientResponse {
+  common.v1.FHIRResource patient = 1;
+  common.v1.GitMetadata git = 2;
+}
+
+message UpdatePatientRequest {
+  string patient_id = 1;
+  bytes fhir_json = 2;
+  string author = 3;
+  string node_id = 4;
+  string site_id = 5;
+}
+
+message UpdatePatientResponse {
+  common.v1.FHIRResource patient = 1;
+  common.v1.GitMetadata git = 2;
+}
+
+message DeletePatientRequest {
+  string patient_id = 1;
+  string author = 2;
+  string node_id = 3;
+  string site_id = 4;
+}
+
+message DeletePatientResponse {
+  common.v1.GitMetadata git = 1;
+}
+
+message SearchPatientsRequest {
+  string query = 1;
+  common.v1.PaginationRequest pagination = 2;
+}
+
+message SearchPatientsResponse {
+  repeated common.v1.FHIRResource patients = 1;
+  common.v1.PaginationResponse pagination = 2;
+}
+
+message MatchPatientsRequest {
+  string family_name = 1;
+  repeated string given_names = 2;
+  string gender = 3;
+  string birth_date_approx = 4;
+  string district = 5;
+  double threshold = 6;
+}
+
+message MatchPatientsResponse {
+  repeated PatientMatch matches = 1;
+}
+
+message PatientMatch {
+  string patient_id = 1;
+  double confidence = 2;
+  repeated string match_factors = 3;
+}
+
+message GetPatientHistoryRequest {
+  string patient_id = 1;
+}
+
+message GetPatientHistoryResponse {
+  repeated HistoryEntry entries = 1;
+}
+
+message HistoryEntry {
+  string commit_hash = 1;
+  string timestamp = 2;
+  string author = 3;
+  string node = 4;
+  string site = 5;
+  string operation = 6;
+  string resource_type = 7;
+  string resource_id = 8;
+  string message = 9;
+}
+
+message GetPatientTimelineRequest {
+  string patient_id = 1;
+}
+
+message GetPatientTimelineResponse {
+  repeated common.v1.FHIRResource events = 1;
+}
+
+// Encounters
+message ListEncountersRequest {
+  string patient_id = 1;
+  common.v1.PaginationRequest pagination = 2;
+}
+
+message ListEncountersResponse {
+  repeated common.v1.FHIRResource encounters = 1;
+  common.v1.PaginationResponse pagination = 2;
+}
+
+message GetEncounterRequest {
+  string patient_id = 1;
+  string encounter_id = 2;
+}
+
+message GetEncounterResponse {
+  common.v1.FHIRResource encounter = 1;
+}
+
+message CreateEncounterRequest {
+  string patient_id = 1;
+  bytes fhir_json = 2;
+  string author = 3;
+  string node_id = 4;
+  string site_id = 5;
+}
+
+message CreateEncounterResponse {
+  common.v1.FHIRResource encounter = 1;
+  common.v1.GitMetadata git = 2;
+}
+
+message UpdateEncounterRequest {
+  string patient_id = 1;
+  string encounter_id = 2;
+  bytes fhir_json = 3;
+  string author = 4;
+  string node_id = 5;
+  string site_id = 6;
+}
+
+message UpdateEncounterResponse {
+  common.v1.FHIRResource encounter = 1;
+  common.v1.GitMetadata git = 2;
+}
+
+// Observations
+message ListObservationsRequest {
+  string patient_id = 1;
+  string code = 2;
+  string category = 3;
+  string date_from = 4;
+  string date_to = 5;
+  string encounter_id = 6;
+  common.v1.PaginationRequest pagination = 7;
+}
+
+message ListObservationsResponse {
+  repeated common.v1.FHIRResource observations = 1;
+  common.v1.PaginationResponse pagination = 2;
+}
+
+message GetObservationRequest {
+  string patient_id = 1;
+  string observation_id = 2;
+}
+
+message GetObservationResponse {
+  common.v1.FHIRResource observation = 1;
+}
+
+message CreateObservationRequest {
+  string patient_id = 1;
+  bytes fhir_json = 2;
+  string author = 3;
+  string node_id = 4;
+  string site_id = 5;
+}
+
+message CreateObservationResponse {
+  common.v1.FHIRResource observation = 1;
+  common.v1.GitMetadata git = 2;
+}
+
+// Conditions
+message ListConditionsRequest {
+  string patient_id = 1;
+  string clinical_status = 2;
+  string category = 3;
+  string code = 4;
+  common.v1.PaginationRequest pagination = 5;
+}
+
+message ListConditionsResponse {
+  repeated common.v1.FHIRResource conditions = 1;
+  common.v1.PaginationResponse pagination = 2;
+}
+
+message CreateConditionRequest {
+  string patient_id = 1;
+  bytes fhir_json = 2;
+  string author = 3;
+  string node_id = 4;
+  string site_id = 5;
+}
+
+message CreateConditionResponse {
+  common.v1.FHIRResource condition = 1;
+  common.v1.GitMetadata git = 2;
+}
+
+message UpdateConditionRequest {
+  string patient_id = 1;
+  string condition_id = 2;
+  bytes fhir_json = 3;
+  string author = 4;
+  string node_id = 5;
+  string site_id = 6;
+}
+
+message UpdateConditionResponse {
+  common.v1.FHIRResource condition = 1;
+  common.v1.GitMetadata git = 2;
+}
+
+// Medication Requests
+message ListMedicationRequestsRequest {
+  string patient_id = 1;
+  common.v1.PaginationRequest pagination = 2;
+}
+
+message ListMedicationRequestsResponse {
+  repeated common.v1.FHIRResource medication_requests = 1;
+  common.v1.PaginationResponse pagination = 2;
+}
+
+message CreateMedicationRequestRequest {
+  string patient_id = 1;
+  bytes fhir_json = 2;
+  string author = 3;
+  string node_id = 4;
+  string site_id = 5;
+}
+
+message CreateMedicationRequestResponse {
+  common.v1.FHIRResource medication_request = 1;
+  common.v1.GitMetadata git = 2;
+}
+
+message UpdateMedicationRequestRequest {
+  string patient_id = 1;
+  string medication_request_id = 2;
+  bytes fhir_json = 3;
+  string author = 4;
+  string node_id = 5;
+  string site_id = 6;
+}
+
+message UpdateMedicationRequestResponse {
+  common.v1.FHIRResource medication_request = 1;
+  common.v1.GitMetadata git = 2;
+}
+
+// Allergy Intolerances
+message ListAllergyIntolerancesRequest {
+  string patient_id = 1;
+  common.v1.PaginationRequest pagination = 2;
+}
+
+message ListAllergyIntolerancesResponse {
+  repeated common.v1.FHIRResource allergy_intolerances = 1;
+  common.v1.PaginationResponse pagination = 2;
+}
+
+message CreateAllergyIntoleranceRequest {
+  string patient_id = 1;
+  bytes fhir_json = 2;
+  string author = 3;
+  string node_id = 4;
+  string site_id = 5;
+}
+
+message CreateAllergyIntoleranceResponse {
+  common.v1.FHIRResource allergy_intolerance = 1;
+  common.v1.GitMetadata git = 2;
+}
+
+message UpdateAllergyIntoleranceRequest {
+  string patient_id = 1;
+  string allergy_intolerance_id = 2;
+  bytes fhir_json = 3;
+  string author = 4;
+  string node_id = 5;
+  string site_id = 6;
+}
+
+message UpdateAllergyIntoleranceResponse {
+  common.v1.FHIRResource allergy_intolerance = 1;
+  common.v1.GitMetadata git = 2;
+}

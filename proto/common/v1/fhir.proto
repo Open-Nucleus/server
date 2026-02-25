@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package common.v1;
+
+option go_package = "github.com/FibrinLab/open-nucleus/gen/proto/common/v1;commonv1";
+
+// FHIRResource wraps a FHIR resource as opaque JSON bytes.
+// The gateway does not transform FHIR resources — they pass through as-is.
+message FHIRResource {
+  string resource_type = 1;
+  string id = 2;
+  bytes json_payload = 3;
+}

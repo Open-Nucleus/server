@@ -1,0 +1,89 @@
+package main
+
+import (
+	"crypto/ed25519"
+	"crypto/rand"
+	"flag"
+	"log/slog"
+	"os"
+
+	"github.com/FibrinLab/open-nucleus/internal/config"
+	"github.com/FibrinLab/open-nucleus/internal/grpcclient"
+	"github.com/FibrinLab/open-nucleus/internal/handler"
+	"github.com/FibrinLab/open-nucleus/internal/middleware"
+	"github.com/FibrinLab/open-nucleus/internal/router"
+	"github.com/FibrinLab/open-nucleus/internal/server"
+	"github.com/FibrinLab/open-nucleus/internal/service"
+)
+
+func main() {
+	configPath := flag.String("config", "config.yaml", "path to config file")
+	flag.Parse()
+
+	// Logger
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelInfo,
+	}))
+	slog.SetDefault(logger)
+
+	// Load config
+	cfg, err := config.Load(*configPath)
+	if err != nil {
+		logger.Error("failed to load config", "error", err)
+		os.Exit(1)
+	}
+
+	// Ed25519 keypair — in production, loaded from config/secrets.
+	// For Phase 1, generate an ephemeral keypair for development.
+	pubKey, _, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		logger.Error("failed to generate Ed25519 key", "error", err)
+		os.Exit(1)
+	}
+
+	// gRPC connection pool — non-blocking, services may not be up yet
+	pool, err := grpcclient.NewPool(cfg.GRPC)
+	if err != nil {
+		logger.Warn("gRPC pool init had errors (services may not be running)", "error", err)
+	}
+	defer pool.Close()
+
+	// Services
+	authSvc := service.NewAuthService(pool)
+	patientSvc := service.NewPatientService(pool)
+
+	// Handlers
+	authHandler := handler.NewAuthHandler(authSvc)
+	patientHandler := handler.NewPatientHandler(patientSvc)
+
+	// Middleware components
+	jwtAuth := middleware.NewJWTAuth(pubKey, cfg.Auth.JWTIssuer)
+	rateLimiter := middleware.NewRateLimiter(cfg.RateLimit)
+
+	// Audit logger
+	auditLogger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelInfo,
+	}))
+
+	// Router
+	mux := router.New(router.Config{
+		AuthHandler:    authHandler,
+		PatientHandler: patientHandler,
+		JWTAuth:        jwtAuth,
+		RateLimiter:    rateLimiter,
+		CORSOrigins:    cfg.CORS.AllowedOrigins,
+		AuditLogger:    auditLogger,
+	})
+
+	// Server
+	srv := server.New(cfg, mux, logger)
+	logger.Info("Open Nucleus API Gateway starting",
+		"port", cfg.Server.Port,
+		"version", "0.1.0-phase1",
+	)
+
+	if err := srv.Run(); err != nil {
+		logger.Error("server error", "error", err)
+		os.Exit(1)
+	}
+}

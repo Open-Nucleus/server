@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package common.v1;
+
+option go_package = "github.com/FibrinLab/open-nucleus/gen/proto/common/v1;commonv1";
+
+message GitMetadata {
+  string commit = 1;
+  string message = 2;
+}
+
+message PaginationRequest {
+  int32 page = 1;
+  int32 per_page = 2;
+  string sort = 3;
+}
+
+message PaginationResponse {
+  int32 page = 1;
+  int32 per_page = 2;
+  int32 total = 3;
+  int32 total_pages = 4;
+}
+
+message NodeInfo {
+  string node_id = 1;
+  string site_id = 2;
+}
