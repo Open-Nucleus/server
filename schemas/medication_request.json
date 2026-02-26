@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["resourceType", "status", "medicationCodeableConcept"],
+  "properties": {
+    "resourceType": {
+      "type": "string",
+      "const": "MedicationRequest"
+    },
+    "status": {
+      "type": "string"
+    },
+    "medicationCodeableConcept": {
+      "type": "object"
+    }
+  }
+}

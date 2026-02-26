@@ -1,7 +1,7 @@
 # Open Nucleus — Architectural Memory
 
 > Living document. Updated after every major feature or structural change.
-> Last updated: Phase 1 — Walking Skeleton (2026-02-25)
+> Last updated: Phase 2 — Gateway Gaps (2026-02-26)
 
 ---
 
@@ -44,14 +44,40 @@ grpcclient.NewPool(cfg.GRPC)          ← dials 6 backend services (non-blocking
     ├─► service.NewPatientService(pool) ← implements service.PatientService interface
     │       │
     │       ▼
-    │   handler.NewPatientHandler(patientSvc)
+    │   handler.NewPatientHandler(patientSvc)   ← also handles clinical sub-resources
+    │
+    ├─► service.NewSyncService(pool)
+    │       ▼
+    │   handler.NewSyncHandler(syncSvc)
+    │
+    ├─► service.NewConflictService(pool)
+    │       ▼
+    │   handler.NewConflictHandler(conflictSvc)
+    │
+    ├─► service.NewSentinelService(pool)
+    │       ▼
+    │   handler.NewSentinelHandler(sentinelSvc)
+    │
+    ├─► service.NewFormularyService(pool)
+    │       ▼
+    │   handler.NewFormularyHandler(formularySvc)
+    │
+    ├─► service.NewAnchorService(pool)
+    │       ▼
+    │   handler.NewAnchorHandler(anchorSvc)
+    │
+    ├─► service.NewSupplyService(pool)
+    │       ▼
+    │   handler.NewSupplyHandler(supplySvc)
+    │
+    ├─► middleware.NewSchemaValidator() + load 6 JSON schemas from schemas/
     │
     ├─► middleware.NewJWTAuth(pubKey, issuer)
     │
     ├─► middleware.NewRateLimiter(cfg.RateLimit)
     │
     ▼
-router.New(Config{handlers, middleware, auditLogger, corsOrigins})
+router.New(Config{all handlers, middleware, schemaValidator, auditLogger, corsOrigins})
     │
     ▼
 server.New(cfg, mux, logger).Run()    ← graceful shutdown on SIGINT/SIGTERM
@@ -118,7 +144,7 @@ jwtauth.go    ──writes──►  CtxClaims     ──read by──►  rbac.
 
 **Middleware pipeline order on protected routes:**
 ```
-CORS → RequestID → AuditLog → JWTAuth → [per-route: RateLimiter → RequirePermission] → Handler
+CORS → RequestID → AuditLog → JWTAuth → [per-route: RateLimiter → RequirePermission → SchemaValidator] → Handler
 ```
 
 **Auth routes skip** JWTAuth and RBAC — they only get CORS + RequestID + AuditLog + RateLimiter(CategoryAuth).
@@ -128,45 +154,47 @@ CORS → RequestID → AuditLog → JWTAuth → [per-route: RateLimiter → Requ
 - Consumed by: service adapters call `pool.Conn("auth")`, `pool.Conn("patient")`, etc.
 
 ### internal/service
-- **interfaces.go** — `AuthService` and `PatientService` interfaces + all DTOs. Handlers depend only on these interfaces, enabling mock-based testing.
-- **auth.go** — `authAdapter` struct implements `AuthService` by calling `pool.Conn("auth")` and making gRPC calls. Currently returns SERVICE_UNAVAILABLE since backends don't exist yet.
-- **patient.go** — `patientAdapter` struct implements `PatientService` via `pool.Conn("patient")`. Same stub behavior.
+- **interfaces.go** — 8 service interfaces (`AuthService`, `PatientService`, `SyncService`, `ConflictService`, `SentinelService`, `FormularyService`, `AnchorService`, `SupplyService`) + all DTOs. Handlers depend only on these interfaces, enabling mock-based testing.
+- **auth.go** — `authAdapter` implements `AuthService` via `pool.Conn("auth")`.
+- **patient.go** — `patientAdapter` implements `PatientService` (24 methods: list/get/search/create/update/delete + match/history/timeline + 15 clinical sub-resource methods) via `pool.Conn("patient")`.
+- **sync.go** — `syncAdapter` implements `SyncService` (6 methods) via `pool.Conn("sync")`.
+- **conflict.go** — `conflictAdapter` implements `ConflictService` (4 methods) via `pool.Conn("sync")` (conflicts are a sync sub-domain).
+- **sentinel.go** — `sentinelAdapter` implements `SentinelService` (5 methods) via `pool.Conn("sentinel")`.
+- **formulary.go** — `formularyAdapter` implements `FormularyService` (5 methods) via `pool.Conn("formulary")`.
+- **anchor.go** — `anchorAdapter` implements `AnchorService` (4 methods) via `pool.Conn("anchor")`.
+- **supply.go** — `supplyAdapter` implements `SupplyService` (5 methods) via `pool.Conn("sentinel")` (supply intelligence from Sentinel).
 
 **Key pattern:** Handlers never touch gRPC directly. The service layer translates between HTTP DTOs and gRPC request/response types. This is where multi-service orchestration will live (e.g., MedRequest → Formulary check).
 
 ### internal/handler
 - **auth.go** — `AuthHandler` holds `service.AuthService`. Methods: `Login`, `Refresh`, `Logout`, `Whoami`. Whoami short-circuits from JWT claims in context if available.
-- **patient.go** — `PatientHandler` holds `service.PatientService`. Methods: `List`, `GetByID`, `Search`. Uses `model.PaginationFromRequest()` + chi's `URLParam()`.
-- **stubs.go** — `StubHandler()` returns 501 via `model.NotImplementedError()`. Used for all unimplemented endpoints.
+- **patient.go** — `PatientHandler` holds `service.PatientService`. Methods: `List`, `GetByID`, `Search`, `Create`, `Update`, `Delete`, `History`, `Timeline`, `Match`. Write methods use `writeResponseWithGit()` to include git metadata in the response envelope.
+- **clinical.go** — Additional methods on `PatientHandler` for all 16 clinical sub-resource endpoints: `ListEncounters`, `GetEncounter`, `CreateEncounter`, `UpdateEncounter`, `ListObservations`, `GetObservation`, `CreateObservation`, `ListConditions`, `CreateCondition`, `UpdateCondition`, `ListMedicationRequests`, `CreateMedicationRequest`, `UpdateMedicationRequest`, `ListAllergyIntolerances`, `CreateAllergyIntolerance`, `UpdateAllergyIntolerance`.
+- **sync.go** — `SyncHandler` holds `service.SyncService`. Methods: `Status`, `Peers`, `Trigger`, `History`, `ExportBundle`, `ImportBundle`.
+- **conflict.go** — `ConflictHandler` holds `service.ConflictService`. Methods: `List`, `GetByID`, `Resolve`, `Defer`.
+- **sentinel.go** — `SentinelHandler` holds `service.SentinelService`. Methods: `ListAlerts`, `Summary`, `GetAlert`, `Acknowledge`, `Dismiss`.
+- **formulary.go** — `FormularyHandler` holds `service.FormularyService`. Methods: `SearchMedications`, `GetMedication`, `CheckInteractions`, `GetAvailability`, `UpdateAvailability`.
+- **anchor.go** — `AnchorHandler` holds `service.AnchorService`. Methods: `Status`, `Verify`, `History`, `Trigger`.
+- **supply.go** — `SupplyHandler` holds `service.SupplyService`. Methods: `Inventory`, `InventoryItem`, `RecordDelivery`, `Predictions`, `Redistribution`.
+- **stubs.go** — `StubHandler()` returns 501 via `model.NotImplementedError()`. Only used for WebSocket endpoint (Phase 5).
 
 ### internal/router
-- **router.go** — `New(Config)` builds the chi route tree. Owns middleware scoping:
+- **router.go** — `New(Config)` builds the chi route tree. Config now includes all 8 handler types + `SchemaValidator`. `validatorMiddleware()` helper returns a no-op if SchemaValidator is nil (for tests without schemas). Owns middleware scoping:
   - `/health` — no middleware beyond global
   - `/api/v1/auth/*` — global + RateLimiter(CategoryAuth), NO JWT/RBAC
-  - `/api/v1/*` (everything else) — global + JWTAuth, then per-route RateLimiter + RequirePermission
-- All 58 REST endpoints + 1 WebSocket endpoint registered. Unimplemented ones point to `StubHandler`.
-- Imports handler, middleware, and model — the only package that knows the full route topology.
+  - `/api/v1/*` (everything else) — global + JWTAuth, then per-route RateLimiter + RequirePermission + optional SchemaValidator
+- All 58 REST endpoints wired to real handlers. Only `/ws` remains stubbed (Phase 5).
 
 ### internal/server
 - **server.go** — `Server` wraps `http.Server` with config-driven timeouts. `Run()` starts listener and blocks until SIGINT/SIGTERM, then calls `Shutdown()` with 10s grace period.
 
----
-
-## Cross-Cutting Patterns
-
-### Response Envelope
-Every response (success or error) goes through `model.JSON()` → `model.Envelope{}`. Handlers call `model.Success()`, `model.SuccessWithPagination()`, or `model.WriteError()`. Never write raw JSON.
-
-### Error Propagation
-```
-Service returns error  →  Handler calls model.WriteError(code, msg)  →  Envelope with status:"error"
-```
-gRPC unavailable errors map to `ErrServiceUnavailable` (503). Validation errors map to `ErrValidation` (400). The `ErrorHTTPStatus` map in `model/errors.go` is the single source of truth for code→status mapping.
-
-### Testing Strategy
-- Middleware tests: pass `httptest.Request` through middleware, assert on `httptest.Recorder` status + body + context values.
-- Handler tests: inject mock service implementations (function fields), assert on response envelope.
-- Integration tests (router_test.go): wire real middleware + mock services, test full request flow (login → list patients, 401 without JWT, 501 for stubs).
+### schemas/
+- **patient.json** — Requires `resourceType: "Patient"`, `name` array (minItems 1), `gender` enum.
+- **encounter.json** — Requires `resourceType: "Encounter"`, `status`, `class` object.
+- **observation.json** — Requires `resourceType: "Observation"`, `status`, `code` object.
+- **condition.json** — Requires `resourceType: "Condition"`, `code` object.
+- **medication_request.json** — Requires `resourceType: "MedicationRequest"`, `status`, `medicationCodeableConcept` object.
+- **allergy_intolerance.json** — Requires `resourceType: "AllergyIntolerance"`.
 
 ---
 
@@ -179,11 +207,40 @@ proto/
 │   └── fhir.proto       ← FHIRResource{resource_type, id, json_payload bytes}
 ├── auth/v1/
 │   └── auth.proto       ← AuthService: Login, Refresh, Logout, Whoami RPCs
-└── patient/v1/
-    └── patient.proto    ← PatientService: CRUD + clinical sub-resources (27 RPCs)
+├── patient/v1/
+│   └── patient.proto    ← PatientService: CRUD + clinical sub-resources (27 RPCs)
+├── sync/v1/
+│   └── sync.proto       ← SyncService (6 RPCs) + ConflictService (4 RPCs)
+├── formulary/v1/
+│   └── formulary.proto  ← FormularyService: 5 RPCs (search, get, interactions, availability)
+├── anchor/v1/
+│   └── anchor.proto     ← AnchorService: 4 RPCs (status, verify, history, trigger)
+└── sentinel/v1/
+    └── sentinel.proto   ← SentinelService: 5 alert RPCs + 5 supply chain RPCs
 ```
 
 FHIR resources are opaque `bytes json_payload` — the gateway never parses or transforms them.
+
+---
+
+## Cross-Cutting Patterns
+
+### Response Envelope
+Every response (success or error) goes through `model.JSON()` → `model.Envelope{}`. Handlers call `model.Success()`, `model.SuccessWithPagination()`, or `model.WriteError()`. Write operations use `writeResponseWithGit()` to include git metadata in the envelope. Never write raw JSON.
+
+### Error Propagation
+```
+Service returns error  →  Handler calls model.WriteError(code, msg)  →  Envelope with status:"error"
+```
+gRPC unavailable errors map to `ErrServiceUnavailable` (503). Validation errors map to `ErrValidation` (400). The `ErrorHTTPStatus` map in `model/errors.go` is the single source of truth for code→status mapping.
+
+### JSON Schema Validation
+POST/PUT requests for FHIR resources are validated against JSON schemas loaded at startup. The `SchemaValidator` middleware reads the request body, validates against the registered schema, resets the body for downstream handlers, and returns 400 with VALIDATION_ERROR on failure.
+
+### Testing Strategy
+- Middleware tests: pass `httptest.Request` through middleware, assert on `httptest.Recorder` status + body + context values.
+- Handler tests: inject mock service implementations (function fields), assert on response envelope. Mock types use embedded interface for convenience.
+- Integration tests (router_test.go): wire real middleware + mock services, test full request flow (login → list patients, 401 without JWT, 503 for service unavailable, no more 501s on stubbed routes).
 
 ---
 
@@ -192,17 +249,21 @@ FHIR resources are opaque `bytes json_payload` — the gateway never parses or t
 | Area | Status | Handler | Service Adapter |
 |------|--------|---------|-----------------|
 | Auth (login/refresh/logout/whoami) | Handler complete, gRPC adapter stubbed | auth.go | auth.go |
-| Patient (list/get/search) | Handler complete, gRPC adapter stubbed | patient.go | patient.go |
-| Patient writes (create/update/delete) | 501 stub | stubs.go | — |
-| Clinical resources (encounters, observations, conditions, meds, allergies) | 501 stub | stubs.go | — |
-| Patient history/timeline | 501 stub | stubs.go | — |
-| Patient match | 501 stub | stubs.go | — |
-| Sync (status/peers/trigger/history/bundle) | 501 stub | stubs.go | — |
-| Conflicts (list/get/resolve/defer) | 501 stub | stubs.go | — |
-| Alerts (list/get/acknowledge/dismiss/summary) | 501 stub | stubs.go | — |
-| Formulary (medications/interactions/availability) | 501 stub | stubs.go | — |
-| Anchor/IOTA (status/verify/history/trigger) | 501 stub | stubs.go | — |
-| Supply chain (inventory/deliveries/predictions/redistribution) | 501 stub | stubs.go | — |
+| Patient reads (list/get/search) | Handler complete, gRPC adapter stubbed | patient.go | patient.go |
+| Patient writes (create/update/delete) | Handler complete, gRPC adapter stubbed | patient.go | patient.go |
+| Patient match/history/timeline | Handler complete, gRPC adapter stubbed | patient.go | patient.go |
+| Encounters (list/get/create/update) | Handler complete, gRPC adapter stubbed | clinical.go | patient.go |
+| Observations (list/get/create) | Handler complete, gRPC adapter stubbed | clinical.go | patient.go |
+| Conditions (list/create/update) | Handler complete, gRPC adapter stubbed | clinical.go | patient.go |
+| Medication Requests (list/create/update) | Handler complete, gRPC adapter stubbed | clinical.go | patient.go |
+| Allergy Intolerances (list/create/update) | Handler complete, gRPC adapter stubbed | clinical.go | patient.go |
+| Sync (status/peers/trigger/history/bundle) | Handler complete, gRPC adapter stubbed | sync.go | sync.go |
+| Conflicts (list/get/resolve/defer) | Handler complete, gRPC adapter stubbed | conflict.go | conflict.go |
+| Alerts (list/get/acknowledge/dismiss/summary) | Handler complete, gRPC adapter stubbed | sentinel.go | sentinel.go |
+| Formulary (medications/interactions/availability) | Handler complete, gRPC adapter stubbed | formulary.go | formulary.go |
+| Anchor/IOTA (status/verify/history/trigger) | Handler complete, gRPC adapter stubbed | anchor.go | anchor.go |
+| Supply chain (inventory/deliveries/predictions/redistribution) | Handler complete, gRPC adapter stubbed | supply.go | supply.go |
+| JSON Schema Validation | 6 schemas loaded, wired on POST/PUT clinical routes | — | validator.go |
 | WebSocket (/ws) | 501 stub | stubs.go | — |
 
 ---
@@ -213,9 +274,10 @@ FHIR resources are opaque `bytes json_payload` — the gateway never parses or t
 2. **Service interface:** Add method to interface in `service/interfaces.go`, add DTOs
 3. **Service adapter:** Implement in `service/<domain>.go` using `pool.Conn("<service>")`
 4. **Handler:** Add method to handler struct in `handler/<domain>.go`
-5. **Router:** Replace `StubHandler()` with the real handler method in `router/router.go`
-6. **Tests:** Unit test handler with mock service, add integration case in `router_test.go`
-7. **Update this file**
+5. **Router:** Wire the handler method in `router/router.go`
+6. **Schema:** If POST/PUT with FHIR body, add JSON schema in `schemas/` and register in `main.go`
+7. **Tests:** Unit test handler with mock service, add integration case in `router_test.go`
+8. **Update this file**
 
 ---
 
@@ -224,7 +286,7 @@ FHIR resources are opaque `bytes json_payload` — the gateway never parses or t
 | Phase | Scope | Status |
 |-------|-------|--------|
 | 1 — Walking Skeleton | Middleware pipeline, auth + patient read handlers, all stubs | COMPLETE |
-| 2 — Patient Writes + Clinical | Patient CRUD, encounters, observations, conditions, meds, allergies, formulary interaction checks | Not started |
-| 3 — Sync + Conflicts + Sentinel | Sync endpoints, conflict resolution, alert endpoints | Not started |
-| 4 — Formulary + Anchor + Supply | Formulary search, IOTA anchoring, supply chain | Not started |
+| 2 — Gateway Gaps | All handler/service/proto definitions, clinical sub-resources, JSON schema validation, zero stubs (except /ws) | COMPLETE |
+| 3 — Sync + Conflicts + Sentinel | Real gRPC backend integration for sync, conflict resolution, alerts | Not started |
+| 4 — Formulary + Anchor + Supply | Real gRPC backend integration for formulary, IOTA anchoring, supply chain | Not started |
 | 5 — WebSocket + Hardening | Real-time events, production config, TLS, metrics | Not started |

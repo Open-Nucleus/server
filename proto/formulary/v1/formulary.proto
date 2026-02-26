@@ -1,0 +1,93 @@
+syntax = "proto3";
+
+package formulary.v1;
+
+option go_package = "github.com/FibrinLab/open-nucleus/gen/proto/formulary/v1;formularyv1";
+
+import "common/v1/metadata.proto";
+
+service FormularyService {
+  rpc SearchMedications(SearchMedicationsRequest) returns (SearchMedicationsResponse);
+  rpc GetMedication(GetMedicationRequest) returns (GetMedicationResponse);
+  rpc CheckInteractions(CheckInteractionsRequest) returns (CheckInteractionsResponse);
+  rpc GetAvailability(GetAvailabilityRequest) returns (GetAvailabilityResponse);
+  rpc UpdateAvailability(UpdateAvailabilityRequest) returns (UpdateAvailabilityResponse);
+}
+
+message SearchMedicationsRequest {
+  string query = 1;
+  string category = 2;
+  common.v1.PaginationRequest pagination = 3;
+}
+
+message SearchMedicationsResponse {
+  repeated Medication medications = 1;
+  common.v1.PaginationResponse pagination = 2;
+}
+
+message GetMedicationRequest {
+  string code = 1;
+}
+
+message GetMedicationResponse {
+  Medication medication = 1;
+}
+
+message Medication {
+  string code = 1;
+  string display = 2;
+  string form = 3;
+  string route = 4;
+  string category = 5;
+  bool available = 6;
+}
+
+message CheckInteractionsRequest {
+  repeated string medication_codes = 1;
+  string patient_id = 2;
+}
+
+message CheckInteractionsResponse {
+  repeated Interaction interactions = 1;
+}
+
+message Interaction {
+  string severity = 1;
+  string type = 2;
+  string description = 3;
+  string medication_a = 4;
+  string medication_b = 5;
+  string source = 6;
+}
+
+message GetAvailabilityRequest {
+  string site_id = 1;
+}
+
+message GetAvailabilityResponse {
+  repeated MedicationAvailability items = 1;
+  string site_id = 2;
+}
+
+message MedicationAvailability {
+  string medication_code = 1;
+  string display = 2;
+  int32 quantity = 3;
+  string unit = 4;
+  string last_updated = 5;
+}
+
+message UpdateAvailabilityRequest {
+  string site_id = 1;
+  repeated MedicationAvailabilityUpdate items = 2;
+}
+
+message MedicationAvailabilityUpdate {
+  string medication_code = 1;
+  int32 quantity = 2;
+  string unit = 3;
+}
+
+message UpdateAvailabilityResponse {
+  int32 updated_count = 1;
+}

@@ -18,9 +18,16 @@ import (
 )
 
 type mockPatientService struct {
-	listFn   func(ctx context.Context, req *service.ListPatientsRequest) (*service.ListPatientsResponse, error)
-	getFn    func(ctx context.Context, id string) (*service.PatientBundle, error)
-	searchFn func(ctx context.Context, query string, page, perPage int) (*service.ListPatientsResponse, error)
+	service.PatientService // embed to satisfy interface with zero methods
+	listFn                 func(ctx context.Context, req *service.ListPatientsRequest) (*service.ListPatientsResponse, error)
+	getFn                  func(ctx context.Context, id string) (*service.PatientBundle, error)
+	searchFn               func(ctx context.Context, query string, page, perPage int) (*service.ListPatientsResponse, error)
+	createFn               func(ctx context.Context, body json.RawMessage) (*service.WriteResponse, error)
+	updateFn               func(ctx context.Context, id string, body json.RawMessage) (*service.WriteResponse, error)
+	deleteFn               func(ctx context.Context, id string) (*service.WriteResponse, error)
+	matchFn                func(ctx context.Context, req *service.MatchPatientsRequest) (*service.MatchPatientsResponse, error)
+	historyFn              func(ctx context.Context, id string) (*service.PatientHistoryResponse, error)
+	timelineFn             func(ctx context.Context, id string) (*service.PatientTimelineResponse, error)
 }
 
 func (m *mockPatientService) ListPatients(ctx context.Context, req *service.ListPatientsRequest) (*service.ListPatientsResponse, error) {
@@ -40,6 +47,48 @@ func (m *mockPatientService) GetPatient(ctx context.Context, id string) (*servic
 func (m *mockPatientService) SearchPatients(ctx context.Context, query string, page, perPage int) (*service.ListPatientsResponse, error) {
 	if m.searchFn != nil {
 		return m.searchFn(ctx, query, page, perPage)
+	}
+	return nil, nil
+}
+
+func (m *mockPatientService) CreatePatient(ctx context.Context, body json.RawMessage) (*service.WriteResponse, error) {
+	if m.createFn != nil {
+		return m.createFn(ctx, body)
+	}
+	return nil, nil
+}
+
+func (m *mockPatientService) UpdatePatient(ctx context.Context, id string, body json.RawMessage) (*service.WriteResponse, error) {
+	if m.updateFn != nil {
+		return m.updateFn(ctx, id, body)
+	}
+	return nil, nil
+}
+
+func (m *mockPatientService) DeletePatient(ctx context.Context, id string) (*service.WriteResponse, error) {
+	if m.deleteFn != nil {
+		return m.deleteFn(ctx, id)
+	}
+	return nil, nil
+}
+
+func (m *mockPatientService) MatchPatients(ctx context.Context, req *service.MatchPatientsRequest) (*service.MatchPatientsResponse, error) {
+	if m.matchFn != nil {
+		return m.matchFn(ctx, req)
+	}
+	return nil, nil
+}
+
+func (m *mockPatientService) GetPatientHistory(ctx context.Context, id string) (*service.PatientHistoryResponse, error) {
+	if m.historyFn != nil {
+		return m.historyFn(ctx, id)
+	}
+	return nil, nil
+}
+
+func (m *mockPatientService) GetPatientTimeline(ctx context.Context, id string) (*service.PatientTimelineResponse, error) {
+	if m.timelineFn != nil {
+		return m.timelineFn(ctx, id)
 	}
 	return nil, nil
 }

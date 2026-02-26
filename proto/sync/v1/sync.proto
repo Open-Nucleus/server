@@ -1,0 +1,157 @@
+syntax = "proto3";
+
+package sync.v1;
+
+option go_package = "github.com/FibrinLab/open-nucleus/gen/proto/sync/v1;syncv1";
+
+import "common/v1/metadata.proto";
+import "common/v1/fhir.proto";
+
+service SyncService {
+  rpc GetStatus(GetStatusRequest) returns (GetStatusResponse);
+  rpc ListPeers(ListPeersRequest) returns (ListPeersResponse);
+  rpc TriggerSync(TriggerSyncRequest) returns (TriggerSyncResponse);
+  rpc GetHistory(GetSyncHistoryRequest) returns (GetSyncHistoryResponse);
+  rpc ExportBundle(ExportBundleRequest) returns (ExportBundleResponse);
+  rpc ImportBundle(ImportBundleRequest) returns (ImportBundleResponse);
+}
+
+service ConflictService {
+  rpc ListConflicts(ListConflictsRequest) returns (ListConflictsResponse);
+  rpc GetConflict(GetConflictRequest) returns (GetConflictResponse);
+  rpc ResolveConflict(ResolveConflictRequest) returns (ResolveConflictResponse);
+  rpc DeferConflict(DeferConflictRequest) returns (DeferConflictResponse);
+}
+
+// Sync RPCs
+
+message GetStatusRequest {}
+
+message GetStatusResponse {
+  string state = 1;
+  string last_sync = 2;
+  int32 pending_changes = 3;
+  string node_id = 4;
+  string site_id = 5;
+}
+
+message ListPeersRequest {}
+
+message ListPeersResponse {
+  repeated PeerInfo peers = 1;
+}
+
+message PeerInfo {
+  string node_id = 1;
+  string site_id = 2;
+  string last_seen = 3;
+  string state = 4;
+  int32 latency_ms = 5;
+}
+
+message TriggerSyncRequest {
+  string target_node = 1;
+}
+
+message TriggerSyncResponse {
+  string sync_id = 1;
+  string state = 2;
+  common.v1.GitMetadata git = 3;
+}
+
+message GetSyncHistoryRequest {
+  common.v1.PaginationRequest pagination = 1;
+}
+
+message GetSyncHistoryResponse {
+  repeated SyncEvent events = 1;
+  common.v1.PaginationResponse pagination = 2;
+}
+
+message SyncEvent {
+  string sync_id = 1;
+  string timestamp = 2;
+  string direction = 3;
+  string peer_node = 4;
+  string state = 5;
+  int32 resources_transferred = 6;
+}
+
+message ExportBundleRequest {
+  repeated string resource_types = 1;
+  string since = 2;
+}
+
+message ExportBundleResponse {
+  bytes bundle_data = 1;
+  string format = 2;
+  int32 resource_count = 3;
+  common.v1.GitMetadata git = 4;
+}
+
+message ImportBundleRequest {
+  bytes bundle_data = 1;
+  string format = 2;
+  string author = 3;
+  string node_id = 4;
+  string site_id = 5;
+}
+
+message ImportBundleResponse {
+  int32 resources_imported = 1;
+  int32 resources_skipped = 2;
+  repeated string errors = 3;
+  common.v1.GitMetadata git = 4;
+}
+
+// Conflict RPCs
+
+message ListConflictsRequest {
+  common.v1.PaginationRequest pagination = 1;
+  string status = 2;
+}
+
+message ListConflictsResponse {
+  repeated Conflict conflicts = 1;
+  common.v1.PaginationResponse pagination = 2;
+}
+
+message GetConflictRequest {
+  string conflict_id = 1;
+}
+
+message GetConflictResponse {
+  Conflict conflict = 1;
+}
+
+message Conflict {
+  string id = 1;
+  string resource_type = 2;
+  string resource_id = 3;
+  string status = 4;
+  string detected_at = 5;
+  common.v1.FHIRResource local_version = 6;
+  common.v1.FHIRResource remote_version = 7;
+  string local_node = 8;
+  string remote_node = 9;
+}
+
+message ResolveConflictRequest {
+  string conflict_id = 1;
+  string resolution = 2;
+  bytes merged_resource = 3;
+  string author = 4;
+}
+
+message ResolveConflictResponse {
+  common.v1.GitMetadata git = 1;
+}
+
+message DeferConflictRequest {
+  string conflict_id = 1;
+  string reason = 2;
+}
+
+message DeferConflictResponse {
+  string status = 1;
+}

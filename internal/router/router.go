@@ -13,12 +13,19 @@ import (
 
 // Config holds all dependencies needed by the router.
 type Config struct {
-	AuthHandler    *handler.AuthHandler
-	PatientHandler *handler.PatientHandler
-	JWTAuth        *middleware.JWTAuth
-	RateLimiter    *middleware.RateLimiter
-	CORSOrigins    []string
-	AuditLogger    *slog.Logger
+	AuthHandler      *handler.AuthHandler
+	PatientHandler   *handler.PatientHandler
+	SyncHandler      *handler.SyncHandler
+	ConflictHandler  *handler.ConflictHandler
+	SentinelHandler  *handler.SentinelHandler
+	FormularyHandler *handler.FormularyHandler
+	AnchorHandler    *handler.AnchorHandler
+	SupplyHandler    *handler.SupplyHandler
+	SchemaValidator  *middleware.SchemaValidator
+	JWTAuth          *middleware.JWTAuth
+	RateLimiter      *middleware.RateLimiter
+	CORSOrigins      []string
+	AuditLogger      *slog.Logger
 }
 
 // New creates the full route tree with middleware scoping.
@@ -59,7 +66,8 @@ func New(cfg Config) http.Handler {
 				r.With(
 					cfg.RateLimiter.Middleware(middleware.CategoryWrite),
 					middleware.RequirePermission(model.PermPatientWrite),
-				).Post("/", handler.StubHandler())
+					validatorMiddleware(cfg.SchemaValidator, "patient"),
+				).Post("/", cfg.PatientHandler.Create)
 
 				r.With(
 					cfg.RateLimiter.Middleware(middleware.CategoryRead),
@@ -69,7 +77,7 @@ func New(cfg Config) http.Handler {
 				r.With(
 					cfg.RateLimiter.Middleware(middleware.CategoryWrite),
 					middleware.RequirePermission(model.PermPatientRead),
-				).Post("/match", handler.StubHandler())
+				).Post("/match", cfg.PatientHandler.Match)
 
 				r.Route("/{id}", func(r chi.Router) {
 					r.With(
@@ -80,45 +88,48 @@ func New(cfg Config) http.Handler {
 					r.With(
 						cfg.RateLimiter.Middleware(middleware.CategoryWrite),
 						middleware.RequirePermission(model.PermPatientWrite),
-					).Put("/", handler.StubHandler())
+						validatorMiddleware(cfg.SchemaValidator, "patient"),
+					).Put("/", cfg.PatientHandler.Update)
 
 					r.With(
 						cfg.RateLimiter.Middleware(middleware.CategoryWrite),
 						middleware.RequirePermission(model.PermPatientWrite),
-					).Delete("/", handler.StubHandler())
+					).Delete("/", cfg.PatientHandler.Delete)
 
 					r.With(
 						cfg.RateLimiter.Middleware(middleware.CategoryRead),
 						middleware.RequirePermission(model.PermPatientRead),
-					).Get("/history", handler.StubHandler())
+					).Get("/history", cfg.PatientHandler.History)
 
 					r.With(
 						cfg.RateLimiter.Middleware(middleware.CategoryRead),
 						middleware.RequirePermission(model.PermPatientRead),
-					).Get("/timeline", handler.StubHandler())
+					).Get("/timeline", cfg.PatientHandler.Timeline)
 
 					// Encounters
 					r.Route("/encounters", func(r chi.Router) {
 						r.With(
 							cfg.RateLimiter.Middleware(middleware.CategoryRead),
 							middleware.RequirePermission(model.PermEncounterRead),
-						).Get("/", handler.StubHandler())
+						).Get("/", cfg.PatientHandler.ListEncounters)
 
 						r.With(
 							cfg.RateLimiter.Middleware(middleware.CategoryWrite),
 							middleware.RequirePermission(model.PermEncounterWrite),
-						).Post("/", handler.StubHandler())
+							validatorMiddleware(cfg.SchemaValidator, "encounter"),
+						).Post("/", cfg.PatientHandler.CreateEncounter)
 
 						r.Route("/{eid}", func(r chi.Router) {
 							r.With(
 								cfg.RateLimiter.Middleware(middleware.CategoryRead),
 								middleware.RequirePermission(model.PermEncounterRead),
-							).Get("/", handler.StubHandler())
+							).Get("/", cfg.PatientHandler.GetEncounter)
 
 							r.With(
 								cfg.RateLimiter.Middleware(middleware.CategoryWrite),
 								middleware.RequirePermission(model.PermEncounterWrite),
-							).Put("/", handler.StubHandler())
+								validatorMiddleware(cfg.SchemaValidator, "encounter"),
+							).Put("/", cfg.PatientHandler.UpdateEncounter)
 						})
 					})
 
@@ -127,17 +138,18 @@ func New(cfg Config) http.Handler {
 						r.With(
 							cfg.RateLimiter.Middleware(middleware.CategoryRead),
 							middleware.RequirePermission(model.PermObservationRead),
-						).Get("/", handler.StubHandler())
+						).Get("/", cfg.PatientHandler.ListObservations)
 
 						r.With(
 							cfg.RateLimiter.Middleware(middleware.CategoryWrite),
 							middleware.RequirePermission(model.PermObservationWrite),
-						).Post("/", handler.StubHandler())
+							validatorMiddleware(cfg.SchemaValidator, "observation"),
+						).Post("/", cfg.PatientHandler.CreateObservation)
 
 						r.With(
 							cfg.RateLimiter.Middleware(middleware.CategoryRead),
 							middleware.RequirePermission(model.PermObservationRead),
-						).Get("/{oid}", handler.StubHandler())
+						).Get("/{oid}", cfg.PatientHandler.GetObservation)
 					})
 
 					// Conditions
@@ -145,17 +157,19 @@ func New(cfg Config) http.Handler {
 						r.With(
 							cfg.RateLimiter.Middleware(middleware.CategoryRead),
 							middleware.RequirePermission(model.PermConditionRead),
-						).Get("/", handler.StubHandler())
+						).Get("/", cfg.PatientHandler.ListConditions)
 
 						r.With(
 							cfg.RateLimiter.Middleware(middleware.CategoryWrite),
 							middleware.RequirePermission(model.PermConditionWrite),
-						).Post("/", handler.StubHandler())
+							validatorMiddleware(cfg.SchemaValidator, "condition"),
+						).Post("/", cfg.PatientHandler.CreateCondition)
 
 						r.With(
 							cfg.RateLimiter.Middleware(middleware.CategoryWrite),
 							middleware.RequirePermission(model.PermConditionWrite),
-						).Put("/{cid}", handler.StubHandler())
+							validatorMiddleware(cfg.SchemaValidator, "condition"),
+						).Put("/{cid}", cfg.PatientHandler.UpdateCondition)
 					})
 
 					// Medication Requests
@@ -163,17 +177,19 @@ func New(cfg Config) http.Handler {
 						r.With(
 							cfg.RateLimiter.Middleware(middleware.CategoryRead),
 							middleware.RequirePermission(model.PermMedicationRead),
-						).Get("/", handler.StubHandler())
+						).Get("/", cfg.PatientHandler.ListMedicationRequests)
 
 						r.With(
 							cfg.RateLimiter.Middleware(middleware.CategoryWrite),
 							middleware.RequirePermission(model.PermMedicationWrite),
-						).Post("/", handler.StubHandler())
+							validatorMiddleware(cfg.SchemaValidator, "medication_request"),
+						).Post("/", cfg.PatientHandler.CreateMedicationRequest)
 
 						r.With(
 							cfg.RateLimiter.Middleware(middleware.CategoryWrite),
 							middleware.RequirePermission(model.PermMedicationWrite),
-						).Put("/{mid}", handler.StubHandler())
+							validatorMiddleware(cfg.SchemaValidator, "medication_request"),
+						).Put("/{mid}", cfg.PatientHandler.UpdateMedicationRequest)
 					})
 
 					// Allergy Intolerances
@@ -181,17 +197,19 @@ func New(cfg Config) http.Handler {
 						r.With(
 							cfg.RateLimiter.Middleware(middleware.CategoryRead),
 							middleware.RequirePermission(model.PermAllergyRead),
-						).Get("/", handler.StubHandler())
+						).Get("/", cfg.PatientHandler.ListAllergyIntolerances)
 
 						r.With(
 							cfg.RateLimiter.Middleware(middleware.CategoryWrite),
 							middleware.RequirePermission(model.PermAllergyWrite),
-						).Post("/", handler.StubHandler())
+							validatorMiddleware(cfg.SchemaValidator, "allergy_intolerance"),
+						).Post("/", cfg.PatientHandler.CreateAllergyIntolerance)
 
 						r.With(
 							cfg.RateLimiter.Middleware(middleware.CategoryWrite),
 							middleware.RequirePermission(model.PermAllergyWrite),
-						).Put("/{aid}", handler.StubHandler())
+							validatorMiddleware(cfg.SchemaValidator, "allergy_intolerance"),
+						).Put("/{aid}", cfg.PatientHandler.UpdateAllergyIntolerance)
 					})
 				})
 			})
@@ -201,33 +219,33 @@ func New(cfg Config) http.Handler {
 				r.With(
 					cfg.RateLimiter.Middleware(middleware.CategoryRead),
 					middleware.RequirePermission(model.PermSyncRead),
-				).Get("/status", handler.StubHandler())
+				).Get("/status", cfg.SyncHandler.Status)
 
 				r.With(
 					cfg.RateLimiter.Middleware(middleware.CategoryRead),
 					middleware.RequirePermission(model.PermSyncRead),
-				).Get("/peers", handler.StubHandler())
+				).Get("/peers", cfg.SyncHandler.Peers)
 
 				r.With(
 					cfg.RateLimiter.Middleware(middleware.CategoryWrite),
 					middleware.RequirePermission(model.PermSyncTrigger),
-				).Post("/trigger", handler.StubHandler())
+				).Post("/trigger", cfg.SyncHandler.Trigger)
 
 				r.With(
 					cfg.RateLimiter.Middleware(middleware.CategoryRead),
 					middleware.RequirePermission(model.PermSyncRead),
-				).Get("/history", handler.StubHandler())
+				).Get("/history", cfg.SyncHandler.History)
 
 				r.Route("/bundle", func(r chi.Router) {
 					r.With(
 						cfg.RateLimiter.Middleware(middleware.CategoryWrite),
 						middleware.RequirePermission(model.PermSyncTrigger),
-					).Post("/export", handler.StubHandler())
+					).Post("/export", cfg.SyncHandler.ExportBundle)
 
 					r.With(
 						cfg.RateLimiter.Middleware(middleware.CategoryWrite),
 						middleware.RequirePermission(model.PermSyncTrigger),
-					).Post("/import", handler.StubHandler())
+					).Post("/import", cfg.SyncHandler.ImportBundle)
 				})
 			})
 
@@ -236,23 +254,23 @@ func New(cfg Config) http.Handler {
 				r.With(
 					cfg.RateLimiter.Middleware(middleware.CategoryRead),
 					middleware.RequirePermission(model.PermConflictRead),
-				).Get("/", handler.StubHandler())
+				).Get("/", cfg.ConflictHandler.List)
 
 				r.Route("/{id}", func(r chi.Router) {
 					r.With(
 						cfg.RateLimiter.Middleware(middleware.CategoryRead),
 						middleware.RequirePermission(model.PermConflictRead),
-					).Get("/", handler.StubHandler())
+					).Get("/", cfg.ConflictHandler.GetByID)
 
 					r.With(
 						cfg.RateLimiter.Middleware(middleware.CategoryWrite),
 						middleware.RequirePermission(model.PermConflictResolve),
-					).Post("/resolve", handler.StubHandler())
+					).Post("/resolve", cfg.ConflictHandler.Resolve)
 
 					r.With(
 						cfg.RateLimiter.Middleware(middleware.CategoryWrite),
 						middleware.RequirePermission(model.PermConflictResolve),
-					).Post("/defer", handler.StubHandler())
+					).Post("/defer", cfg.ConflictHandler.Defer)
 				})
 			})
 
@@ -261,28 +279,28 @@ func New(cfg Config) http.Handler {
 				r.With(
 					cfg.RateLimiter.Middleware(middleware.CategoryRead),
 					middleware.RequirePermission(model.PermAlertRead),
-				).Get("/", handler.StubHandler())
+				).Get("/", cfg.SentinelHandler.ListAlerts)
 
 				r.With(
 					cfg.RateLimiter.Middleware(middleware.CategoryRead),
 					middleware.RequirePermission(model.PermAlertRead),
-				).Get("/summary", handler.StubHandler())
+				).Get("/summary", cfg.SentinelHandler.Summary)
 
 				r.Route("/{id}", func(r chi.Router) {
 					r.With(
 						cfg.RateLimiter.Middleware(middleware.CategoryRead),
 						middleware.RequirePermission(model.PermAlertRead),
-					).Get("/", handler.StubHandler())
+					).Get("/", cfg.SentinelHandler.GetAlert)
 
 					r.With(
 						cfg.RateLimiter.Middleware(middleware.CategoryWrite),
 						middleware.RequirePermission(model.PermAlertWrite),
-					).Post("/acknowledge", handler.StubHandler())
+					).Post("/acknowledge", cfg.SentinelHandler.Acknowledge)
 
 					r.With(
 						cfg.RateLimiter.Middleware(middleware.CategoryWrite),
 						middleware.RequirePermission(model.PermAlertWrite),
-					).Post("/dismiss", handler.StubHandler())
+					).Post("/dismiss", cfg.SentinelHandler.Dismiss)
 				})
 			})
 
@@ -291,27 +309,27 @@ func New(cfg Config) http.Handler {
 				r.With(
 					cfg.RateLimiter.Middleware(middleware.CategoryRead),
 					middleware.RequirePermission(model.PermFormularyRead),
-				).Get("/medications", handler.StubHandler())
+				).Get("/medications", cfg.FormularyHandler.SearchMedications)
 
 				r.With(
 					cfg.RateLimiter.Middleware(middleware.CategoryRead),
 					middleware.RequirePermission(model.PermFormularyRead),
-				).Get("/medications/{code}", handler.StubHandler())
+				).Get("/medications/{code}", cfg.FormularyHandler.GetMedication)
 
 				r.With(
 					cfg.RateLimiter.Middleware(middleware.CategoryWrite),
 					middleware.RequirePermission(model.PermFormularyRead),
-				).Post("/check-interactions", handler.StubHandler())
+				).Post("/check-interactions", cfg.FormularyHandler.CheckInteractions)
 
 				r.With(
 					cfg.RateLimiter.Middleware(middleware.CategoryRead),
 					middleware.RequirePermission(model.PermFormularyRead),
-				).Get("/availability/{site_id}", handler.StubHandler())
+				).Get("/availability/{site_id}", cfg.FormularyHandler.GetAvailability)
 
 				r.With(
 					cfg.RateLimiter.Middleware(middleware.CategoryWrite),
 					middleware.RequirePermission(model.PermFormularyWrite),
-				).Put("/availability/{site_id}", handler.StubHandler())
+				).Put("/availability/{site_id}", cfg.FormularyHandler.UpdateAvailability)
 			})
 
 			// Anchor/IOTA endpoints
@@ -319,22 +337,22 @@ func New(cfg Config) http.Handler {
 				r.With(
 					cfg.RateLimiter.Middleware(middleware.CategoryRead),
 					middleware.RequirePermission(model.PermAnchorRead),
-				).Get("/status", handler.StubHandler())
+				).Get("/status", cfg.AnchorHandler.Status)
 
 				r.With(
 					cfg.RateLimiter.Middleware(middleware.CategoryWrite),
 					middleware.RequirePermission(model.PermAnchorRead),
-				).Post("/verify", handler.StubHandler())
+				).Post("/verify", cfg.AnchorHandler.Verify)
 
 				r.With(
 					cfg.RateLimiter.Middleware(middleware.CategoryRead),
 					middleware.RequirePermission(model.PermAnchorRead),
-				).Get("/history", handler.StubHandler())
+				).Get("/history", cfg.AnchorHandler.History)
 
 				r.With(
 					cfg.RateLimiter.Middleware(middleware.CategoryWrite),
 					middleware.RequirePermission(model.PermAnchorTrigger),
-				).Post("/trigger", handler.StubHandler())
+				).Post("/trigger", cfg.AnchorHandler.Trigger)
 			})
 
 			// Supply chain endpoints
@@ -342,33 +360,42 @@ func New(cfg Config) http.Handler {
 				r.With(
 					cfg.RateLimiter.Middleware(middleware.CategoryRead),
 					middleware.RequirePermission(model.PermSupplyRead),
-				).Get("/inventory", handler.StubHandler())
+				).Get("/inventory", cfg.SupplyHandler.Inventory)
 
 				r.With(
 					cfg.RateLimiter.Middleware(middleware.CategoryRead),
 					middleware.RequirePermission(model.PermSupplyRead),
-				).Get("/inventory/{item_code}", handler.StubHandler())
+				).Get("/inventory/{item_code}", cfg.SupplyHandler.InventoryItem)
 
 				r.With(
 					cfg.RateLimiter.Middleware(middleware.CategoryWrite),
 					middleware.RequirePermission(model.PermSupplyWrite),
-				).Post("/deliveries", handler.StubHandler())
+				).Post("/deliveries", cfg.SupplyHandler.RecordDelivery)
 
 				r.With(
 					cfg.RateLimiter.Middleware(middleware.CategoryRead),
 					middleware.RequirePermission(model.PermSupplyRead),
-				).Get("/predictions", handler.StubHandler())
+				).Get("/predictions", cfg.SupplyHandler.Predictions)
 
 				r.With(
 					cfg.RateLimiter.Middleware(middleware.CategoryRead),
 					middleware.RequirePermission(model.PermSupplyRead),
-				).Get("/redistribution", handler.StubHandler())
+				).Get("/redistribution", cfg.SupplyHandler.Redistribution)
 			})
 
-			// WebSocket endpoint (stub for now)
+			// WebSocket endpoint (stub for now — Phase 5)
 			r.Get("/ws", handler.StubHandler())
 		})
 	})
 
 	return r
+}
+
+// validatorMiddleware returns a no-op middleware if SchemaValidator is nil,
+// otherwise applies the schema validation for the given pattern.
+func validatorMiddleware(sv *middleware.SchemaValidator, pattern string) func(http.Handler) http.Handler {
+	if sv == nil {
+		return func(next http.Handler) http.Handler { return next }
+	}
+	return sv.Middleware(pattern)
 }

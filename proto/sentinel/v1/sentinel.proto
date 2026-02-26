@@ -1,0 +1,169 @@
+syntax = "proto3";
+
+package sentinel.v1;
+
+option go_package = "github.com/FibrinLab/open-nucleus/gen/proto/sentinel/v1;sentinelv1";
+
+import "common/v1/metadata.proto";
+
+service SentinelService {
+  // Alert RPCs
+  rpc ListAlerts(ListAlertsRequest) returns (ListAlertsResponse);
+  rpc GetAlertSummary(GetAlertSummaryRequest) returns (GetAlertSummaryResponse);
+  rpc GetAlert(GetAlertRequest) returns (GetAlertResponse);
+  rpc AcknowledgeAlert(AcknowledgeAlertRequest) returns (AcknowledgeAlertResponse);
+  rpc DismissAlert(DismissAlertRequest) returns (DismissAlertResponse);
+
+  // Supply chain intelligence RPCs
+  rpc GetInventory(GetInventoryRequest) returns (GetInventoryResponse);
+  rpc GetInventoryItem(GetInventoryItemRequest) returns (GetInventoryItemResponse);
+  rpc RecordDelivery(RecordDeliveryRequest) returns (RecordDeliveryResponse);
+  rpc GetPredictions(GetPredictionsRequest) returns (GetPredictionsResponse);
+  rpc GetRedistribution(GetRedistributionRequest) returns (GetRedistributionResponse);
+}
+
+// Alert messages
+
+message ListAlertsRequest {
+  common.v1.PaginationRequest pagination = 1;
+  string severity = 2;
+  string status = 3;
+}
+
+message ListAlertsResponse {
+  repeated Alert alerts = 1;
+  common.v1.PaginationResponse pagination = 2;
+}
+
+message GetAlertSummaryRequest {}
+
+message GetAlertSummaryResponse {
+  int32 total = 1;
+  int32 critical = 2;
+  int32 warning = 3;
+  int32 info = 4;
+  int32 unacknowledged = 5;
+}
+
+message GetAlertRequest {
+  string alert_id = 1;
+}
+
+message GetAlertResponse {
+  Alert alert = 1;
+}
+
+message Alert {
+  string id = 1;
+  string type = 2;
+  string severity = 3;
+  string status = 4;
+  string title = 5;
+  string description = 6;
+  string patient_id = 7;
+  string created_at = 8;
+  string acknowledged_at = 9;
+  string acknowledged_by = 10;
+}
+
+message AcknowledgeAlertRequest {
+  string alert_id = 1;
+  string acknowledged_by = 2;
+}
+
+message AcknowledgeAlertResponse {
+  Alert alert = 1;
+}
+
+message DismissAlertRequest {
+  string alert_id = 1;
+  string reason = 2;
+}
+
+message DismissAlertResponse {
+  Alert alert = 1;
+}
+
+// Supply chain messages
+
+message GetInventoryRequest {
+  string site_id = 1;
+  common.v1.PaginationRequest pagination = 2;
+}
+
+message GetInventoryResponse {
+  repeated InventoryItem items = 1;
+  common.v1.PaginationResponse pagination = 2;
+}
+
+message GetInventoryItemRequest {
+  string item_code = 1;
+  string site_id = 2;
+}
+
+message GetInventoryItemResponse {
+  InventoryItem item = 1;
+}
+
+message InventoryItem {
+  string item_code = 1;
+  string display = 2;
+  int32 quantity = 3;
+  string unit = 4;
+  string site_id = 5;
+  string last_updated = 6;
+  int32 reorder_level = 7;
+}
+
+message RecordDeliveryRequest {
+  string site_id = 1;
+  repeated DeliveryItem items = 2;
+  string received_by = 3;
+  string delivery_date = 4;
+}
+
+message DeliveryItem {
+  string item_code = 1;
+  int32 quantity = 2;
+  string unit = 3;
+  string batch_number = 4;
+  string expiry_date = 5;
+}
+
+message RecordDeliveryResponse {
+  string delivery_id = 1;
+  int32 items_recorded = 2;
+}
+
+message GetPredictionsRequest {
+  string site_id = 1;
+}
+
+message GetPredictionsResponse {
+  repeated SupplyPrediction predictions = 1;
+}
+
+message SupplyPrediction {
+  string item_code = 1;
+  string display = 2;
+  int32 current_quantity = 3;
+  int32 predicted_days_remaining = 4;
+  string risk_level = 5;
+  string recommended_action = 6;
+}
+
+message GetRedistributionRequest {
+  string site_id = 1;
+}
+
+message GetRedistributionResponse {
+  repeated RedistributionSuggestion suggestions = 1;
+}
+
+message RedistributionSuggestion {
+  string item_code = 1;
+  string from_site = 2;
+  string to_site = 3;
+  int32 suggested_quantity = 4;
+  string rationale = 5;
+}

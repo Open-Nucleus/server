@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["resourceType", "code"],
+  "properties": {
+    "resourceType": {
+      "type": "string",
+      "const": "Condition"
+    },
+    "code": {
+      "type": "object"
+    }
+  }
+}

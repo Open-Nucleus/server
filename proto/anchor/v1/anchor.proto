@@ -1,0 +1,60 @@
+syntax = "proto3";
+
+package anchor.v1;
+
+option go_package = "github.com/FibrinLab/open-nucleus/gen/proto/anchor/v1;anchorv1";
+
+import "common/v1/metadata.proto";
+
+service AnchorService {
+  rpc GetStatus(GetAnchorStatusRequest) returns (GetAnchorStatusResponse);
+  rpc VerifyAnchor(VerifyAnchorRequest) returns (VerifyAnchorResponse);
+  rpc GetHistory(GetAnchorHistoryRequest) returns (GetAnchorHistoryResponse);
+  rpc TriggerAnchor(TriggerAnchorRequest) returns (TriggerAnchorResponse);
+}
+
+message GetAnchorStatusRequest {}
+
+message GetAnchorStatusResponse {
+  string state = 1;
+  string last_anchor = 2;
+  string tangle_node = 3;
+  int32 pending_commits = 4;
+}
+
+message VerifyAnchorRequest {
+  string commit_hash = 1;
+}
+
+message VerifyAnchorResponse {
+  bool verified = 1;
+  string anchor_id = 2;
+  string tangle_message_id = 3;
+  string anchored_at = 4;
+  string commit_hash = 5;
+}
+
+message GetAnchorHistoryRequest {
+  common.v1.PaginationRequest pagination = 1;
+}
+
+message GetAnchorHistoryResponse {
+  repeated AnchorEvent events = 1;
+  common.v1.PaginationResponse pagination = 2;
+}
+
+message AnchorEvent {
+  string anchor_id = 1;
+  string commit_hash = 2;
+  string tangle_message_id = 3;
+  string timestamp = 4;
+  string state = 5;
+}
+
+message TriggerAnchorRequest {}
+
+message TriggerAnchorResponse {
+  string anchor_id = 1;
+  string state = 2;
+  common.v1.GitMetadata git = 3;
+}

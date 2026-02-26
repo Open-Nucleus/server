@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["resourceType", "status", "class"],
+  "properties": {
+    "resourceType": {
+      "type": "string",
+      "const": "Encounter"
+    },
+    "status": {
+      "type": "string"
+    },
+    "class": {
+      "type": "object"
+    }
+  }
+}
