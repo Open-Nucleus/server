@@ -6,39 +6,83 @@ option go_package = "github.com/FibrinLab/open-nucleus/gen/proto/patient/v1;pati
 
 import "common/v1/metadata.proto";
 import "common/v1/fhir.proto";
+import "google/protobuf/timestamp.proto";
 
 service PatientService {
+  // Patient CRUD
   rpc ListPatients(ListPatientsRequest) returns (ListPatientsResponse);
   rpc GetPatient(GetPatientRequest) returns (GetPatientResponse);
+  rpc GetPatientBundle(GetPatientBundleRequest) returns (GetPatientBundleResponse);
   rpc CreatePatient(CreatePatientRequest) returns (CreatePatientResponse);
   rpc UpdatePatient(UpdatePatientRequest) returns (UpdatePatientResponse);
   rpc DeletePatient(DeletePatientRequest) returns (DeletePatientResponse);
+
+  // Patient search and matching
   rpc SearchPatients(SearchPatientsRequest) returns (SearchPatientsResponse);
   rpc MatchPatients(MatchPatientsRequest) returns (MatchPatientsResponse);
+
+  // Patient history
   rpc GetPatientHistory(GetPatientHistoryRequest) returns (GetPatientHistoryResponse);
   rpc GetPatientTimeline(GetPatientTimelineRequest) returns (GetPatientTimelineResponse);
 
-  // Clinical sub-resources
+  // Encounter CRUD
   rpc ListEncounters(ListEncountersRequest) returns (ListEncountersResponse);
   rpc GetEncounter(GetEncounterRequest) returns (GetEncounterResponse);
   rpc CreateEncounter(CreateEncounterRequest) returns (CreateEncounterResponse);
   rpc UpdateEncounter(UpdateEncounterRequest) returns (UpdateEncounterResponse);
 
+  // Observation CRUD
   rpc ListObservations(ListObservationsRequest) returns (ListObservationsResponse);
   rpc GetObservation(GetObservationRequest) returns (GetObservationResponse);
   rpc CreateObservation(CreateObservationRequest) returns (CreateObservationResponse);
 
+  // Condition CRUD
   rpc ListConditions(ListConditionsRequest) returns (ListConditionsResponse);
+  rpc GetCondition(GetConditionRequest) returns (GetConditionResponse);
   rpc CreateCondition(CreateConditionRequest) returns (CreateConditionResponse);
   rpc UpdateCondition(UpdateConditionRequest) returns (UpdateConditionResponse);
 
+  // MedicationRequest CRUD
   rpc ListMedicationRequests(ListMedicationRequestsRequest) returns (ListMedicationRequestsResponse);
+  rpc GetMedicationRequest(GetMedicationRequestRequest) returns (GetMedicationRequestResponse);
   rpc CreateMedicationRequest(CreateMedicationRequestRequest) returns (CreateMedicationRequestResponse);
   rpc UpdateMedicationRequest(UpdateMedicationRequestRequest) returns (UpdateMedicationRequestResponse);
 
+  // AllergyIntolerance CRUD
   rpc ListAllergyIntolerances(ListAllergyIntolerancesRequest) returns (ListAllergyIntolerancesResponse);
+  rpc GetAllergyIntolerance(GetAllergyIntoleranceRequest) returns (GetAllergyIntoleranceResponse);
   rpc CreateAllergyIntolerance(CreateAllergyIntoleranceRequest) returns (CreateAllergyIntoleranceResponse);
   rpc UpdateAllergyIntolerance(UpdateAllergyIntoleranceRequest) returns (UpdateAllergyIntoleranceResponse);
+
+  // Flag CRUD (used by Sentinel Agent write-back)
+  rpc CreateFlag(CreateFlagRequest) returns (CreateFlagResponse);
+  rpc UpdateFlag(UpdateFlagRequest) returns (UpdateFlagResponse);
+
+  // Batch operations
+  rpc CreateBatch(CreateBatchRequest) returns (BatchResponse);
+
+  // Index management
+  rpc RebuildIndex(RebuildIndexRequest) returns (RebuildIndexResponse);
+  rpc CheckIndexHealth(CheckIndexHealthRequest) returns (IndexHealthResponse);
+  rpc ReindexResources(ReindexRequest) returns (ReindexResponse);
+
+  // Health check
+  rpc Health(HealthRequest) returns (HealthResponse);
+}
+
+// Mutation context passed on every mutating request
+message MutationContext {
+  string practitioner_id = 1;
+  string node_id = 2;
+  string site_id = 3;
+  google.protobuf.Timestamp timestamp = 4;
+}
+
+// Git commit info returned on mutations
+message GitCommitInfo {
+  string commit_hash = 1;
+  string message = 2;
+  google.protobuf.Timestamp timestamp = 3;
 }
 
 // Patient CRUD
@@ -71,40 +115,48 @@ message GetPatientResponse {
   repeated common.v1.FHIRResource flags = 7;
 }
 
+message GetPatientBundleRequest {
+  string patient_id = 1;
+}
+
+message GetPatientBundleResponse {
+  common.v1.FHIRResource patient = 1;
+  repeated common.v1.FHIRResource encounters = 2;
+  repeated common.v1.FHIRResource observations = 3;
+  repeated common.v1.FHIRResource conditions = 4;
+  repeated common.v1.FHIRResource medication_requests = 5;
+  repeated common.v1.FHIRResource allergy_intolerances = 6;
+  repeated common.v1.FHIRResource flags = 7;
+}
+
 message CreatePatientRequest {
   bytes fhir_json = 1;
-  string author = 2;
-  string node_id = 3;
-  string site_id = 4;
+  MutationContext context = 2;
 }
 
 message CreatePatientResponse {
   common.v1.FHIRResource patient = 1;
-  common.v1.GitMetadata git = 2;
+  GitCommitInfo git = 2;
 }
 
 message UpdatePatientRequest {
   string patient_id = 1;
   bytes fhir_json = 2;
-  string author = 3;
-  string node_id = 4;
-  string site_id = 5;
+  MutationContext context = 3;
 }
 
 message UpdatePatientResponse {
   common.v1.FHIRResource patient = 1;
-  common.v1.GitMetadata git = 2;
+  GitCommitInfo git = 2;
 }
 
 message DeletePatientRequest {
   string patient_id = 1;
-  string author = 2;
-  string node_id = 3;
-  string site_id = 4;
+  MutationContext context = 2;
 }
 
 message DeletePatientResponse {
-  common.v1.GitMetadata git = 1;
+  GitCommitInfo git = 1;
 }
 
 message SearchPatientsRequest {
@@ -158,10 +210,19 @@ message HistoryEntry {
 
 message GetPatientTimelineRequest {
   string patient_id = 1;
+  common.v1.PaginationRequest pagination = 2;
 }
 
 message GetPatientTimelineResponse {
-  repeated common.v1.FHIRResource events = 1;
+  repeated TimelineEvent events = 1;
+  common.v1.PaginationResponse pagination = 2;
+}
+
+message TimelineEvent {
+  string event_type = 1;
+  string resource_id = 2;
+  string date = 3;
+  bytes fhir_json = 4;
 }
 
 // Encounters
@@ -187,28 +248,24 @@ message GetEncounterResponse {
 message CreateEncounterRequest {
   string patient_id = 1;
   bytes fhir_json = 2;
-  string author = 3;
-  string node_id = 4;
-  string site_id = 5;
+  MutationContext context = 3;
 }
 
 message CreateEncounterResponse {
   common.v1.FHIRResource encounter = 1;
-  common.v1.GitMetadata git = 2;
+  GitCommitInfo git = 2;
 }
 
 message UpdateEncounterRequest {
   string patient_id = 1;
   string encounter_id = 2;
   bytes fhir_json = 3;
-  string author = 4;
-  string node_id = 5;
-  string site_id = 6;
+  MutationContext context = 4;
 }
 
 message UpdateEncounterResponse {
   common.v1.FHIRResource encounter = 1;
-  common.v1.GitMetadata git = 2;
+  GitCommitInfo git = 2;
 }
 
 // Observations
@@ -239,14 +296,12 @@ message GetObservationResponse {
 message CreateObservationRequest {
   string patient_id = 1;
   bytes fhir_json = 2;
-  string author = 3;
-  string node_id = 4;
-  string site_id = 5;
+  MutationContext context = 3;
 }
 
 message CreateObservationResponse {
   common.v1.FHIRResource observation = 1;
-  common.v1.GitMetadata git = 2;
+  GitCommitInfo git = 2;
 }
 
 // Conditions
@@ -263,31 +318,36 @@ message ListConditionsResponse {
   common.v1.PaginationResponse pagination = 2;
 }
 
+message GetConditionRequest {
+  string patient_id = 1;
+  string condition_id = 2;
+}
+
+message GetConditionResponse {
+  common.v1.FHIRResource condition = 1;
+}
+
 message CreateConditionRequest {
   string patient_id = 1;
   bytes fhir_json = 2;
-  string author = 3;
-  string node_id = 4;
-  string site_id = 5;
+  MutationContext context = 3;
 }
 
 message CreateConditionResponse {
   common.v1.FHIRResource condition = 1;
-  common.v1.GitMetadata git = 2;
+  GitCommitInfo git = 2;
 }
 
 message UpdateConditionRequest {
   string patient_id = 1;
   string condition_id = 2;
   bytes fhir_json = 3;
-  string author = 4;
-  string node_id = 5;
-  string site_id = 6;
+  MutationContext context = 4;
 }
 
 message UpdateConditionResponse {
   common.v1.FHIRResource condition = 1;
-  common.v1.GitMetadata git = 2;
+  GitCommitInfo git = 2;
 }
 
 // Medication Requests
@@ -301,31 +361,36 @@ message ListMedicationRequestsResponse {
   common.v1.PaginationResponse pagination = 2;
 }
 
+message GetMedicationRequestRequest {
+  string patient_id = 1;
+  string medication_request_id = 2;
+}
+
+message GetMedicationRequestResponse {
+  common.v1.FHIRResource medication_request = 1;
+}
+
 message CreateMedicationRequestRequest {
   string patient_id = 1;
   bytes fhir_json = 2;
-  string author = 3;
-  string node_id = 4;
-  string site_id = 5;
+  MutationContext context = 3;
 }
 
 message CreateMedicationRequestResponse {
   common.v1.FHIRResource medication_request = 1;
-  common.v1.GitMetadata git = 2;
+  GitCommitInfo git = 2;
 }
 
 message UpdateMedicationRequestRequest {
   string patient_id = 1;
   string medication_request_id = 2;
   bytes fhir_json = 3;
-  string author = 4;
-  string node_id = 5;
-  string site_id = 6;
+  MutationContext context = 4;
 }
 
 message UpdateMedicationRequestResponse {
   common.v1.FHIRResource medication_request = 1;
-  common.v1.GitMetadata git = 2;
+  GitCommitInfo git = 2;
 }
 
 // Allergy Intolerances
@@ -339,29 +404,118 @@ message ListAllergyIntolerancesResponse {
   common.v1.PaginationResponse pagination = 2;
 }
 
+message GetAllergyIntoleranceRequest {
+  string patient_id = 1;
+  string allergy_intolerance_id = 2;
+}
+
+message GetAllergyIntoleranceResponse {
+  common.v1.FHIRResource allergy_intolerance = 1;
+}
+
 message CreateAllergyIntoleranceRequest {
   string patient_id = 1;
   bytes fhir_json = 2;
-  string author = 3;
-  string node_id = 4;
-  string site_id = 5;
+  MutationContext context = 3;
 }
 
 message CreateAllergyIntoleranceResponse {
   common.v1.FHIRResource allergy_intolerance = 1;
-  common.v1.GitMetadata git = 2;
+  GitCommitInfo git = 2;
 }
 
 message UpdateAllergyIntoleranceRequest {
   string patient_id = 1;
   string allergy_intolerance_id = 2;
   bytes fhir_json = 3;
-  string author = 4;
-  string node_id = 5;
-  string site_id = 6;
+  MutationContext context = 4;
 }
 
 message UpdateAllergyIntoleranceResponse {
   common.v1.FHIRResource allergy_intolerance = 1;
-  common.v1.GitMetadata git = 2;
+  GitCommitInfo git = 2;
+}
+
+// Flags (Sentinel Agent write-back)
+message CreateFlagRequest {
+  string patient_id = 1;
+  bytes fhir_json = 2;
+  MutationContext context = 3;
+}
+
+message CreateFlagResponse {
+  common.v1.FHIRResource flag = 1;
+  GitCommitInfo git = 2;
+}
+
+message UpdateFlagRequest {
+  string patient_id = 1;
+  string flag_id = 2;
+  bytes fhir_json = 3;
+  MutationContext context = 4;
+}
+
+message UpdateFlagResponse {
+  common.v1.FHIRResource flag = 1;
+  GitCommitInfo git = 2;
+}
+
+// Batch operations
+message CreateBatchRequest {
+  string patient_id = 1;
+  repeated common.v1.FHIRResource resources = 2;
+  MutationContext context = 3;
+  bool atomic = 4;
+}
+
+message BatchResponse {
+  repeated BatchItemResult results = 1;
+  GitCommitInfo git = 2;
+}
+
+message BatchItemResult {
+  string resource_type = 1;
+  string resource_id = 2;
+  bool success = 3;
+  string error = 4;
+}
+
+// Index management
+message RebuildIndexRequest {}
+
+message RebuildIndexResponse {
+  int32 resources_indexed = 1;
+  string git_head = 2;
+  int64 duration_ms = 3;
+}
+
+message CheckIndexHealthRequest {}
+
+message IndexHealthResponse {
+  bool healthy = 1;
+  string index_head = 2;
+  string git_head = 3;
+  int32 index_count = 4;
+  int32 git_count = 5;
+  string message = 6;
+}
+
+message ReindexRequest {
+  repeated string resource_paths = 1;
+}
+
+message ReindexResponse {
+  int32 indexed = 1;
+  int32 failed = 2;
+  repeated string errors = 3;
+}
+
+// Health check
+message HealthRequest {}
+
+message HealthResponse {
+  string status = 1;
+  string git_head = 2;
+  int32 patient_count = 3;
+  bool index_healthy = 4;
 }

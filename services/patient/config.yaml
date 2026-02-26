@@ -1,0 +1,34 @@
+patient_service:
+  grpc_port: 50051
+
+  git:
+    repo_path: /var/lib/open-nucleus/data
+    author_name: "open-nucleus"
+    author_email: "system@open-nucleus.local"
+
+  sqlite:
+    db_path: /var/lib/open-nucleus/index.db
+    journal_mode: WAL
+    busy_timeout: 5000
+    cache_size: -20000
+
+  validation:
+    strict_mode: true
+    require_icd10: true
+    require_loinc: true
+
+  write_lock:
+    timeout: 5s
+
+  index:
+    auto_rebuild_on_drift: true
+    health_check_on_startup: true
+
+  matching:
+    default_threshold: 0.7
+    max_results: 10
+    fuzzy_max_distance: 2
+
+  logging:
+    level: info
+    format: json

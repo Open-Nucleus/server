@@ -1,7 +1,7 @@
 # Open Nucleus — Architectural Memory
 
 > Living document. Updated after every major feature or structural change.
-> Last updated: Phase 2 — Gateway Gaps (2026-02-26)
+> Last updated: Phase 3 — Patient Service (2026-02-26)
 
 ---
 
@@ -213,12 +213,12 @@ CORS → RequestID → AuditLog → JWTAuth → [per-route: RateLimiter → Requ
 ```
 proto/
 ├── common/v1/
-│   ├── metadata.proto   ← GitMetadata, PaginationRequest/Response, NodeInfo
+│   ├── metadata.proto   ← GitMetadata (+ Timestamp), PaginationRequest/Response, NodeInfo
 │   └── fhir.proto       ← FHIRResource{resource_type, id, json_payload bytes}
 ├── auth/v1/
 │   └── auth.proto       ← AuthService: Login, Refresh, Logout, Whoami RPCs
 ├── patient/v1/
-│   └── patient.proto    ← PatientService: CRUD + clinical sub-resources (27 RPCs)
+│   └── patient.proto    ← PatientService: 38 RPCs (CRUD + clinical + batch + index + health)
 ├── sync/v1/
 │   └── sync.proto       ← SyncService (6 RPCs) + ConflictService (4 RPCs)
 ├── formulary/v1/
@@ -230,6 +230,75 @@ proto/
 ```
 
 FHIR resources are opaque `bytes json_payload` — the gateway never parses or transforms them.
+
+Generated Go code lives in `gen/proto/` (protoc with go + go-grpc plugins).
+
+---
+
+## Shared Libraries (pkg/)
+
+### pkg/fhir — FHIR R4 Utilities
+Pure functions for working with FHIR resources. No I/O.
+- **types.go** — Resource type constants (`ResourcePatient`, etc.), operation constants (`OpCreate`, etc.), row structs for all 7 resource types (`PatientRow`, `EncounterRow`, etc.), `FieldError`, `Pagination`, `PaginationOpts`, `TimelineEvent`.
+- **path.go** — `GitPath(resourceType, patientID, resourceID)` returns Git file path per spec §3.3. `PatientDirPath(patientID)` for history queries.
+- **meta.go** — `SetMeta()` writes `meta.lastUpdated/versionId/source`. `AssignID()` assigns UUID if absent. `GetResourceType()`, `GetID()`.
+- **validate.go** — `Validate(resourceType, json)` performs Layer 1 structural validation. Per-type validators enforce required fields from spec §4.3.
+- **extract.go** — `ExtractPatientFields()`, `ExtractEncounterFields()`, etc. Extract SQLite indexed columns from FHIR JSON.
+- **softdelete.go** — `ApplySoftDelete()` mutates resource fields per spec §3.4 (Patient→active:false, Encounter→status:entered-in-error, etc.).
+
+### pkg/gitstore — Git Operations
+Wraps `go-git/v5` for clinical data Git repository management.
+- **store.go** — `Store` interface: `WriteAndCommit()`, `Read()`, `LogPath()`, `Head()`, `TreeWalk()`, `Rollback()`. `NewStore(repoPath)` opens or inits repo.
+- **commit.go** — `CommitMessage` struct with `Format()` and `ParseCommitMessage()` for structured commit messages per spec §3.3.
+
+### pkg/sqliteindex — SQLite Query Index
+Uses `modernc.org/sqlite` (pure Go, no CGO) for Raspberry Pi 4 deployment.
+- **schema.go** — `InitSchema()` creates 9 tables (patients, encounters, observations, conditions, medication_requests, allergy_intolerances, flags, detected_issues, patient_summaries) + index_meta + FTS5 + triggers. `DropAll()` for rebuild.
+- **index.go** — `Index` interface: Upsert/Get/List methods for all 7 resource types + bundle + search + timeline + match + meta + summary. `NewIndex(dbPath)` opens DB with WAL mode.
+- **search.go** — FTS5 patient search via `patients_fts` virtual table.
+- **timeline.go** — `GetTimeline()` UNION ALL query across encounters, observations, conditions, flags.
+- **match.go** — `GetMatchCandidates()` broad SQL query for patient identity matching.
+- **summary.go** — `UpdateSummary()` recomputes `patient_summaries` counts. `GetPatientBundle()` returns patient + all active child resources.
+
+## Patient Service (services/patient/)
+
+The first real backend microservice. Single writer for all clinical FHIR data: validate → Git commit → SQLite upsert → return resource + commit metadata.
+
+```
+services/patient/
+├── cmd/main.go                          ← gRPC server entrypoint, port :50051
+├── config.yaml                          ← default config
+├── internal/
+│   ├── config/config.go                 ← koanf config loader
+│   ├── pipeline/writer.go               ← Write pipeline (sync.Mutex serialized)
+│   └── server/
+│       ├── server.go                    ← gRPC server struct + helpers (levenshtein, soundex)
+│       ├── patient_rpcs.go              ← List/Get/Bundle/Create/Update/Delete/Search/Match/History/Timeline
+│       ├── encounter_rpcs.go            ← List/Get/Create/Update
+│       ├── observation_rpcs.go          ← List/Get/Create
+│       ├── condition_rpcs.go            ← List/Get/Create/Update
+│       ├── medrq_rpcs.go               ← List/Get/Create/Update (MedicationRequest)
+│       ├── allergy_rpcs.go              ← List/Get/Create/Update (AllergyIntolerance)
+│       ├── flag_rpcs.go                 ← Create/Update (Sentinel write-back)
+│       ├── batch_rpcs.go               ← CreateBatch (atomic multi-resource commit)
+│       ├── index_rpcs.go               ← RebuildIndex, CheckIndexHealth, ReindexResources
+│       └── health_rpcs.go              ← Health check
+└── patient_test.go                      ← Integration tests (full gRPC roundtrip)
+```
+
+**Write pipeline (pipeline/writer.go):**
+1. Validate FHIR JSON (pkg/fhir)
+2. Assign UUID if CREATE
+3. Set meta.lastUpdated/versionId/source
+4. Acquire sync.Mutex (5s timeout)
+5. Write JSON to Git + commit (pkg/gitstore)
+6. Extract fields + upsert SQLite (pkg/fhir + pkg/sqliteindex)
+7. Update patient_summaries
+8. Release mutex, return resource + git metadata
+
+**Error handling (spec §11):** Validation→INVALID_ARGUMENT, NotFound→NOT_FOUND, LockTimeout→ABORTED, GitFail→INTERNAL+rollback, SQLiteFail→log warning (data safe in Git).
+
+**Patient matching (spec §7):** Weighted scoring (family 0.30, fuzzy 0.20, given 0.15, gender 0.10, birth year 0.10, district 0.05) with Levenshtein distance and Soundex phonetic matching.
 
 ---
 
@@ -297,6 +366,7 @@ POST/PUT requests for FHIR resources are validated against JSON schemas loaded a
 |-------|-------|--------|
 | 1 — Walking Skeleton | Middleware pipeline, auth + patient read handlers, all stubs | COMPLETE |
 | 2 — Gateway Gaps | All handler/service/proto definitions, clinical sub-resources, JSON schema validation, zero stubs (except /ws) | COMPLETE |
-| 3 — Sync + Conflicts + Sentinel | Real gRPC backend integration for sync, conflict resolution, alerts | Not started |
-| 4 — Formulary + Anchor + Supply | Real gRPC backend integration for formulary, IOTA anchoring, supply chain | Not started |
-| 5 — WebSocket + Hardening | Real-time events, production config, TLS, metrics | Not started |
+| 3 — Patient Service | First real backend: `services/patient/` + `pkg/fhir` + `pkg/gitstore` + `pkg/sqliteindex`. 38 gRPC RPCs, full write pipeline, 40 tests passing | COMPLETE |
+| 4 — Sync + Conflicts + Sentinel | Real gRPC backend integration for sync, conflict resolution, alerts | Not started |
+| 5 — Formulary + Anchor + Supply | Real gRPC backend integration for formulary, IOTA anchoring, supply chain | Not started |
+| 6 — WebSocket + Hardening | Real-time events, production config, TLS, metrics | Not started |

@@ -1,0 +1,568 @@
+package sqliteindex
+
+import (
+	"database/sql"
+	"fmt"
+
+	"github.com/FibrinLab/open-nucleus/pkg/fhir"
+	_ "modernc.org/sqlite"
+)
+
+// Index provides SQLite query index operations.
+type Index interface {
+	UpsertPatient(row *fhir.PatientRow) error
+	UpsertEncounter(row *fhir.EncounterRow) error
+	UpsertObservation(row *fhir.ObservationRow) error
+	UpsertCondition(row *fhir.ConditionRow) error
+	UpsertMedicationRequest(row *fhir.MedicationRequestRow) error
+	UpsertAllergyIntolerance(row *fhir.AllergyIntoleranceRow) error
+	UpsertFlag(row *fhir.FlagRow) error
+
+	GetPatient(id string) (*fhir.PatientRow, error)
+	ListPatients(opts PatientListOpts) ([]*fhir.PatientRow, *fhir.Pagination, error)
+	GetEncounter(patientID, id string) (*fhir.EncounterRow, error)
+	ListEncounters(patientID string, opts fhir.PaginationOpts) ([]*fhir.EncounterRow, *fhir.Pagination, error)
+	GetObservation(patientID, id string) (*fhir.ObservationRow, error)
+	ListObservations(patientID string, opts ObservationListOpts) ([]*fhir.ObservationRow, *fhir.Pagination, error)
+	GetCondition(patientID, id string) (*fhir.ConditionRow, error)
+	ListConditions(patientID string, opts ConditionListOpts) ([]*fhir.ConditionRow, *fhir.Pagination, error)
+	GetMedicationRequest(patientID, id string) (*fhir.MedicationRequestRow, error)
+	ListMedicationRequests(patientID string, opts fhir.PaginationOpts) ([]*fhir.MedicationRequestRow, *fhir.Pagination, error)
+	GetAllergyIntolerance(patientID, id string) (*fhir.AllergyIntoleranceRow, error)
+	ListAllergyIntolerances(patientID string, opts fhir.PaginationOpts) ([]*fhir.AllergyIntoleranceRow, *fhir.Pagination, error)
+	ListFlags(patientID string, opts fhir.PaginationOpts) ([]*fhir.FlagRow, *fhir.Pagination, error)
+
+	GetPatientBundle(patientID string) (*BundleResult, error)
+	SearchPatients(query string, opts fhir.PaginationOpts) ([]*fhir.PatientRow, *fhir.Pagination, error)
+	GetTimeline(patientID string, opts fhir.PaginationOpts) ([]fhir.TimelineEvent, *fhir.Pagination, error)
+	GetMatchCandidates(familyName, birthYear string) ([]*fhir.PatientRow, error)
+	UpdateSummary(patientID string) error
+
+	GetMeta(key string) (string, error)
+	SetMeta(key, value string) error
+	ResourceCount() (int, error)
+
+	Close() error
+}
+
+// PatientListOpts extends PaginationOpts with patient-specific filters.
+type PatientListOpts struct {
+	fhir.PaginationOpts
+	Gender        string
+	BirthDateFrom string
+	BirthDateTo   string
+	SiteID        string
+	ActiveOnly    bool
+}
+
+// ObservationListOpts extends PaginationOpts with observation-specific filters.
+type ObservationListOpts struct {
+	fhir.PaginationOpts
+	Code        string
+	Category    string
+	DateFrom    string
+	DateTo      string
+	EncounterID string
+}
+
+// ConditionListOpts extends PaginationOpts with condition-specific filters.
+type ConditionListOpts struct {
+	fhir.PaginationOpts
+	ClinicalStatus string
+	Category       string
+	Code           string
+}
+
+// BundleResult holds all resources for a patient bundle.
+type BundleResult struct {
+	Patient             *fhir.PatientRow
+	Encounters          []*fhir.EncounterRow
+	Observations        []*fhir.ObservationRow
+	Conditions          []*fhir.ConditionRow
+	MedicationRequests  []*fhir.MedicationRequestRow
+	AllergyIntolerances []*fhir.AllergyIntoleranceRow
+	Flags               []*fhir.FlagRow
+}
+
+type sqliteIndex struct {
+	db *sql.DB
+}
+
+// NewIndex opens a SQLite database and initialises the schema.
+func NewIndex(dbPath string) (Index, error) {
+	dsn := dbPath
+	if dbPath == ":memory:" {
+		dsn = "file::memory:?cache=shared"
+	} else {
+		dsn = dbPath + "?_journal_mode=WAL&_busy_timeout=5000&_cache_size=-20000"
+	}
+
+	db, err := sql.Open("sqlite", dsn)
+	if err != nil {
+		return nil, fmt.Errorf("open sqlite: %w", err)
+	}
+
+	if err := InitSchema(db); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("init schema: %w", err)
+	}
+
+	return &sqliteIndex{db: db}, nil
+}
+
+func (idx *sqliteIndex) Close() error {
+	return idx.db.Close()
+}
+
+// --- Upsert methods ---
+
+func (idx *sqliteIndex) UpsertPatient(row *fhir.PatientRow) error {
+	active := 1
+	if !row.Active {
+		active = 0
+	}
+	_, err := idx.db.Exec(`INSERT OR REPLACE INTO patients (id, family_name, given_names, gender, birth_date, site_id, active, last_updated, git_blob_hash, fhir_json)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		row.ID, row.FamilyName, row.GivenNames, row.Gender, row.BirthDate, row.SiteID, active, row.LastUpdated, row.GitBlobHash, row.FHIRJson)
+	return err
+}
+
+func (idx *sqliteIndex) UpsertEncounter(row *fhir.EncounterRow) error {
+	_, err := idx.db.Exec(`INSERT OR REPLACE INTO encounters (id, patient_id, status, class_code, type_code, period_start, period_end, site_id, reason_code, last_updated, git_blob_hash, fhir_json)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		row.ID, row.PatientID, row.Status, row.ClassCode, row.TypeCode, row.PeriodStart, row.PeriodEnd, row.SiteID, row.ReasonCode, row.LastUpdated, row.GitBlobHash, row.FHIRJson)
+	return err
+}
+
+func (idx *sqliteIndex) UpsertObservation(row *fhir.ObservationRow) error {
+	_, err := idx.db.Exec(`INSERT OR REPLACE INTO observations (id, patient_id, encounter_id, status, category, code, code_display, effective_datetime, value_quantity_value, value_quantity_unit, value_string, value_codeable_concept, site_id, last_updated, git_blob_hash, fhir_json)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		row.ID, row.PatientID, row.EncounterID, row.Status, row.Category, row.Code, row.CodeDisplay, row.EffectiveDatetime, row.ValueQuantityValue, row.ValueQuantityUnit, row.ValueString, row.ValueCodeableConcept, row.SiteID, row.LastUpdated, row.GitBlobHash, row.FHIRJson)
+	return err
+}
+
+func (idx *sqliteIndex) UpsertCondition(row *fhir.ConditionRow) error {
+	_, err := idx.db.Exec(`INSERT OR REPLACE INTO conditions (id, patient_id, clinical_status, verification_status, code, code_display, onset_datetime, site_id, last_updated, git_blob_hash, fhir_json)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		row.ID, row.PatientID, row.ClinicalStatus, row.VerificationStatus, row.Code, row.CodeDisplay, row.OnsetDatetime, row.SiteID, row.LastUpdated, row.GitBlobHash, row.FHIRJson)
+	return err
+}
+
+func (idx *sqliteIndex) UpsertMedicationRequest(row *fhir.MedicationRequestRow) error {
+	_, err := idx.db.Exec(`INSERT OR REPLACE INTO medication_requests (id, patient_id, status, intent, medication_code, medication_display, authored_on, site_id, last_updated, git_blob_hash, fhir_json)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		row.ID, row.PatientID, row.Status, row.Intent, row.MedicationCode, row.MedicationDisplay, row.AuthoredOn, row.SiteID, row.LastUpdated, row.GitBlobHash, row.FHIRJson)
+	return err
+}
+
+func (idx *sqliteIndex) UpsertAllergyIntolerance(row *fhir.AllergyIntoleranceRow) error {
+	_, err := idx.db.Exec(`INSERT OR REPLACE INTO allergy_intolerances (id, patient_id, clinical_status, verification_status, type, substance_code, substance_display, criticality, site_id, last_updated, git_blob_hash, fhir_json)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		row.ID, row.PatientID, row.ClinicalStatus, row.VerificationStatus, row.Type, row.SubstanceCode, row.SubstanceDisplay, row.Criticality, row.SiteID, row.LastUpdated, row.GitBlobHash, row.FHIRJson)
+	return err
+}
+
+func (idx *sqliteIndex) UpsertFlag(row *fhir.FlagRow) error {
+	_, err := idx.db.Exec(`INSERT OR REPLACE INTO flags (id, patient_id, status, category, code, period_start, period_end, generated_by, site_id, last_updated, git_blob_hash, fhir_json)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		row.ID, row.PatientID, row.Status, row.Category, row.Code, row.PeriodStart, row.PeriodEnd, row.GeneratedBy, row.SiteID, row.LastUpdated, row.GitBlobHash, row.FHIRJson)
+	return err
+}
+
+// --- Get methods ---
+
+func (idx *sqliteIndex) GetPatient(id string) (*fhir.PatientRow, error) {
+	row := idx.db.QueryRow(`SELECT id, family_name, given_names, gender, birth_date, site_id, active, last_updated, git_blob_hash, fhir_json FROM patients WHERE id = ?`, id)
+	p := &fhir.PatientRow{}
+	var active int
+	err := row.Scan(&p.ID, &p.FamilyName, &p.GivenNames, &p.Gender, &p.BirthDate, &p.SiteID, &active, &p.LastUpdated, &p.GitBlobHash, &p.FHIRJson)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	p.Active = active == 1
+	return p, nil
+}
+
+func (idx *sqliteIndex) GetEncounter(patientID, id string) (*fhir.EncounterRow, error) {
+	row := idx.db.QueryRow(`SELECT id, patient_id, status, class_code, type_code, period_start, period_end, site_id, reason_code, last_updated, git_blob_hash, fhir_json FROM encounters WHERE id = ? AND patient_id = ?`, id, patientID)
+	e := &fhir.EncounterRow{}
+	err := row.Scan(&e.ID, &e.PatientID, &e.Status, &e.ClassCode, &e.TypeCode, &e.PeriodStart, &e.PeriodEnd, &e.SiteID, &e.ReasonCode, &e.LastUpdated, &e.GitBlobHash, &e.FHIRJson)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return e, nil
+}
+
+func (idx *sqliteIndex) GetObservation(patientID, id string) (*fhir.ObservationRow, error) {
+	row := idx.db.QueryRow(`SELECT id, patient_id, encounter_id, status, category, code, code_display, effective_datetime, value_quantity_value, value_quantity_unit, value_string, value_codeable_concept, site_id, last_updated, git_blob_hash, fhir_json FROM observations WHERE id = ? AND patient_id = ?`, id, patientID)
+	o := &fhir.ObservationRow{}
+	err := row.Scan(&o.ID, &o.PatientID, &o.EncounterID, &o.Status, &o.Category, &o.Code, &o.CodeDisplay, &o.EffectiveDatetime, &o.ValueQuantityValue, &o.ValueQuantityUnit, &o.ValueString, &o.ValueCodeableConcept, &o.SiteID, &o.LastUpdated, &o.GitBlobHash, &o.FHIRJson)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return o, nil
+}
+
+func (idx *sqliteIndex) GetCondition(patientID, id string) (*fhir.ConditionRow, error) {
+	row := idx.db.QueryRow(`SELECT id, patient_id, clinical_status, verification_status, code, code_display, onset_datetime, site_id, last_updated, git_blob_hash, fhir_json FROM conditions WHERE id = ? AND patient_id = ?`, id, patientID)
+	c := &fhir.ConditionRow{}
+	err := row.Scan(&c.ID, &c.PatientID, &c.ClinicalStatus, &c.VerificationStatus, &c.Code, &c.CodeDisplay, &c.OnsetDatetime, &c.SiteID, &c.LastUpdated, &c.GitBlobHash, &c.FHIRJson)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return c, nil
+}
+
+func (idx *sqliteIndex) GetMedicationRequest(patientID, id string) (*fhir.MedicationRequestRow, error) {
+	row := idx.db.QueryRow(`SELECT id, patient_id, status, intent, medication_code, medication_display, authored_on, site_id, last_updated, git_blob_hash, fhir_json FROM medication_requests WHERE id = ? AND patient_id = ?`, id, patientID)
+	m := &fhir.MedicationRequestRow{}
+	err := row.Scan(&m.ID, &m.PatientID, &m.Status, &m.Intent, &m.MedicationCode, &m.MedicationDisplay, &m.AuthoredOn, &m.SiteID, &m.LastUpdated, &m.GitBlobHash, &m.FHIRJson)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (idx *sqliteIndex) GetAllergyIntolerance(patientID, id string) (*fhir.AllergyIntoleranceRow, error) {
+	row := idx.db.QueryRow(`SELECT id, patient_id, clinical_status, verification_status, type, substance_code, substance_display, criticality, site_id, last_updated, git_blob_hash, fhir_json FROM allergy_intolerances WHERE id = ? AND patient_id = ?`, id, patientID)
+	a := &fhir.AllergyIntoleranceRow{}
+	err := row.Scan(&a.ID, &a.PatientID, &a.ClinicalStatus, &a.VerificationStatus, &a.Type, &a.SubstanceCode, &a.SubstanceDisplay, &a.Criticality, &a.SiteID, &a.LastUpdated, &a.GitBlobHash, &a.FHIRJson)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return a, nil
+}
+
+// --- List methods ---
+
+func (idx *sqliteIndex) ListPatients(opts PatientListOpts) ([]*fhir.PatientRow, *fhir.Pagination, error) {
+	query := "SELECT id, family_name, given_names, gender, birth_date, site_id, active, last_updated, git_blob_hash, fhir_json FROM patients WHERE 1=1"
+	countQuery := "SELECT COUNT(*) FROM patients WHERE 1=1"
+	var args []any
+
+	if opts.ActiveOnly {
+		query += " AND active = 1"
+		countQuery += " AND active = 1"
+	}
+	if opts.Gender != "" {
+		query += " AND gender = ?"
+		countQuery += " AND gender = ?"
+		args = append(args, opts.Gender)
+	}
+	if opts.BirthDateFrom != "" {
+		query += " AND birth_date >= ?"
+		countQuery += " AND birth_date >= ?"
+		args = append(args, opts.BirthDateFrom)
+	}
+	if opts.BirthDateTo != "" {
+		query += " AND birth_date <= ?"
+		countQuery += " AND birth_date <= ?"
+		args = append(args, opts.BirthDateTo)
+	}
+	if opts.SiteID != "" {
+		query += " AND site_id = ?"
+		countQuery += " AND site_id = ?"
+		args = append(args, opts.SiteID)
+	}
+
+	// Count
+	var total int
+	err := idx.db.QueryRow(countQuery, args...).Scan(&total)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	pg := paginate(opts.PaginationOpts, total)
+
+	query += " ORDER BY last_updated DESC LIMIT ? OFFSET ?"
+	queryArgs := append(args, pg.PerPage, (pg.Page-1)*pg.PerPage)
+
+	rows, err := idx.db.Query(query, queryArgs...)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer rows.Close()
+
+	var results []*fhir.PatientRow
+	for rows.Next() {
+		p := &fhir.PatientRow{}
+		var active int
+		if err := rows.Scan(&p.ID, &p.FamilyName, &p.GivenNames, &p.Gender, &p.BirthDate, &p.SiteID, &active, &p.LastUpdated, &p.GitBlobHash, &p.FHIRJson); err != nil {
+			return nil, nil, err
+		}
+		p.Active = active == 1
+		results = append(results, p)
+	}
+	return results, pg, rows.Err()
+}
+
+func (idx *sqliteIndex) ListEncounters(patientID string, opts fhir.PaginationOpts) ([]*fhir.EncounterRow, *fhir.Pagination, error) {
+	var total int
+	err := idx.db.QueryRow("SELECT COUNT(*) FROM encounters WHERE patient_id = ?", patientID).Scan(&total)
+	if err != nil {
+		return nil, nil, err
+	}
+	pg := paginate(opts, total)
+
+	rows, err := idx.db.Query("SELECT id, patient_id, status, class_code, type_code, period_start, period_end, site_id, reason_code, last_updated, git_blob_hash, fhir_json FROM encounters WHERE patient_id = ? ORDER BY period_start DESC LIMIT ? OFFSET ?",
+		patientID, pg.PerPage, (pg.Page-1)*pg.PerPage)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer rows.Close()
+
+	var results []*fhir.EncounterRow
+	for rows.Next() {
+		e := &fhir.EncounterRow{}
+		if err := rows.Scan(&e.ID, &e.PatientID, &e.Status, &e.ClassCode, &e.TypeCode, &e.PeriodStart, &e.PeriodEnd, &e.SiteID, &e.ReasonCode, &e.LastUpdated, &e.GitBlobHash, &e.FHIRJson); err != nil {
+			return nil, nil, err
+		}
+		results = append(results, e)
+	}
+	return results, pg, rows.Err()
+}
+
+func (idx *sqliteIndex) ListObservations(patientID string, opts ObservationListOpts) ([]*fhir.ObservationRow, *fhir.Pagination, error) {
+	query := "SELECT id, patient_id, encounter_id, status, category, code, code_display, effective_datetime, value_quantity_value, value_quantity_unit, value_string, value_codeable_concept, site_id, last_updated, git_blob_hash, fhir_json FROM observations WHERE patient_id = ?"
+	countQuery := "SELECT COUNT(*) FROM observations WHERE patient_id = ?"
+	args := []any{patientID}
+
+	if opts.Code != "" {
+		query += " AND code = ?"
+		countQuery += " AND code = ?"
+		args = append(args, opts.Code)
+	}
+	if opts.Category != "" {
+		query += " AND category = ?"
+		countQuery += " AND category = ?"
+		args = append(args, opts.Category)
+	}
+	if opts.DateFrom != "" {
+		query += " AND effective_datetime >= ?"
+		countQuery += " AND effective_datetime >= ?"
+		args = append(args, opts.DateFrom)
+	}
+	if opts.DateTo != "" {
+		query += " AND effective_datetime <= ?"
+		countQuery += " AND effective_datetime <= ?"
+		args = append(args, opts.DateTo)
+	}
+	if opts.EncounterID != "" {
+		query += " AND encounter_id = ?"
+		countQuery += " AND encounter_id = ?"
+		args = append(args, opts.EncounterID)
+	}
+
+	var total int
+	if err := idx.db.QueryRow(countQuery, args...).Scan(&total); err != nil {
+		return nil, nil, err
+	}
+	pg := paginate(opts.PaginationOpts, total)
+
+	query += " ORDER BY effective_datetime DESC LIMIT ? OFFSET ?"
+	queryArgs := append(args, pg.PerPage, (pg.Page-1)*pg.PerPage)
+
+	rows, err := idx.db.Query(query, queryArgs...)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer rows.Close()
+
+	var results []*fhir.ObservationRow
+	for rows.Next() {
+		o := &fhir.ObservationRow{}
+		if err := rows.Scan(&o.ID, &o.PatientID, &o.EncounterID, &o.Status, &o.Category, &o.Code, &o.CodeDisplay, &o.EffectiveDatetime, &o.ValueQuantityValue, &o.ValueQuantityUnit, &o.ValueString, &o.ValueCodeableConcept, &o.SiteID, &o.LastUpdated, &o.GitBlobHash, &o.FHIRJson); err != nil {
+			return nil, nil, err
+		}
+		results = append(results, o)
+	}
+	return results, pg, rows.Err()
+}
+
+func (idx *sqliteIndex) ListConditions(patientID string, opts ConditionListOpts) ([]*fhir.ConditionRow, *fhir.Pagination, error) {
+	query := "SELECT id, patient_id, clinical_status, verification_status, code, code_display, onset_datetime, site_id, last_updated, git_blob_hash, fhir_json FROM conditions WHERE patient_id = ?"
+	countQuery := "SELECT COUNT(*) FROM conditions WHERE patient_id = ?"
+	args := []any{patientID}
+
+	if opts.ClinicalStatus != "" {
+		query += " AND clinical_status = ?"
+		countQuery += " AND clinical_status = ?"
+		args = append(args, opts.ClinicalStatus)
+	}
+	if opts.Code != "" {
+		query += " AND code = ?"
+		countQuery += " AND code = ?"
+		args = append(args, opts.Code)
+	}
+
+	var total int
+	if err := idx.db.QueryRow(countQuery, args...).Scan(&total); err != nil {
+		return nil, nil, err
+	}
+	pg := paginate(opts.PaginationOpts, total)
+
+	query += " ORDER BY last_updated DESC LIMIT ? OFFSET ?"
+	queryArgs := append(args, pg.PerPage, (pg.Page-1)*pg.PerPage)
+
+	rows, err := idx.db.Query(query, queryArgs...)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer rows.Close()
+
+	var results []*fhir.ConditionRow
+	for rows.Next() {
+		c := &fhir.ConditionRow{}
+		if err := rows.Scan(&c.ID, &c.PatientID, &c.ClinicalStatus, &c.VerificationStatus, &c.Code, &c.CodeDisplay, &c.OnsetDatetime, &c.SiteID, &c.LastUpdated, &c.GitBlobHash, &c.FHIRJson); err != nil {
+			return nil, nil, err
+		}
+		results = append(results, c)
+	}
+	return results, pg, rows.Err()
+}
+
+func (idx *sqliteIndex) ListMedicationRequests(patientID string, opts fhir.PaginationOpts) ([]*fhir.MedicationRequestRow, *fhir.Pagination, error) {
+	var total int
+	if err := idx.db.QueryRow("SELECT COUNT(*) FROM medication_requests WHERE patient_id = ?", patientID).Scan(&total); err != nil {
+		return nil, nil, err
+	}
+	pg := paginate(opts, total)
+
+	rows, err := idx.db.Query("SELECT id, patient_id, status, intent, medication_code, medication_display, authored_on, site_id, last_updated, git_blob_hash, fhir_json FROM medication_requests WHERE patient_id = ? ORDER BY last_updated DESC LIMIT ? OFFSET ?",
+		patientID, pg.PerPage, (pg.Page-1)*pg.PerPage)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer rows.Close()
+
+	var results []*fhir.MedicationRequestRow
+	for rows.Next() {
+		m := &fhir.MedicationRequestRow{}
+		if err := rows.Scan(&m.ID, &m.PatientID, &m.Status, &m.Intent, &m.MedicationCode, &m.MedicationDisplay, &m.AuthoredOn, &m.SiteID, &m.LastUpdated, &m.GitBlobHash, &m.FHIRJson); err != nil {
+			return nil, nil, err
+		}
+		results = append(results, m)
+	}
+	return results, pg, rows.Err()
+}
+
+func (idx *sqliteIndex) ListAllergyIntolerances(patientID string, opts fhir.PaginationOpts) ([]*fhir.AllergyIntoleranceRow, *fhir.Pagination, error) {
+	var total int
+	if err := idx.db.QueryRow("SELECT COUNT(*) FROM allergy_intolerances WHERE patient_id = ?", patientID).Scan(&total); err != nil {
+		return nil, nil, err
+	}
+	pg := paginate(opts, total)
+
+	rows, err := idx.db.Query("SELECT id, patient_id, clinical_status, verification_status, type, substance_code, substance_display, criticality, site_id, last_updated, git_blob_hash, fhir_json FROM allergy_intolerances WHERE patient_id = ? ORDER BY last_updated DESC LIMIT ? OFFSET ?",
+		patientID, pg.PerPage, (pg.Page-1)*pg.PerPage)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer rows.Close()
+
+	var results []*fhir.AllergyIntoleranceRow
+	for rows.Next() {
+		a := &fhir.AllergyIntoleranceRow{}
+		if err := rows.Scan(&a.ID, &a.PatientID, &a.ClinicalStatus, &a.VerificationStatus, &a.Type, &a.SubstanceCode, &a.SubstanceDisplay, &a.Criticality, &a.SiteID, &a.LastUpdated, &a.GitBlobHash, &a.FHIRJson); err != nil {
+			return nil, nil, err
+		}
+		results = append(results, a)
+	}
+	return results, pg, rows.Err()
+}
+
+func (idx *sqliteIndex) ListFlags(patientID string, opts fhir.PaginationOpts) ([]*fhir.FlagRow, *fhir.Pagination, error) {
+	var total int
+	if err := idx.db.QueryRow("SELECT COUNT(*) FROM flags WHERE patient_id = ?", patientID).Scan(&total); err != nil {
+		return nil, nil, err
+	}
+	pg := paginate(opts, total)
+
+	rows, err := idx.db.Query("SELECT id, patient_id, status, category, code, period_start, period_end, generated_by, site_id, last_updated, git_blob_hash, fhir_json FROM flags WHERE patient_id = ? ORDER BY last_updated DESC LIMIT ? OFFSET ?",
+		patientID, pg.PerPage, (pg.Page-1)*pg.PerPage)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer rows.Close()
+
+	var results []*fhir.FlagRow
+	for rows.Next() {
+		f := &fhir.FlagRow{}
+		if err := rows.Scan(&f.ID, &f.PatientID, &f.Status, &f.Category, &f.Code, &f.PeriodStart, &f.PeriodEnd, &f.GeneratedBy, &f.SiteID, &f.LastUpdated, &f.GitBlobHash, &f.FHIRJson); err != nil {
+			return nil, nil, err
+		}
+		results = append(results, f)
+	}
+	return results, pg, rows.Err()
+}
+
+// --- Meta ---
+
+func (idx *sqliteIndex) GetMeta(key string) (string, error) {
+	var val string
+	err := idx.db.QueryRow("SELECT value FROM index_meta WHERE key = ?", key).Scan(&val)
+	if err == sql.ErrNoRows {
+		return "", nil
+	}
+	return val, err
+}
+
+func (idx *sqliteIndex) SetMeta(key, value string) error {
+	_, err := idx.db.Exec("INSERT OR REPLACE INTO index_meta (key, value) VALUES (?, ?)", key, value)
+	return err
+}
+
+func (idx *sqliteIndex) ResourceCount() (int, error) {
+	var total int
+	for _, table := range []string{"patients", "encounters", "observations", "conditions", "medication_requests", "allergy_intolerances", "flags"} {
+		var count int
+		if err := idx.db.QueryRow("SELECT COUNT(*) FROM " + table).Scan(&count); err != nil {
+			return 0, err
+		}
+		total += count
+	}
+	return total, nil
+}
+
+// paginate normalises pagination options and computes pagination metadata.
+func paginate(opts fhir.PaginationOpts, total int) *fhir.Pagination {
+	page := opts.Page
+	if page < 1 {
+		page = 1
+	}
+	perPage := opts.PerPage
+	if perPage < 1 {
+		perPage = 25
+	}
+	if perPage > 100 {
+		perPage = 100
+	}
+	totalPages := (total + perPage - 1) / perPage
+	if totalPages < 1 {
+		totalPages = 1
+	}
+	return &fhir.Pagination{
+		Page:       page,
+		PerPage:    perPage,
+		Total:      total,
+		TotalPages: totalPages,
+	}
+}

@@ -4,9 +4,12 @@ package common.v1;
 
 option go_package = "github.com/FibrinLab/open-nucleus/gen/proto/common/v1;commonv1";
 
+import "google/protobuf/timestamp.proto";
+
 message GitMetadata {
   string commit = 1;
   string message = 2;
+  google.protobuf.Timestamp timestamp = 3;
 }
 
 message PaginationRequest {
