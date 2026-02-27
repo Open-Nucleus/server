@@ -6,16 +6,35 @@ option go_package = "github.com/FibrinLab/open-nucleus/gen/proto/sync/v1;syncv1"
 
 import "common/v1/metadata.proto";
 import "common/v1/fhir.proto";
+import "google/protobuf/timestamp.proto";
 
+// SyncService handles sync orchestration and peer management.
 service SyncService {
   rpc GetStatus(GetStatusRequest) returns (GetStatusResponse);
   rpc ListPeers(ListPeersRequest) returns (ListPeersResponse);
   rpc TriggerSync(TriggerSyncRequest) returns (TriggerSyncResponse);
+  rpc CancelSync(CancelSyncRequest) returns (CancelSyncResponse);
   rpc GetHistory(GetSyncHistoryRequest) returns (GetSyncHistoryResponse);
   rpc ExportBundle(ExportBundleRequest) returns (ExportBundleResponse);
   rpc ImportBundle(ImportBundleRequest) returns (ImportBundleResponse);
+
+  // Peer trust management
+  rpc TrustPeer(TrustPeerRequest) returns (TrustPeerResponse);
+  rpc UntrustPeer(UntrustPeerRequest) returns (UntrustPeerResponse);
+
+  // Transport management
+  rpc ListTransports(ListTransportsRequest) returns (ListTransportsResponse);
+  rpc EnableTransport(EnableTransportRequest) returns (EnableTransportResponse);
+  rpc DisableTransport(DisableTransportRequest) returns (DisableTransportResponse);
+
+  // Event streaming
+  rpc SubscribeEvents(SubscribeEventsRequest) returns (stream SyncEvent);
+
+  // Health
+  rpc Health(HealthRequest) returns (HealthResponse);
 }
 
+// ConflictService handles FHIR-aware merge conflict resolution.
 service ConflictService {
   rpc ListConflicts(ListConflictsRequest) returns (ListConflictsResponse);
   rpc GetConflict(GetConflictRequest) returns (GetConflictResponse);
@@ -23,16 +42,28 @@ service ConflictService {
   rpc DeferConflict(DeferConflictRequest) returns (DeferConflictResponse);
 }
 
-// Sync RPCs
+// NodeSyncService is the node-to-node sync protocol.
+service NodeSyncService {
+  // Ed25519-signed identity exchange
+  rpc Handshake(HandshakeRequest) returns (HandshakeResponse);
+  // Git pack streaming (server → client)
+  rpc RequestPack(RequestPackRequest) returns (stream PackChunk);
+  // Git pack receiving (client → server)
+  rpc SendPack(stream PackChunk) returns (SendPackResponse);
+}
+
+// --- Sync RPCs ---
 
 message GetStatusRequest {}
 
 message GetStatusResponse {
-  string state = 1;
+  string state = 1;               // "idle", "syncing", "error"
   string last_sync = 2;
   int32 pending_changes = 3;
   string node_id = 4;
   string site_id = 5;
+  string current_sync_id = 6;
+  string current_peer = 7;
 }
 
 message ListPeersRequest {}
@@ -45,8 +76,11 @@ message PeerInfo {
   string node_id = 1;
   string site_id = 2;
   string last_seen = 3;
-  string state = 4;
+  string state = 4;               // "online", "offline", "syncing"
   int32 latency_ms = 5;
+  bool trusted = 6;
+  string transport = 7;
+  string their_head = 8;
 }
 
 message TriggerSyncRequest {
@@ -59,22 +93,37 @@ message TriggerSyncResponse {
   common.v1.GitMetadata git = 3;
 }
 
+message CancelSyncRequest {
+  string sync_id = 1;
+}
+
+message CancelSyncResponse {
+  bool cancelled = 1;
+}
+
 message GetSyncHistoryRequest {
   common.v1.PaginationRequest pagination = 1;
 }
 
 message GetSyncHistoryResponse {
-  repeated SyncEvent events = 1;
+  repeated SyncHistoryEntry entries = 1;
   common.v1.PaginationResponse pagination = 2;
 }
 
-message SyncEvent {
+message SyncHistoryEntry {
   string sync_id = 1;
-  string timestamp = 2;
-  string direction = 3;
-  string peer_node = 4;
-  string state = 5;
-  int32 resources_transferred = 6;
+  string peer_node = 2;
+  string transport = 3;
+  string direction = 4;           // "push", "pull", "bidirectional"
+  string state = 5;               // "completed", "failed", "cancelled"
+  string started_at = 6;
+  string completed_at = 7;
+  int32 resources_sent = 8;
+  int32 resources_received = 9;
+  int32 conflicts_detected = 10;
+  string local_head_before = 11;
+  string local_head_after = 12;
+  string error_message = 13;
 }
 
 message ExportBundleRequest {
@@ -104,11 +153,75 @@ message ImportBundleResponse {
   common.v1.GitMetadata git = 4;
 }
 
-// Conflict RPCs
+// --- Peer Trust ---
+
+message TrustPeerRequest {
+  string node_id = 1;
+}
+
+message TrustPeerResponse {
+  PeerInfo peer = 1;
+}
+
+message UntrustPeerRequest {
+  string node_id = 1;
+}
+
+message UntrustPeerResponse {
+  PeerInfo peer = 1;
+}
+
+// --- Transport Management ---
+
+message ListTransportsRequest {}
+
+message ListTransportsResponse {
+  repeated TransportInfo transports = 1;
+}
+
+message TransportInfo {
+  string name = 1;
+  bool enabled = 2;
+  bool available = 3;
+  repeated string capabilities = 4;  // "discovery", "streaming", "constrained"
+}
+
+message EnableTransportRequest {
+  string name = 1;
+}
+
+message EnableTransportResponse {
+  TransportInfo transport = 1;
+}
+
+message DisableTransportRequest {
+  string name = 1;
+}
+
+message DisableTransportResponse {
+  TransportInfo transport = 1;
+}
+
+// --- Events ---
+
+message SubscribeEventsRequest {
+  repeated string event_types = 1;  // filter by type, empty = all
+}
+
+message SyncEvent {
+  string type = 1;                  // "sync.started", "sync.completed", "sync.failed",
+                                    // "peer.discovered", "peer.lost",
+                                    // "conflict.new", "conflict.resolved"
+  google.protobuf.Timestamp timestamp = 2;
+  map<string, string> payload = 3;
+}
+
+// --- Conflict RPCs ---
 
 message ListConflictsRequest {
   common.v1.PaginationRequest pagination = 1;
-  string status = 2;
+  string status = 2;               // "pending", "deferred", "resolved", "" (all)
+  string level = 3;                // "auto_merge", "review", "block", "" (all)
 }
 
 message ListConflictsResponse {
@@ -128,17 +241,23 @@ message Conflict {
   string id = 1;
   string resource_type = 2;
   string resource_id = 3;
-  string status = 4;
-  string detected_at = 5;
-  common.v1.FHIRResource local_version = 6;
-  common.v1.FHIRResource remote_version = 7;
-  string local_node = 8;
-  string remote_node = 9;
+  string status = 4;               // "pending", "deferred", "resolved"
+  string level = 5;                // "auto_merge", "review", "block"
+  string detected_at = 6;
+  common.v1.FHIRResource local_version = 7;
+  common.v1.FHIRResource remote_version = 8;
+  string local_node = 9;
+  string remote_node = 10;
+  string patient_id = 11;
+  repeated string changed_fields = 12;
+  string peer_site_id = 13;
+  bytes merged_version = 14;       // auto-merged result (if auto_merge level)
+  string reason = 15;              // classification reason
 }
 
 message ResolveConflictRequest {
   string conflict_id = 1;
-  string resolution = 2;
+  string resolution = 2;           // "accept_local", "accept_remote", "accept_merged"
   bytes merged_resource = 3;
   string author = 4;
 }
@@ -154,4 +273,57 @@ message DeferConflictRequest {
 
 message DeferConflictResponse {
   string status = 1;
+}
+
+// --- Node-to-Node Protocol ---
+
+message HandshakeRequest {
+  string node_id = 1;
+  bytes public_key = 2;
+  string git_head = 3;
+  int64 commit_count = 4;
+  bytes signature = 5;             // Ed25519 signature of (node_id + git_head)
+}
+
+message HandshakeResponse {
+  string node_id = 1;
+  bytes public_key = 2;
+  string git_head = 3;
+  int64 commit_count = 4;
+  bytes signature = 5;
+  bool needs_sync = 6;
+}
+
+message RequestPackRequest {
+  string want_head = 1;            // remote HEAD we want to reach
+  repeated string have_commits = 2; // commits we already have
+}
+
+message PackChunk {
+  bytes data = 1;
+  int32 sequence = 2;
+  bool is_last = 3;
+}
+
+message SendPackResponse {
+  bool accepted = 1;
+  string new_head = 2;
+  int32 objects_received = 3;
+  repeated ResourceDelta deltas = 4;
+}
+
+message ResourceDelta {
+  string path = 1;
+  string resource_type = 2;
+  string operation = 3;            // "created", "updated", "deleted"
+}
+
+// --- Health ---
+
+message HealthRequest {}
+
+message HealthResponse {
+  string status = 1;
+  string version = 2;
+  int64 uptime_seconds = 3;
 }

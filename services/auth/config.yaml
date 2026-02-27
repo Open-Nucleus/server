@@ -1,0 +1,39 @@
+auth_service:
+  grpc_port: 50053
+
+  jwt:
+    issuer: open-nucleus-auth
+    access_lifetime: 24h
+    refresh_lifetime: 168h  # 7 days
+    clock_skew: 2h
+
+  git:
+    repo_path: /var/lib/open-nucleus/data
+    author_name: "open-nucleus-auth"
+    author_email: "auth@open-nucleus.local"
+
+  node:
+    key_path: /var/lib/open-nucleus/keys/node.key
+    id_path: /var/lib/open-nucleus/keys/node.id
+
+  devices:
+    path: .nucleus/devices
+
+  roles:
+    path: .nucleus/roles
+
+  security:
+    nonce_ttl: 60s
+    max_failures: 10
+    failure_window: 60s
+    bootstrap_secret: ""  # set via env NUCLEUS_BOOTSTRAP_SECRET
+
+  keystore:
+    type: memory  # "memory" for dev, "file" for production
+
+  sqlite:
+    db_path: /var/lib/open-nucleus/auth.db
+
+  logging:
+    level: info
+    format: json

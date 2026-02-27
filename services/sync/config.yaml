@@ -1,0 +1,52 @@
+sync_service:
+  grpc_port: 50052
+
+  git:
+    repo_path: /var/lib/open-nucleus/data
+    author_name: "open-nucleus-sync"
+    author_email: "sync@open-nucleus.local"
+
+  transports:
+    local_network:
+      enabled: true
+      mdns_service: "_nucleus._tcp"
+      mdns_domain: "local."
+      port: 50060
+    wifi_direct:
+      enabled: false
+    bluetooth:
+      enabled: false
+    usb:
+      enabled: false
+
+  sync:
+    max_concurrent: 1
+    cooldown: 30s
+    handshake_timeout: 10s
+    transfer_timeout: 300s
+    chunk_size: 65536  # 64KB
+
+  priority:
+    enabled: true
+    bluetooth_constrained: true
+
+  merge:
+    drug_interaction_check: false
+
+  discovery:
+    scan_interval: 30s
+    peer_ttl: 300s
+
+  history:
+    db_path: /var/lib/open-nucleus/sync.db
+    max_entries: 10000
+
+  events:
+    buffer_size: 100
+
+  node:
+    id: ""  # auto-generated if empty
+
+  logging:
+    level: info
+    format: json

@@ -1,7 +1,7 @@
 # Open Nucleus — Architectural Memory
 
 > Living document. Updated after every major feature or structural change.
-> Last updated: Phase 3 — Patient Service (2026-02-26)
+> Last updated: Phase 4 — Auth + Sync Services (2026-02-27)
 
 ---
 
@@ -216,11 +216,11 @@ proto/
 │   ├── metadata.proto   ← GitMetadata (+ Timestamp), PaginationRequest/Response, NodeInfo
 │   └── fhir.proto       ← FHIRResource{resource_type, id, json_payload bytes}
 ├── auth/v1/
-│   └── auth.proto       ← AuthService: Login, Refresh, Logout, Whoami RPCs
+│   └── auth.proto       ← AuthService: 15 RPCs (register, challenge, authenticate, refresh, logout, identity, devices, roles, validate, health)
 ├── patient/v1/
 │   └── patient.proto    ← PatientService: 38 RPCs (CRUD + clinical + batch + index + health)
 ├── sync/v1/
-│   └── sync.proto       ← SyncService (6 RPCs) + ConflictService (4 RPCs)
+│   └── sync.proto       ← SyncService (14 RPCs) + ConflictService (4 RPCs) + NodeSyncService (3 RPCs)
 ├── formulary/v1/
 │   └── formulary.proto  ← FormularyService: 5 RPCs (search, get, interactions, availability)
 ├── anchor/v1/
@@ -327,7 +327,7 @@ POST/PUT requests for FHIR resources are validated against JSON schemas loaded a
 
 | Area | Status | Handler | Service Adapter |
 |------|--------|---------|-----------------|
-| Auth (login/refresh/logout/whoami) | Handler complete, gRPC adapter stubbed | auth.go | auth.go |
+| Auth (register/challenge/authenticate/refresh/logout/validate/roles/devices) | Handler complete, gRPC adapter wired to auth service :50053 | auth.go | auth.go |
 | Patient reads (list/get/search) | Handler complete, gRPC adapter stubbed | patient.go | patient.go |
 | Patient writes (create/update/delete) | Handler complete, gRPC adapter stubbed | patient.go | patient.go |
 | Patient match/history/timeline | Handler complete, gRPC adapter stubbed | patient.go | patient.go |
@@ -336,8 +336,8 @@ POST/PUT requests for FHIR resources are validated against JSON schemas loaded a
 | Conditions (list/create/update) | Handler complete, gRPC adapter stubbed | clinical.go | patient.go |
 | Medication Requests (list/create/update) | Handler complete, gRPC adapter stubbed | clinical.go | patient.go |
 | Allergy Intolerances (list/create/update) | Handler complete, gRPC adapter stubbed | clinical.go | patient.go |
-| Sync (status/peers/trigger/history/bundle) | Handler complete, gRPC adapter stubbed | sync.go | sync.go |
-| Conflicts (list/get/resolve/defer) | Handler complete, gRPC adapter stubbed | conflict.go | conflict.go |
+| Sync (status/peers/trigger/cancel/history/bundle/transports/events) | Handler complete, gRPC adapter wired to sync service :50052 | sync.go | sync.go |
+| Conflicts (list/get/resolve/defer) | Handler complete, gRPC adapter wired to sync service :50052 | conflict.go | conflict.go |
 | Alerts (list/get/acknowledge/dismiss/summary) | Handler complete, gRPC adapter stubbed | sentinel.go | sentinel.go |
 | Formulary (medications/interactions/availability) | Handler complete, gRPC adapter stubbed | formulary.go | formulary.go |
 | Anchor/IOTA (status/verify/history/trigger) | Handler complete, gRPC adapter stubbed | anchor.go | anchor.go |
@@ -360,6 +360,106 @@ POST/PUT requests for FHIR resources are validated against JSON schemas loaded a
 
 ---
 
+## Auth Service (services/auth/)
+
+Ed25519 challenge-response authentication, EdDSA JWT issuance, device registry in Git, RBAC with 5 roles.
+
+```
+services/auth/
+├── cmd/main.go                          ← gRPC server entrypoint, port :50053
+├── config.yaml                          ← default config
+├── internal/
+│   ├── config/config.go                 ← koanf config loader
+│   ├── store/
+│   │   ├── schema.go                    ← SQLite tables: deny_list, revocations, node_info
+│   │   └── denylist.go                  ← In-memory + SQLite deny list for JTI revocation
+│   ├── service/
+│   │   ├── auth.go                      ← AuthService: register, challenge, authenticate, refresh, logout, validate, revoke
+│   │   └── device.go                    ← Git-backed device registry (CRUD .nucleus/devices/*.json)
+│   └── server/
+│       ├── server.go                    ← gRPC server struct + error mapping
+│       ├── auth_rpcs.go                 ← RegisterDevice, GetChallenge, Authenticate, RefreshToken, Logout, GetCurrentIdentity
+│       ├── device_rpcs.go               ← ListDevices, RevokeDevice, CheckRevocation
+│       ├── role_rpcs.go                 ← ListRoles, GetRole, AssignRole
+│       ├── validation_rpcs.go           ← ValidateToken, CheckPermission
+│       └── health_rpcs.go              ← Health
+└── auth_test.go                         ← 12 integration tests (bootstrap, full auth cycle, brute force, revocation, etc.)
+```
+
+**Auth flow:** RegisterDevice → GetChallenge (32-byte nonce) → Authenticate (Ed25519 sig of nonce) → JWT issued → ValidateToken (<1ms, all in-memory)
+
+**Token validation:** VerifyToken parses JWT → check deny list (in-memory map) → check device revocation list. All O(1), no I/O.
+
+**RBAC:** 5 roles (CHW, Nurse, Physician, SiteAdmin, RegionalAdmin) × 37 permissions. Site scope: "local" (single site) or "regional" (cross-site).
+
+---
+
+## Sync Service (services/sync/)
+
+Transport-agnostic Git sync, FHIR-aware merge driver, conflict resolution, event bus.
+
+```
+services/sync/
+├── cmd/main.go                          ← gRPC server entrypoint, port :50052
+├── config.yaml                          ← default config
+├── internal/
+│   ├── config/config.go                 ← koanf config loader
+│   ├── store/
+│   │   ├── schema.go                    ← SQLite tables: conflicts, sync_history, peer_state
+│   │   ├── conflicts.go                 ← ConflictStore: Create, Get, List (with filters), Resolve, Defer
+│   │   ├── history.go                   ← HistoryStore: Record, List, Get, RecordCompleted, RecordFailed
+│   │   └── peers.go                     ← PeerStore: Upsert, Get, List, Trust, Untrust, MarkRevoked
+│   ├── transport/
+│   │   ├── adapter.go                   ← Adapter interface (Name, Capabilities, Start, Stop, Discover, Connect)
+│   │   ├── stubs.go                     ← StubAdapter for unimplemented transports
+│   │   └── localnet/localnet.go         ← Local network adapter (mDNS + gRPC over TCP)
+│   ├── service/
+│   │   ├── eventbus.go                  ← EventBus: pub/sub with type filtering, 7 event types
+│   │   ├── syncengine.go               ← SyncEngine: orchestrator, TriggerSync, CancelSync, ExportBundle, ImportBundle
+│   │   ├── syncqueue.go                ← SyncQueue: priority queue for sync jobs
+│   │   └── bundle.go                   ← Bundle format placeholder
+│   └── server/
+│       ├── server.go                    ← gRPC server struct + error mapping
+│       ├── sync_rpcs.go                 ← GetStatus, TriggerSync, CancelSync, ListPeers, TrustPeer, UntrustPeer, GetHistory
+│       ├── conflict_rpcs.go             ← ListConflicts, GetConflict, ResolveConflict, DeferConflict
+│       ├── transport_rpcs.go            ← ListTransports, EnableTransport, DisableTransport
+│       ├── event_rpcs.go               ← SubscribeEvents (server-streaming)
+│       ├── bundle_rpcs.go              ← ExportBundle, ImportBundle
+│       ├── nodesync_rpcs.go            ← Handshake, RequestPack, SendPack (stubs for node-to-node)
+│       └── health_rpcs.go              ← Health
+└── sync_test.go                         ← 12 integration tests
+```
+
+**Merge Driver:** Three-tier classification: AutoMerge (non-overlapping) → Review (overlapping non-clinical) → Block (clinical safety risk). Block rules: allergy criticality, drug interaction, diagnosis conflict, patient identity, contradictory vitals.
+
+**Transport:** Pluggable via Adapter interface. Local network (mDNS discovery), Wi-Fi Direct, Bluetooth, USB (stubs). Transport selection is automatic.
+
+**Event Bus:** 7 event types (sync.started/completed/failed, peer.discovered/lost, conflict.new/resolved). Server-streaming gRPC for real-time updates.
+
+---
+
+## Shared Libraries — Auth + Merge
+
+### pkg/auth — Shared Auth Utilities
+- **crypto.go** — Ed25519 `GenerateKeypair()`, `Sign()`, `Verify()`, `EncodePublicKey()`, `DecodePublicKey()`
+- **jwt.go** — `NucleusClaims`, `SignToken()`, `VerifyToken()` — EdDSA JWT via golang-jwt/v5
+- **nonce.go** — `NonceStore` with TTL, `Generate()`, `Consume()`, `Cleanup()`
+- **keystore.go** — `KeyStore` interface, `MemoryKeyStore`, `FileKeyStore` (0600 perms)
+- **roles.go** — 37 permission constants, 5 role definitions, `HasPermission()`, `AllRoles()`
+- **bruteforce.go** — `BruteForceGuard` with sliding window (N fails / M seconds)
+- **auth_test.go** — 19 tests
+
+### pkg/merge — FHIR-Aware Merge Driver
+- **types.go** — `ConflictLevel` (AutoMerge/Review/Block), `FieldMergeStrategy`, `SyncPriority` (5 tiers)
+- **diff.go** — `DiffResources()`, `DiffResourcesWithBase()`, `OverlappingFields()`, `NonOverlappingFields()`
+- **classify.go** — `Classifier` with block rules per resource type, optional `FormularyChecker`
+- **strategy.go** — Field merge strategies (LatestTimestamp, KeepBoth, PreferLocal) per resource type
+- **driver.go** — `Driver` with `MergeFile()` and `MergeFields()` for three-way merge
+- **priority.go** — `ClassifyResource()` → 5-tier sync priority based on resource type and status
+- **merge_test.go** — 19 tests
+
+---
+
 ## Phase Roadmap
 
 | Phase | Scope | Status |
@@ -367,6 +467,6 @@ POST/PUT requests for FHIR resources are validated against JSON schemas loaded a
 | 1 — Walking Skeleton | Middleware pipeline, auth + patient read handlers, all stubs | COMPLETE |
 | 2 — Gateway Gaps | All handler/service/proto definitions, clinical sub-resources, JSON schema validation, zero stubs (except /ws) | COMPLETE |
 | 3 — Patient Service | First real backend: `services/patient/` + `pkg/fhir` + `pkg/gitstore` + `pkg/sqliteindex`. 38 gRPC RPCs, full write pipeline, 40 tests passing | COMPLETE |
-| 4 — Sync + Conflicts + Sentinel | Real gRPC backend integration for sync, conflict resolution, alerts | Not started |
+| 4 — Auth + Sync Services | Auth Service (15 RPCs, Ed25519 + JWT + RBAC) + Sync Service (~25 RPCs + NodeSyncService, FHIR merge driver, event bus) + `pkg/auth` + `pkg/merge`. 62 tests passing | COMPLETE |
 | 5 — Formulary + Anchor + Supply | Real gRPC backend integration for formulary, IOTA anchoring, supply chain | Not started |
 | 6 — WebSocket + Hardening | Real-time events, production config, TLS, metrics | Not started |

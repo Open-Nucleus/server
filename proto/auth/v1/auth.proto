@@ -4,49 +4,130 @@ package auth.v1;
 
 option go_package = "github.com/FibrinLab/open-nucleus/gen/proto/auth/v1;authv1";
 
+import "google/protobuf/timestamp.proto";
+
 service AuthService {
-  rpc Login(LoginRequest) returns (LoginResponse);
-  rpc Refresh(RefreshRequest) returns (RefreshResponse);
+  // Device registration (admin-only or bootstrap)
+  rpc RegisterDevice(RegisterDeviceRequest) returns (RegisterDeviceResponse);
+
+  // Challenge-response authentication
+  rpc GetChallenge(GetChallengeRequest) returns (GetChallengeResponse);
+  rpc Authenticate(AuthenticateRequest) returns (AuthenticateResponse);
+
+  // Token lifecycle
+  rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenResponse);
   rpc Logout(LogoutRequest) returns (LogoutResponse);
-  rpc Whoami(WhoamiRequest) returns (WhoamiResponse);
+  rpc GetCurrentIdentity(GetCurrentIdentityRequest) returns (GetCurrentIdentityResponse);
+
+  // Device management
+  rpc ListDevices(ListDevicesRequest) returns (ListDevicesResponse);
+  rpc RevokeDevice(RevokeDeviceRequest) returns (RevokeDeviceResponse);
+  rpc CheckRevocation(CheckRevocationRequest) returns (CheckRevocationResponse);
+
+  // Roles and permissions
+  rpc ListRoles(ListRolesRequest) returns (ListRolesResponse);
+  rpc GetRole(GetRoleRequest) returns (GetRoleResponse);
+  rpc AssignRole(AssignRoleRequest) returns (AssignRoleResponse);
+
+  // Token validation (hot path, <1ms)
+  rpc ValidateToken(ValidateTokenRequest) returns (ValidateTokenResponse);
+  rpc CheckPermission(CheckPermissionRequest) returns (CheckPermissionResponse);
+
+  // Health
+  rpc Health(HealthRequest) returns (HealthResponse);
 }
 
-message ChallengeResponse {
-  string nonce = 1;
-  string signature = 2;
-  string timestamp = 3;
+// --- Core types ---
+
+message TokenClaims {
+  string sub = 1;               // practitioner ID
+  string device_id = 2;
+  string node_id = 3;
+  string site_id = 4;
+  string role = 5;
+  repeated string permissions = 6;
+  string site_scope = 7;        // "local" or "regional"
+  string jti = 8;               // JWT ID for deny list
+  google.protobuf.Timestamp issued_at = 9;
+  google.protobuf.Timestamp expires_at = 10;
+}
+
+message DeviceInfo {
+  string device_id = 1;
+  string public_key = 2;
+  string practitioner_id = 3;
+  string site_id = 4;
+  string device_name = 5;
+  string role = 6;
+  string status = 7;            // "active", "revoked"
+  string registered_at = 8;
+  string revoked_at = 9;
+  string revoked_by = 10;
+  string revocation_reason = 11;
 }
 
 message RoleInfo {
   string code = 1;
   string display = 2;
   repeated string permissions = 3;
+  string site_scope = 4;
 }
 
-message LoginRequest {
+message ChallengeResponse {
+  bytes nonce = 1;
+  google.protobuf.Timestamp expires_at = 2;
+}
+
+// --- Register Device ---
+
+message RegisterDeviceRequest {
+  string public_key = 1;        // base64-encoded Ed25519 public key
+  string practitioner_id = 2;
+  string site_id = 3;
+  string device_name = 4;
+  string role = 5;              // requested role (ignored for bootstrap)
+  string bootstrap_secret = 6;  // only for first device registration
+}
+
+message RegisterDeviceResponse {
+  DeviceInfo device = 1;
+}
+
+// --- Challenge-Response Auth ---
+
+message GetChallengeRequest {
   string device_id = 1;
-  string public_key = 2;
-  ChallengeResponse challenge_response = 3;
-  string practitioner_id = 4;
 }
 
-message LoginResponse {
-  string token = 1;
-  string expires_at = 2;
-  string refresh_token = 3;
+message GetChallengeResponse {
+  ChallengeResponse challenge = 1;
+}
+
+message AuthenticateRequest {
+  string device_id = 1;
+  bytes signature = 2;          // Ed25519 signature of nonce
+  string practitioner_id = 3;
+}
+
+message AuthenticateResponse {
+  string access_token = 1;
+  string refresh_token = 2;
+  string expires_at = 3;
   RoleInfo role = 4;
   string site_id = 5;
   string node_id = 6;
 }
 
-message RefreshRequest {
+// --- Token Lifecycle ---
+
+message RefreshTokenRequest {
   string refresh_token = 1;
 }
 
-message RefreshResponse {
-  string token = 1;
-  string expires_at = 2;
-  string refresh_token = 3;
+message RefreshTokenResponse {
+  string access_token = 1;
+  string refresh_token = 2;
+  string expires_at = 3;
 }
 
 message LogoutRequest {
@@ -55,11 +136,99 @@ message LogoutRequest {
 
 message LogoutResponse {}
 
-message WhoamiRequest {}
+message GetCurrentIdentityRequest {}
 
-message WhoamiResponse {
+message GetCurrentIdentityResponse {
   string subject = 1;
-  string node_id = 2;
-  string site_id = 3;
-  RoleInfo role = 4;
+  string device_id = 2;
+  string node_id = 3;
+  string site_id = 4;
+  RoleInfo role = 5;
+}
+
+// --- Device Management ---
+
+message ListDevicesRequest {}
+
+message ListDevicesResponse {
+  repeated DeviceInfo devices = 1;
+}
+
+message RevokeDeviceRequest {
+  string device_id = 1;
+  string revoked_by = 2;
+  string reason = 3;
+}
+
+message RevokeDeviceResponse {
+  DeviceInfo device = 1;
+}
+
+message CheckRevocationRequest {
+  string device_id = 1;
+}
+
+message CheckRevocationResponse {
+  bool revoked = 1;
+  string revoked_at = 2;
+  string reason = 3;
+}
+
+// --- Roles ---
+
+message ListRolesRequest {}
+
+message ListRolesResponse {
+  repeated RoleInfo roles = 1;
+}
+
+message GetRoleRequest {
+  string role_code = 1;
+}
+
+message GetRoleResponse {
+  RoleInfo role = 1;
+}
+
+message AssignRoleRequest {
+  string device_id = 1;
+  string role = 2;
+  string assigned_by = 3;
+}
+
+message AssignRoleResponse {
+  DeviceInfo device = 1;
+}
+
+// --- Token Validation ---
+
+message ValidateTokenRequest {
+  string token = 1;
+}
+
+message ValidateTokenResponse {
+  bool valid = 1;
+  TokenClaims claims = 2;
+  string error_code = 3;        // "expired", "revoked", "invalid_signature", "denied"
+}
+
+message CheckPermissionRequest {
+  string token = 1;
+  string permission = 2;
+  string target_site_id = 3;
+}
+
+message CheckPermissionResponse {
+  bool allowed = 1;
+  string reason = 2;
+}
+
+// --- Health ---
+
+message HealthRequest {}
+
+message HealthResponse {
+  string status = 1;
+  string version = 2;
+  int64 uptime_seconds = 3;
 }
