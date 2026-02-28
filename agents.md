@@ -1,7 +1,7 @@
 # Open Nucleus — Architectural Memory
 
 > Living document. Updated after every major feature or structural change.
-> Last updated: Phase 4 — Auth + Sync Services (2026-02-27)
+> Last updated: Phase 4.5 — E2E Smoke Tests + Patient Adapter Wiring (2026-02-28)
 
 ---
 
@@ -320,6 +320,13 @@ POST/PUT requests for FHIR resources are validated against JSON schemas loaded a
 - Middleware tests: pass `httptest.Request` through middleware, assert on `httptest.Recorder` status + body + context values.
 - Handler tests: inject mock service implementations (function fields), assert on response envelope. Mock types use embedded interface for convenience.
 - Integration tests (router_test.go): wire real middleware + mock services, test full request flow (login → list patients, 401 without JWT, 503 for service unavailable, no more 501s on stubbed routes).
+- **E2E smoke tests** (`test/e2e/smoke_test.go`): Boot all 3 microservices (Auth, Patient, Sync) in-process on dynamic ports, wire the full gateway HTTP handler with real JWT validation, test the complete REST flow (auth → CRUD → sync). 11 tests covering health, auth enforcement, CRUD, sync status, token refresh, and logout. Run via `make test-e2e`.
+
+### Test Helper Packages
+Exported test helpers that wrap internal service setup for E2E tests (Go's `internal` package restriction prevents direct imports from `test/e2e/`):
+- `services/auth/authtest/` — Starts in-process Auth Service, exposes `Addr`, `PublicKey`, `GetChallenge()`, `AuthenticateWithNonce()`
+- `services/patient/patienttest/` — Starts in-process Patient Service, exposes `Addr`
+- `services/sync/synctest/` — Starts in-process Sync Service, exposes `Addr`
 
 ---
 
@@ -468,5 +475,6 @@ services/sync/
 | 2 — Gateway Gaps | All handler/service/proto definitions, clinical sub-resources, JSON schema validation, zero stubs (except /ws) | COMPLETE |
 | 3 — Patient Service | First real backend: `services/patient/` + `pkg/fhir` + `pkg/gitstore` + `pkg/sqliteindex`. 38 gRPC RPCs, full write pipeline, 40 tests passing | COMPLETE |
 | 4 — Auth + Sync Services | Auth Service (15 RPCs, Ed25519 + JWT + RBAC) + Sync Service (~25 RPCs + NodeSyncService, FHIR merge driver, event bus) + `pkg/auth` + `pkg/merge`. 62 tests passing | COMPLETE |
+| 4.5 — E2E Smoke Tests | Full-stack E2E tests (11 cases), JWT claims fix, patient gRPC adapter wiring, test helper packages | COMPLETE |
 | 5 — Formulary + Anchor + Supply | Real gRPC backend integration for formulary, IOTA anchoring, supply chain | Not started |
 | 6 — WebSocket + Hardening | Real-time events, production config, TLS, metrics | Not started |

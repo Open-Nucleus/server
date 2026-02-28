@@ -3,12 +3,17 @@ package model
 import "github.com/golang-jwt/jwt/v5"
 
 // NucleusClaims represents the JWT claims per spec section 2.3.
+// JSON tags match pkg/auth.NucleusClaims so JWTs from the Auth Service
+// deserialize correctly in the gateway middleware.
 type NucleusClaims struct {
 	jwt.RegisteredClaims
-	Node        string   `json:"node"`
-	Site        string   `json:"site"`
+	DeviceID    string   `json:"device_id"`
+	Node        string   `json:"node_id"`
+	Site        string   `json:"site_id"`
 	Role        string   `json:"role"`
 	Permissions []string `json:"permissions"`
+	SiteScope   string   `json:"site_scope"`
+	TokenType   string   `json:"token_type"`
 }
 
 // LoginRequest is the body of POST /auth/login.

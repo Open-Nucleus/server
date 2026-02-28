@@ -1,4 +1,4 @@
-.PHONY: build build-all build-patient build-auth build-sync run test test-patient test-auth test-sync test-all proto-gen lint clean
+.PHONY: build build-all build-patient build-auth build-sync run test test-patient test-auth test-sync test-e2e test-all proto-gen lint clean
 
 BINARY := gateway
 BUILD_DIR := bin
@@ -31,6 +31,9 @@ test-auth:
 
 test-sync:
 	go test -v -race ./services/sync/... ./pkg/merge/...
+
+test-e2e:
+	go test -v -race -count=1 ./test/e2e/...
 
 test-all:
 	go test -v -race ./...
