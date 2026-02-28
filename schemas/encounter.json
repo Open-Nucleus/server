@@ -1,17 +1,50 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
-  "required": ["resourceType", "status", "class"],
+  "required": ["resourceType", "status", "class", "subject", "period"],
+  "$defs": {
+    "Reference": {
+      "type": "object",
+      "required": ["reference"],
+      "properties": {
+        "reference": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  },
   "properties": {
     "resourceType": {
       "type": "string",
       "const": "Encounter"
     },
     "status": {
-      "type": "string"
+      "type": "string",
+      "enum": ["planned", "arrived", "triaged", "in-progress", "onleave", "finished", "cancelled", "entered-in-error"]
     },
     "class": {
-      "type": "object"
+      "type": "object",
+      "required": ["code"],
+      "properties": {
+        "code": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "subject": {
+      "$ref": "#/$defs/Reference"
+    },
+    "period": {
+      "type": "object",
+      "required": ["start"],
+      "properties": {
+        "start": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
     }
   }
 }

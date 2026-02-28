@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
-  "required": ["resourceType", "name", "gender"],
+  "required": ["resourceType", "name", "gender", "birthDate"],
   "properties": {
     "resourceType": {
       "type": "string",
@@ -9,11 +9,32 @@
     },
     "name": {
       "type": "array",
-      "minItems": 1
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["family", "given"],
+        "properties": {
+          "family": {
+            "type": "string",
+            "minLength": 1
+          },
+          "given": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
     },
     "gender": {
       "type": "string",
       "enum": ["male", "female", "other", "unknown"]
+    },
+    "birthDate": {
+      "type": "string",
+      "minLength": 1
     }
   }
 }

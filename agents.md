@@ -1,7 +1,7 @@
 # Open Nucleus — Architectural Memory
 
 > Living document. Updated after every major feature or structural change.
-> Last updated: Phase 4.5 — E2E Smoke Tests + Patient Adapter Wiring (2026-02-28)
+> Last updated: Phase 4.5 — Schema Hardening (2026-02-28)
 
 ---
 
@@ -199,12 +199,14 @@ CORS → RequestID → AuditLog → JWTAuth → [per-route: RateLimiter → Requ
 - **server.go** — `Server` wraps `http.Server` with config-driven timeouts. `Run()` starts listener and blocks until SIGINT/SIGTERM, then calls `Shutdown()` with 10s grace period.
 
 ### schemas/
-- **patient.json** — Requires `resourceType: "Patient"`, `name` array (minItems 1), `gender` enum.
-- **encounter.json** — Requires `resourceType: "Encounter"`, `status`, `class` object.
-- **observation.json** — Requires `resourceType: "Observation"`, `status`, `code` object.
-- **condition.json** — Requires `resourceType: "Condition"`, `code` object.
-- **medication_request.json** — Requires `resourceType: "MedicationRequest"`, `status`, `medicationCodeableConcept` object.
-- **allergy_intolerance.json** — Requires `resourceType: "AllergyIntolerance"`.
+All 6 schemas use inline `$defs` for reusable `Reference` (`{ reference: string minLength:1 }`) and `CodeableConcept` (`anyOf: [ has coding[], has text ]`) patterns. They mirror the validation rules in `pkg/fhir/validate.go` so malformed payloads are rejected at the gateway before the gRPC round-trip.
+
+- **patient.json** — Requires `resourceType: "Patient"`, `name` array (items: `{ family: string, given: string[] }`), `gender` enum, `birthDate` string.
+- **encounter.json** — Requires `resourceType: "Encounter"`, `status` enum (8 FHIR values), `class` object with `code`, `subject` Reference, `period` with `start`.
+- **observation.json** — Requires `resourceType: "Observation"`, `status` enum (7 values), `code` CodeableConcept, `subject` Reference, `effectiveDateTime`.
+- **condition.json** — Requires `resourceType: "Condition"`, `clinicalStatus` CodeableConcept, `verificationStatus` CodeableConcept, `code` CodeableConcept, `subject` Reference.
+- **medication_request.json** — Requires `resourceType: "MedicationRequest"`, `status`, `intent`, `medicationCodeableConcept` CodeableConcept, `subject` Reference, `dosageInstruction` array (minItems:1).
+- **allergy_intolerance.json** — Requires `resourceType: "AllergyIntolerance"`, `clinicalStatus` CodeableConcept, `verificationStatus` CodeableConcept, `code` CodeableConcept, `patient` Reference.
 
 ---
 
@@ -349,7 +351,7 @@ Exported test helpers that wrap internal service setup for E2E tests (Go's `inte
 | Formulary (medications/interactions/availability) | Handler complete, gRPC adapter stubbed | formulary.go | formulary.go |
 | Anchor/IOTA (status/verify/history/trigger) | Handler complete, gRPC adapter stubbed | anchor.go | anchor.go |
 | Supply chain (inventory/deliveries/predictions/redistribution) | Handler complete, gRPC adapter stubbed | supply.go | supply.go |
-| JSON Schema Validation | 6 schemas loaded, wired on POST/PUT clinical routes | — | validator.go |
+| JSON Schema Validation | 6 hardened schemas (Reference, CodeableConcept, status enums, required fields mirror validate.go) | — | validator.go |
 | WebSocket (/ws) | 501 stub | stubs.go | — |
 
 ---

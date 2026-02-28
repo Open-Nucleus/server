@@ -1,14 +1,58 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
-  "required": ["resourceType", "code"],
+  "required": ["resourceType", "clinicalStatus", "verificationStatus", "code", "subject"],
+  "$defs": {
+    "Reference": {
+      "type": "object",
+      "required": ["reference"],
+      "properties": {
+        "reference": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "CodeableConcept": {
+      "type": "object",
+      "anyOf": [
+        {
+          "required": ["coding"],
+          "properties": {
+            "coding": {
+              "type": "array",
+              "minItems": 1
+            }
+          }
+        },
+        {
+          "required": ["text"],
+          "properties": {
+            "text": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ]
+    }
+  },
   "properties": {
     "resourceType": {
       "type": "string",
       "const": "Condition"
     },
+    "clinicalStatus": {
+      "$ref": "#/$defs/CodeableConcept"
+    },
+    "verificationStatus": {
+      "$ref": "#/$defs/CodeableConcept"
+    },
     "code": {
-      "type": "object"
+      "$ref": "#/$defs/CodeableConcept"
+    },
+    "subject": {
+      "$ref": "#/$defs/Reference"
     }
   }
 }

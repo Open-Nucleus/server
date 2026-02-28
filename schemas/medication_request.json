@@ -1,7 +1,42 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
-  "required": ["resourceType", "status", "medicationCodeableConcept"],
+  "required": ["resourceType", "status", "intent", "medicationCodeableConcept", "subject", "dosageInstruction"],
+  "$defs": {
+    "Reference": {
+      "type": "object",
+      "required": ["reference"],
+      "properties": {
+        "reference": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "CodeableConcept": {
+      "type": "object",
+      "anyOf": [
+        {
+          "required": ["coding"],
+          "properties": {
+            "coding": {
+              "type": "array",
+              "minItems": 1
+            }
+          }
+        },
+        {
+          "required": ["text"],
+          "properties": {
+            "text": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ]
+    }
+  },
   "properties": {
     "resourceType": {
       "type": "string",
@@ -10,8 +45,19 @@
     "status": {
       "type": "string"
     },
+    "intent": {
+      "type": "string",
+      "minLength": 1
+    },
     "medicationCodeableConcept": {
-      "type": "object"
+      "$ref": "#/$defs/CodeableConcept"
+    },
+    "subject": {
+      "$ref": "#/$defs/Reference"
+    },
+    "dosageInstruction": {
+      "type": "array",
+      "minItems": 1
     }
   }
 }
