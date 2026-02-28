@@ -328,14 +328,14 @@ POST/PUT requests for FHIR resources are validated against JSON schemas loaded a
 | Area | Status | Handler | Service Adapter |
 |------|--------|---------|-----------------|
 | Auth (register/challenge/authenticate/refresh/logout/validate/roles/devices) | Handler complete, gRPC adapter wired to auth service :50053 | auth.go | auth.go |
-| Patient reads (list/get/search) | Handler complete, gRPC adapter stubbed | patient.go | patient.go |
-| Patient writes (create/update/delete) | Handler complete, gRPC adapter stubbed | patient.go | patient.go |
-| Patient match/history/timeline | Handler complete, gRPC adapter stubbed | patient.go | patient.go |
-| Encounters (list/get/create/update) | Handler complete, gRPC adapter stubbed | clinical.go | patient.go |
-| Observations (list/get/create) | Handler complete, gRPC adapter stubbed | clinical.go | patient.go |
-| Conditions (list/create/update) | Handler complete, gRPC adapter stubbed | clinical.go | patient.go |
-| Medication Requests (list/create/update) | Handler complete, gRPC adapter stubbed | clinical.go | patient.go |
-| Allergy Intolerances (list/create/update) | Handler complete, gRPC adapter stubbed | clinical.go | patient.go |
+| Patient reads (list/get/search) | Handler complete, gRPC adapter wired to patient service :50051 | patient.go | patient.go |
+| Patient writes (create/update/delete) | Handler complete, gRPC adapter wired to patient service :50051 | patient.go | patient.go |
+| Patient match/history/timeline | Handler complete, gRPC adapter wired to patient service :50051 | patient.go | patient.go |
+| Encounters (list/get/create/update) | Handler complete, gRPC adapter wired to patient service :50051 | clinical.go | patient.go |
+| Observations (list/get/create) | Handler complete, gRPC adapter wired to patient service :50051 | clinical.go | patient.go |
+| Conditions (list/create/update) | Handler complete, gRPC adapter wired to patient service :50051 | clinical.go | patient.go |
+| Medication Requests (list/create/update) | Handler complete, gRPC adapter wired to patient service :50051 | clinical.go | patient.go |
+| Allergy Intolerances (list/create/update) | Handler complete, gRPC adapter wired to patient service :50051 | clinical.go | patient.go |
 | Sync (status/peers/trigger/cancel/history/bundle/transports/events) | Handler complete, gRPC adapter wired to sync service :50052 | sync.go | sync.go |
 | Conflicts (list/get/resolve/defer) | Handler complete, gRPC adapter wired to sync service :50052 | conflict.go | conflict.go |
 | Alerts (list/get/acknowledge/dismiss/summary) | Handler complete, gRPC adapter stubbed | sentinel.go | sentinel.go |

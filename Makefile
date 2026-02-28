@@ -1,10 +1,12 @@
-.PHONY: build build-patient build-auth build-sync run test test-patient test-auth test-sync test-all proto-gen lint clean
+.PHONY: build build-all build-patient build-auth build-sync run test test-patient test-auth test-sync test-all proto-gen lint clean
 
 BINARY := gateway
 BUILD_DIR := bin
 
 build:
 	go build -o $(BUILD_DIR)/$(BINARY) ./cmd/gateway
+
+build-all: build build-patient build-auth build-sync
 
 build-patient:
 	go build -o $(BUILD_DIR)/patient-service ./services/patient/cmd
