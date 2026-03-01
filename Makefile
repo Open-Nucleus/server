@@ -1,4 +1,4 @@
-.PHONY: build build-all build-patient build-auth build-sync run test test-patient test-auth test-sync test-e2e test-all proto-gen lint clean
+.PHONY: build build-all build-patient build-auth build-sync run test test-patient test-auth test-sync test-e2e test-all smoke proto-gen lint clean
 
 BINARY := gateway
 BUILD_DIR := bin
@@ -37,6 +37,9 @@ test-e2e:
 
 test-all:
 	go test -v -race ./...
+
+smoke:
+	go run ./cmd/smoke
 
 proto-gen:
 	buf generate

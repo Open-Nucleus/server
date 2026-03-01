@@ -1,7 +1,7 @@
 # Open Nucleus — Architectural Memory
 
 > Living document. Updated after every major feature or structural change.
-> Last updated: Phase 4.5 — Schema Hardening (2026-02-28)
+> Last updated: Phase 4.5 — Smoke Test CLI (2026-03-01)
 
 ---
 
@@ -329,6 +329,11 @@ Exported test helpers that wrap internal service setup for E2E tests (Go's `inte
 - `services/auth/authtest/` — Starts in-process Auth Service, exposes `Addr`, `PublicKey`, `GetChallenge()`, `AuthenticateWithNonce()`
 - `services/patient/patienttest/` — Starts in-process Patient Service, exposes `Addr`
 - `services/sync/synctest/` — Starts in-process Sync Service, exposes `Addr`
+
+Each package also exports a `StartStandalone()` function that returns `(env, cleanup, error)` instead of requiring `*testing.T`. Used by the smoke test CLI.
+
+### Interactive Smoke Test CLI (`cmd/smoke/`)
+Standalone Go program that boots all 3 services + gateway in-process, runs 17 REST steps with colored PASS/FAIL output. No external deps, no `*testing.T` — just `go run ./cmd/smoke` or `make smoke`. Exercises: health, auth enforcement, full CRUD (patient + 5 clinical resources), timeline, history, sync, conflicts, schema rejection, and delete. Exit code 0/1 for CI.
 
 ---
 
