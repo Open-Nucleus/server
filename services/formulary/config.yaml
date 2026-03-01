@@ -1,0 +1,13 @@
+formulary_service:
+  grpc_port: 50054
+
+  sqlite:
+    db_path: /var/lib/open-nucleus/formulary.db
+
+  drug_db:
+    medications_dir: ""   # empty = use embedded seed data
+    interactions_file: "" # empty = use embedded seed data
+
+  logging:
+    level: info
+    format: json

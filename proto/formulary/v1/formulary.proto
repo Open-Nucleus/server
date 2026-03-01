@@ -7,12 +7,35 @@ option go_package = "github.com/FibrinLab/open-nucleus/gen/proto/formulary/v1;fo
 import "common/v1/metadata.proto";
 
 service FormularyService {
+  // Drug lookup
   rpc SearchMedications(SearchMedicationsRequest) returns (SearchMedicationsResponse);
   rpc GetMedication(GetMedicationRequest) returns (GetMedicationResponse);
+  rpc ListMedicationsByCategory(ListMedicationsByCategoryRequest) returns (ListMedicationsByCategoryResponse);
+
+  // Safety checks
   rpc CheckInteractions(CheckInteractionsRequest) returns (CheckInteractionsResponse);
-  rpc GetAvailability(GetAvailabilityRequest) returns (GetAvailabilityResponse);
-  rpc UpdateAvailability(UpdateAvailabilityRequest) returns (UpdateAvailabilityResponse);
+  rpc CheckAllergyConflicts(CheckAllergyConflictsRequest) returns (CheckAllergyConflictsResponse);
+
+  // Dosing (stub — depends on open-pharm-dosing)
+  rpc ValidateDosing(ValidateDosingRequest) returns (ValidateDosingResponse);
+  rpc GetDosingOptions(GetDosingOptionsRequest) returns (GetDosingOptionsResponse);
+  rpc GenerateSchedule(GenerateScheduleRequest) returns (GenerateScheduleResponse);
+
+  // Stock management
+  rpc GetStockLevel(GetStockLevelRequest) returns (GetStockLevelResponse);
+  rpc UpdateStockLevel(UpdateStockLevelRequest) returns (UpdateStockLevelResponse);
+  rpc RecordDelivery(RecordDeliveryRequest) returns (RecordDeliveryResponse);
+  rpc GetStockPrediction(GetStockPredictionRequest) returns (GetStockPredictionResponse);
+  rpc GetRedistributionSuggestions(GetRedistributionSuggestionsRequest) returns (GetRedistributionSuggestionsResponse);
+
+  // Formulary metadata
+  rpc GetFormularyInfo(GetFormularyInfoRequest) returns (GetFormularyInfoResponse);
+
+  // Health
+  rpc Health(HealthRequest) returns (HealthResponse);
 }
+
+// --- Drug lookup messages ---
 
 message SearchMedicationsRequest {
   string query = 1;
@@ -33,6 +56,16 @@ message GetMedicationResponse {
   Medication medication = 1;
 }
 
+message ListMedicationsByCategoryRequest {
+  string category = 1;
+  common.v1.PaginationRequest pagination = 2;
+}
+
+message ListMedicationsByCategoryResponse {
+  repeated Medication medications = 1;
+  common.v1.PaginationResponse pagination = 2;
+}
+
 message Medication {
   string code = 1;
   string display = 2;
@@ -40,15 +73,28 @@ message Medication {
   string route = 4;
   string category = 5;
   bool available = 6;
+  bool who_essential = 7;
+  string therapeutic_class = 8;
+  repeated string common_frequencies = 9;
+  string strength = 10;
+  string unit = 11;
 }
+
+// --- Interaction checking messages ---
 
 message CheckInteractionsRequest {
   repeated string medication_codes = 1;
   string patient_id = 2;
+  repeated string allergy_codes = 3;
+  string site_id = 4;
 }
 
 message CheckInteractionsResponse {
   repeated Interaction interactions = 1;
+  repeated AllergyAlert allergy_alerts = 2;
+  repeated DosingWarning dosing_warnings = 3;
+  StockSummary stock_summary = 4;
+  string overall_risk = 5;
 }
 
 message Interaction {
@@ -58,36 +104,206 @@ message Interaction {
   string medication_a = 4;
   string medication_b = 5;
   string source = 6;
+  string clinical_effect = 7;
+  string recommendation = 8;
 }
 
-message GetAvailabilityRequest {
-  string site_id = 1;
+message AllergyAlert {
+  string severity = 1;
+  string allergy_code = 2;
+  string medication_code = 3;
+  string description = 4;
+  string cross_reactivity_class = 5;
 }
 
-message GetAvailabilityResponse {
-  repeated MedicationAvailability items = 1;
-  string site_id = 2;
-}
-
-message MedicationAvailability {
+message DosingWarning {
   string medication_code = 1;
-  string display = 2;
+  string warning = 2;
+  string severity = 3;
+}
+
+message StockSummary {
+  repeated StockItem items = 1;
+}
+
+message StockItem {
+  string medication_code = 1;
+  bool available = 2;
+  int32 quantity = 3;
+  string unit = 4;
+}
+
+// --- Allergy conflict messages ---
+
+message CheckAllergyConflictsRequest {
+  repeated string medication_codes = 1;
+  repeated string allergy_codes = 2;
+}
+
+message CheckAllergyConflictsResponse {
+  repeated AllergyAlert alerts = 1;
+  bool safe = 2;
+}
+
+// --- Dosing messages (stub) ---
+
+message ValidateDosingRequest {
+  string medication_code = 1;
+  double dose_value = 2;
+  string dose_unit = 3;
+  string frequency = 4;
+  string route = 5;
+  double patient_weight_kg = 6;
+}
+
+message ValidateDosingResponse {
+  bool valid = 1;
+  string message = 2;
+  bool configured = 3;
+}
+
+message GetDosingOptionsRequest {
+  string medication_code = 1;
+  double patient_weight_kg = 2;
+}
+
+message GetDosingOptionsResponse {
+  repeated DosingOption options = 1;
+  bool configured = 2;
+  string message = 3;
+}
+
+message DosingOption {
+  double dose_value = 1;
+  string dose_unit = 2;
+  string frequency = 3;
+  string route = 4;
+  string indication = 5;
+}
+
+message GenerateScheduleRequest {
+  string medication_code = 1;
+  double dose_value = 2;
+  string dose_unit = 3;
+  string frequency = 4;
+  string start_time = 5;
+  int32 duration_days = 6;
+}
+
+message GenerateScheduleResponse {
+  repeated ScheduleEntry entries = 1;
+  bool configured = 2;
+  string message = 3;
+}
+
+message ScheduleEntry {
+  string time = 1;
+  double dose_value = 2;
+  string dose_unit = 3;
+  string note = 4;
+}
+
+// --- Stock management messages ---
+
+message GetStockLevelRequest {
+  string site_id = 1;
+  string medication_code = 2;
+}
+
+message GetStockLevelResponse {
+  string site_id = 1;
+  string medication_code = 2;
   int32 quantity = 3;
   string unit = 4;
   string last_updated = 5;
+  string earliest_expiry = 6;
+  double daily_consumption_rate = 7;
 }
 
-message UpdateAvailabilityRequest {
+message UpdateStockLevelRequest {
   string site_id = 1;
-  repeated MedicationAvailabilityUpdate items = 2;
+  string medication_code = 2;
+  int32 quantity = 3;
+  string unit = 4;
+  string reason = 5;
+  string updated_by = 6;
 }
 
-message MedicationAvailabilityUpdate {
+message UpdateStockLevelResponse {
+  bool success = 1;
+  string last_updated = 2;
+}
+
+message RecordDeliveryRequest {
+  string site_id = 1;
+  repeated DeliveryItem items = 2;
+  string received_by = 3;
+  string delivery_date = 4;
+}
+
+message DeliveryItem {
   string medication_code = 1;
   int32 quantity = 2;
   string unit = 3;
+  string batch_number = 4;
+  string expiry_date = 5;
 }
 
-message UpdateAvailabilityResponse {
-  int32 updated_count = 1;
+message RecordDeliveryResponse {
+  string delivery_id = 1;
+  int32 items_recorded = 2;
+}
+
+message GetStockPredictionRequest {
+  string site_id = 1;
+  string medication_code = 2;
+}
+
+message GetStockPredictionResponse {
+  int32 days_remaining = 1;
+  string risk_level = 2;
+  string earliest_expiry = 3;
+  int32 expiring_quantity = 4;
+  string recommended_action = 5;
+}
+
+message GetRedistributionSuggestionsRequest {
+  string medication_code = 1;
+}
+
+message GetRedistributionSuggestionsResponse {
+  repeated RedistributionSuggestion suggestions = 1;
+}
+
+message RedistributionSuggestion {
+  string from_site = 1;
+  string to_site = 2;
+  int32 suggested_quantity = 3;
+  string rationale = 4;
+  int32 from_site_quantity = 5;
+  int32 to_site_quantity = 6;
+}
+
+// --- Formulary metadata messages ---
+
+message GetFormularyInfoRequest {}
+
+message GetFormularyInfoResponse {
+  string version = 1;
+  int32 total_medications = 2;
+  int32 total_interactions = 3;
+  string last_updated = 4;
+  repeated string categories = 5;
+  bool dosing_engine_available = 6;
+}
+
+// --- Health ---
+
+message HealthRequest {}
+
+message HealthResponse {
+  string status = 1;
+  string version = 2;
+  int32 medications_loaded = 3;
+  int32 interactions_loaded = 4;
 }

@@ -1,0 +1,206 @@
+{
+  "interactions": [
+    {
+      "medication_a": "L04AX03",
+      "medication_b": "J01EA01",
+      "severity": "high",
+      "type": "drug-drug",
+      "description": "Methotrexate + Trimethoprim: both are antifolate drugs. Co-administration causes severe pancytopenia.",
+      "clinical_effect": "Additive bone marrow suppression, potentially fatal pancytopenia",
+      "recommendation": "Avoid co-administration. If unavoidable, monitor CBC twice weekly.",
+      "source": "WHO Essential Medicines Interactions"
+    },
+    {
+      "medication_a": "P01BA02",
+      "medication_b": "C01BD01",
+      "severity": "high",
+      "type": "drug-drug",
+      "description": "Hydroxychloroquine + Amiodarone: both prolong QT interval. Combined use increases risk of fatal arrhythmia.",
+      "clinical_effect": "Additive QT prolongation, risk of Torsades de Pointes",
+      "recommendation": "Avoid co-administration. Monitor ECG if clinically necessary.",
+      "source": "CredibleMeds QT Risk List"
+    },
+    {
+      "medication_a": "J04AB02",
+      "medication_b": "G03AA07",
+      "severity": "high",
+      "type": "drug-drug",
+      "description": "Rifampicin + OCP: Rifampicin induces CYP3A4, reducing contraceptive efficacy to near-zero.",
+      "clinical_effect": "Loss of contraceptive efficacy, unintended pregnancy",
+      "recommendation": "Use alternative contraception (IUD, depot injection) during and for 4 weeks after rifampicin.",
+      "source": "WHO Medical Eligibility Criteria"
+    },
+    {
+      "medication_a": "B01AA03",
+      "medication_b": "M01AB05",
+      "severity": "high",
+      "type": "drug-drug",
+      "description": "Warfarin + Diclofenac: NSAIDs increase bleeding risk with anticoagulants via platelet inhibition and GI erosion.",
+      "clinical_effect": "Major bleeding risk, GI hemorrhage",
+      "recommendation": "Avoid NSAIDs. Use paracetamol for analgesia.",
+      "source": "WHO Essential Medicines Interactions"
+    },
+    {
+      "medication_a": "B01AA03",
+      "medication_b": "B01AC06",
+      "severity": "high",
+      "type": "drug-drug",
+      "description": "Warfarin + Aspirin: dual antiplatelet/anticoagulant effect markedly increases bleeding risk.",
+      "clinical_effect": "Major bleeding, GI hemorrhage",
+      "recommendation": "Avoid unless cardiology indication. Monitor INR closely.",
+      "source": "WHO Essential Medicines Interactions"
+    },
+    {
+      "medication_a": "P01BE03",
+      "medication_b": "J05AG01",
+      "severity": "high",
+      "type": "drug-drug",
+      "description": "Artemether/Lumefantrine + Efavirenz: both prolong QT. Efavirenz also reduces lumefantrine levels via CYP3A4 induction.",
+      "clinical_effect": "QT prolongation and reduced antimalarial efficacy",
+      "recommendation": "Monitor ECG. Consider dose adjustment or alternative antiretroviral.",
+      "source": "WHO HIV/Malaria Drug Interaction Guide"
+    },
+    {
+      "medication_a": "L04AX03",
+      "medication_b": "M01AB05",
+      "severity": "high",
+      "type": "drug-drug",
+      "description": "Methotrexate + Diclofenac: NSAIDs reduce renal clearance of methotrexate, causing toxicity.",
+      "clinical_effect": "Methotrexate toxicity: mucositis, pancytopenia, hepatotoxicity",
+      "recommendation": "Avoid NSAIDs with methotrexate. Use paracetamol.",
+      "source": "WHO Essential Medicines Interactions"
+    },
+    {
+      "medication_a": "J04AB02",
+      "medication_b": "B01AA03",
+      "severity": "high",
+      "type": "drug-drug",
+      "description": "Rifampicin + Warfarin: Rifampicin induces CYP enzymes, dramatically reducing warfarin levels.",
+      "clinical_effect": "Loss of anticoagulation, risk of thrombosis",
+      "recommendation": "Increase INR monitoring frequency. May need 2-3x warfarin dose. Consider alternative anticoagulant.",
+      "source": "WHO Essential Medicines Interactions"
+    },
+    {
+      "medication_a": "J04AB02",
+      "medication_b": "J05AG01",
+      "severity": "high",
+      "type": "drug-drug",
+      "description": "Rifampicin + Efavirenz: Rifampicin reduces efavirenz levels via CYP induction.",
+      "clinical_effect": "Subtherapeutic antiretroviral levels, risk of HIV treatment failure",
+      "recommendation": "Increase efavirenz to 800mg OD or use alternative TB regimen.",
+      "source": "WHO HIV/TB Drug Interaction Guide"
+    },
+    {
+      "medication_a": "C01BD01",
+      "medication_b": "J01FA10",
+      "severity": "high",
+      "type": "drug-drug",
+      "description": "Amiodarone + Azithromycin: both prolong QT interval.",
+      "clinical_effect": "QT prolongation, risk of Torsades de Pointes",
+      "recommendation": "Avoid co-administration. Use alternative antibiotic.",
+      "source": "CredibleMeds QT Risk List"
+    },
+    {
+      "medication_a": "C01BD01",
+      "medication_b": "B01AA03",
+      "severity": "moderate",
+      "type": "drug-drug",
+      "description": "Amiodarone + Warfarin: Amiodarone inhibits warfarin metabolism, increasing INR.",
+      "clinical_effect": "Elevated INR, increased bleeding risk",
+      "recommendation": "Reduce warfarin dose by 30-50%. Monitor INR weekly.",
+      "source": "WHO Essential Medicines Interactions"
+    },
+    {
+      "medication_a": "A02BC01",
+      "medication_b": "L04AX03",
+      "severity": "moderate",
+      "type": "drug-drug",
+      "description": "Omeprazole + Methotrexate: PPIs may reduce renal clearance of methotrexate.",
+      "clinical_effect": "Increased methotrexate levels, risk of toxicity",
+      "recommendation": "Consider withholding PPI during high-dose methotrexate.",
+      "source": "FDA Drug Safety Communication"
+    },
+    {
+      "medication_a": "H02AB07",
+      "medication_b": "M01AB05",
+      "severity": "moderate",
+      "type": "drug-drug",
+      "description": "Prednisone + Diclofenac: combined GI toxicity risk.",
+      "clinical_effect": "Increased risk of GI bleeding and peptic ulceration",
+      "recommendation": "Co-prescribe proton pump inhibitor if combination unavoidable.",
+      "source": "WHO Essential Medicines Interactions"
+    },
+    {
+      "medication_a": "A03FA01",
+      "medication_b": "N02AA01",
+      "severity": "low",
+      "type": "drug-drug",
+      "description": "Metoclopramide + Morphine: Metoclopramide counteracts opioid-induced gastroparesis.",
+      "clinical_effect": "Beneficial interaction — accelerates gastric emptying",
+      "recommendation": "May be used intentionally. No dose adjustment needed.",
+      "source": "WHO Palliative Care Guidelines"
+    },
+    {
+      "medication_a": "J04AB02",
+      "medication_b": "A02BC01",
+      "severity": "moderate",
+      "type": "drug-drug",
+      "description": "Rifampicin + Omeprazole: Rifampicin induces CYP2C19, reducing omeprazole efficacy.",
+      "clinical_effect": "Reduced acid suppression, treatment failure for peptic ulcer",
+      "recommendation": "Increase omeprazole dose or use H2 blocker.",
+      "source": "WHO Essential Medicines Interactions"
+    },
+    {
+      "medication_a": "P01BA02",
+      "medication_b": "J01FA10",
+      "severity": "moderate",
+      "type": "drug-drug",
+      "description": "Hydroxychloroquine + Azithromycin: both prolong QT interval.",
+      "clinical_effect": "Additive QT prolongation",
+      "recommendation": "Monitor ECG. Avoid in patients with pre-existing QT prolongation.",
+      "source": "CredibleMeds QT Risk List",
+      "class_a": "P01BA",
+      "class_b": "J01FA"
+    },
+    {
+      "medication_a": "J04AB02",
+      "medication_b": "H02AB07",
+      "severity": "moderate",
+      "type": "drug-drug",
+      "description": "Rifampicin + Prednisone: Rifampicin induces steroid metabolism, reducing efficacy.",
+      "clinical_effect": "Reduced corticosteroid efficacy",
+      "recommendation": "Double prednisone dose when co-administered with rifampicin.",
+      "source": "WHO TB Treatment Guidelines"
+    }
+  ],
+  "allergies": [
+    {
+      "allergy_code": "91936005",
+      "medication_class": "J01C",
+      "severity": "high",
+      "description": "Penicillin allergy: contraindication to all penicillin-class antibiotics (J01C*)",
+      "cross_reactivity_class": "beta-lactam"
+    },
+    {
+      "allergy_code": "91936005",
+      "medication_class": "J01DB",
+      "severity": "moderate",
+      "description": "Penicillin allergy with cephalosporin cross-reactivity: ~1-2% cross-reactivity rate with 1st-gen cephalosporins",
+      "cross_reactivity_class": "beta-lactam"
+    },
+    {
+      "allergy_code": "294505008",
+      "medication_class": "M01AB",
+      "severity": "high",
+      "description": "NSAID allergy: contraindication to all NSAID-class analgesics",
+      "cross_reactivity_class": "NSAID"
+    },
+    {
+      "allergy_code": "294505008",
+      "medication_class": "B01AC06",
+      "severity": "moderate",
+      "description": "NSAID allergy with aspirin cross-reactivity",
+      "cross_reactivity_class": "NSAID"
+    }
+  ]
+}

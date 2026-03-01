@@ -306,6 +306,7 @@ func New(cfg Config) http.Handler {
 
 			// Formulary endpoints
 			r.Route("/formulary", func(r chi.Router) {
+				// Drug lookup
 				r.With(
 					cfg.RateLimiter.Middleware(middleware.CategoryRead),
 					middleware.RequirePermission(model.PermFormularyRead),
@@ -314,22 +315,71 @@ func New(cfg Config) http.Handler {
 				r.With(
 					cfg.RateLimiter.Middleware(middleware.CategoryRead),
 					middleware.RequirePermission(model.PermFormularyRead),
+				).Get("/medications/category/{category}", cfg.FormularyHandler.ListMedicationsByCategory)
+
+				r.With(
+					cfg.RateLimiter.Middleware(middleware.CategoryRead),
+					middleware.RequirePermission(model.PermFormularyRead),
 				).Get("/medications/{code}", cfg.FormularyHandler.GetMedication)
 
+				// Safety checks
 				r.With(
 					cfg.RateLimiter.Middleware(middleware.CategoryWrite),
 					middleware.RequirePermission(model.PermFormularyRead),
 				).Post("/check-interactions", cfg.FormularyHandler.CheckInteractions)
 
 				r.With(
+					cfg.RateLimiter.Middleware(middleware.CategoryWrite),
+					middleware.RequirePermission(model.PermFormularyRead),
+				).Post("/check-allergies", cfg.FormularyHandler.CheckAllergyConflicts)
+
+				// Dosing (stub)
+				r.With(
+					cfg.RateLimiter.Middleware(middleware.CategoryWrite),
+					middleware.RequirePermission(model.PermFormularyRead),
+				).Post("/dosing/validate", cfg.FormularyHandler.ValidateDosing)
+
+				r.With(
 					cfg.RateLimiter.Middleware(middleware.CategoryRead),
 					middleware.RequirePermission(model.PermFormularyRead),
-				).Get("/availability/{site_id}", cfg.FormularyHandler.GetAvailability)
+				).Get("/dosing/options", cfg.FormularyHandler.GetDosingOptions)
+
+				r.With(
+					cfg.RateLimiter.Middleware(middleware.CategoryWrite),
+					middleware.RequirePermission(model.PermFormularyRead),
+				).Post("/dosing/schedule", cfg.FormularyHandler.GenerateSchedule)
+
+				// Stock management
+				r.With(
+					cfg.RateLimiter.Middleware(middleware.CategoryRead),
+					middleware.RequirePermission(model.PermFormularyRead),
+				).Get("/stock/{site_id}/{medication_code}", cfg.FormularyHandler.GetStockLevel)
 
 				r.With(
 					cfg.RateLimiter.Middleware(middleware.CategoryWrite),
 					middleware.RequirePermission(model.PermFormularyWrite),
-				).Put("/availability/{site_id}", cfg.FormularyHandler.UpdateAvailability)
+				).Put("/stock/{site_id}/{medication_code}", cfg.FormularyHandler.UpdateStockLevel)
+
+				r.With(
+					cfg.RateLimiter.Middleware(middleware.CategoryRead),
+					middleware.RequirePermission(model.PermFormularyRead),
+				).Get("/stock/{site_id}/{medication_code}/prediction", cfg.FormularyHandler.GetStockPrediction)
+
+				r.With(
+					cfg.RateLimiter.Middleware(middleware.CategoryWrite),
+					middleware.RequirePermission(model.PermFormularyWrite),
+				).Post("/deliveries", cfg.FormularyHandler.RecordDelivery)
+
+				r.With(
+					cfg.RateLimiter.Middleware(middleware.CategoryRead),
+					middleware.RequirePermission(model.PermFormularyRead),
+				).Get("/redistribution/{medication_code}", cfg.FormularyHandler.GetRedistributionSuggestions)
+
+				// Formulary metadata
+				r.With(
+					cfg.RateLimiter.Middleware(middleware.CategoryRead),
+					middleware.RequirePermission(model.PermFormularyRead),
+				).Get("/info", cfg.FormularyHandler.GetFormularyInfo)
 			})
 
 			// Anchor/IOTA endpoints

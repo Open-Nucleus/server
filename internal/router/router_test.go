@@ -193,19 +193,46 @@ func (t *testSentinelSvc) DismissAlert(_ context.Context, _, _ string) (*service
 
 type testFormularySvc struct{}
 
-func (t *testFormularySvc) SearchMedications(_ context.Context, _ string, _, _ int) (*service.MedicationListResponse, error) {
+func (t *testFormularySvc) SearchMedications(_ context.Context, _, _ string, _, _ int) (*service.MedicationListResponse, error) {
 	return nil, fmt.Errorf("formulary service unavailable: backend not connected")
 }
 func (t *testFormularySvc) GetMedication(_ context.Context, _ string) (*service.MedicationDetail, error) {
 	return nil, fmt.Errorf("formulary service unavailable: backend not connected")
 }
+func (t *testFormularySvc) ListMedicationsByCategory(_ context.Context, _ string, _, _ int) (*service.MedicationListResponse, error) {
+	return nil, fmt.Errorf("formulary service unavailable: backend not connected")
+}
 func (t *testFormularySvc) CheckInteractions(_ context.Context, _ *service.CheckInteractionsRequest) (*service.CheckInteractionsResponse, error) {
 	return nil, fmt.Errorf("formulary service unavailable: backend not connected")
 }
-func (t *testFormularySvc) GetAvailability(_ context.Context, _ string) (*service.AvailabilityResponse, error) {
+func (t *testFormularySvc) CheckAllergyConflicts(_ context.Context, _ *service.CheckAllergyConflictsRequest) (*service.CheckAllergyConflictsResponse, error) {
 	return nil, fmt.Errorf("formulary service unavailable: backend not connected")
 }
-func (t *testFormularySvc) UpdateAvailability(_ context.Context, _ string, _ json.RawMessage) (*service.UpdateAvailabilityResponse, error) {
+func (t *testFormularySvc) ValidateDosing(_ context.Context, _ *service.ValidateDosingRequest) (*service.ValidateDosingResponse, error) {
+	return nil, fmt.Errorf("formulary service unavailable: backend not connected")
+}
+func (t *testFormularySvc) GetDosingOptions(_ context.Context, _ string, _ float64) (*service.GetDosingOptionsResponse, error) {
+	return nil, fmt.Errorf("formulary service unavailable: backend not connected")
+}
+func (t *testFormularySvc) GenerateSchedule(_ context.Context, _ *service.GenerateScheduleRequest) (*service.GenerateScheduleResponse, error) {
+	return nil, fmt.Errorf("formulary service unavailable: backend not connected")
+}
+func (t *testFormularySvc) GetStockLevel(_ context.Context, _, _ string) (*service.StockLevelResponse, error) {
+	return nil, fmt.Errorf("formulary service unavailable: backend not connected")
+}
+func (t *testFormularySvc) UpdateStockLevel(_ context.Context, _ *service.UpdateStockLevelRequest) (*service.UpdateStockLevelResponse, error) {
+	return nil, fmt.Errorf("formulary service unavailable: backend not connected")
+}
+func (t *testFormularySvc) RecordDelivery(_ context.Context, _ *service.FormularyDeliveryRequest) (*service.FormularyDeliveryResponse, error) {
+	return nil, fmt.Errorf("formulary service unavailable: backend not connected")
+}
+func (t *testFormularySvc) GetStockPrediction(_ context.Context, _, _ string) (*service.StockPredictionResponse, error) {
+	return nil, fmt.Errorf("formulary service unavailable: backend not connected")
+}
+func (t *testFormularySvc) GetRedistributionSuggestions(_ context.Context, _ string) (*service.FormularyRedistributionResponse, error) {
+	return nil, fmt.Errorf("formulary service unavailable: backend not connected")
+}
+func (t *testFormularySvc) GetFormularyInfo(_ context.Context) (*service.FormularyInfoResponse, error) {
 	return nil, fmt.Errorf("formulary service unavailable: backend not connected")
 }
 

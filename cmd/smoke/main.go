@@ -28,6 +28,7 @@ import (
 	"github.com/FibrinLab/open-nucleus/internal/service"
 	"github.com/FibrinLab/open-nucleus/pkg/auth"
 	"github.com/FibrinLab/open-nucleus/services/auth/authtest"
+	"github.com/FibrinLab/open-nucleus/services/formulary/formularytest"
 	"github.com/FibrinLab/open-nucleus/services/patient/patienttest"
 	"github.com/FibrinLab/open-nucleus/services/sync/synctest"
 	"google.golang.org/grpc"
@@ -64,7 +65,7 @@ type stack struct {
 	accessToken string
 }
 
-func wireGateway(aEnv *authtest.StandaloneEnv, pEnv *patienttest.Env, sEnv *synctest.Env) (*stack, error) {
+func wireGateway(aEnv *authtest.StandaloneEnv, pEnv *patienttest.Env, sEnv *synctest.Env, fEnv *formularytest.Env) (*stack, error) {
 	gatewayCfg := &config.Config{
 		Auth: config.AuthConfig{
 			JWTIssuer:     "open-nucleus-auth",
@@ -72,11 +73,12 @@ func wireGateway(aEnv *authtest.StandaloneEnv, pEnv *patienttest.Env, sEnv *sync
 			RefreshWindow: 2 * time.Hour,
 		},
 		GRPC: config.GRPCConfig{
-			AuthService:    aEnv.Addr,
-			PatientService: pEnv.Addr,
-			SyncService:    sEnv.Addr,
-			DialTimeout:    5 * time.Second,
-			RequestTimeout: 30 * time.Second,
+			AuthService:      aEnv.Addr,
+			PatientService:   pEnv.Addr,
+			SyncService:      sEnv.Addr,
+			FormularyService: fEnv.Addr,
+			DialTimeout:      5 * time.Second,
+			RequestTimeout:   30 * time.Second,
 		},
 		RateLimit: config.RateLimitConfig{
 			ReadRPM:    200,
@@ -272,8 +274,15 @@ func main() {
 	addCleanup(syncCleanup)
 	fmt.Printf("  Sync service    %s%s%s\n", colorDim, sEnv.Addr, colorReset)
 
+	fEnv, formularyCleanup, err := formularytest.StartStandalone(tmpDir)
+	if err != nil {
+		fatal("start formulary: %v", err)
+	}
+	addCleanup(formularyCleanup)
+	fmt.Printf("  Formulary       %s%s%s\n", colorDim, fEnv.Addr, colorReset)
+
 	// Wire gateway
-	st, err := wireGateway(aEnv, pEnv, sEnv)
+	st, err := wireGateway(aEnv, pEnv, sEnv, fEnv)
 	if err != nil {
 		fatal("wire gateway: %v", err)
 	}
@@ -461,6 +470,39 @@ func main() {
 		{
 			name:   "List conflicts",
 			method: "GET", path: "/api/v1/conflicts/",
+			auth: true, expect: 200,
+		},
+		// --- Formulary steps ---
+		{
+			name:   "Search medications",
+			method: "GET", path: "/api/v1/formulary/medications?q=amox",
+			auth: true, expect: 200,
+		},
+		{
+			name:   "Get medication by code",
+			method: "GET", path: "/api/v1/formulary/medications/J01CA04",
+			auth: true, expect: 200,
+		},
+		{
+			name:   "Check drug interactions",
+			method: "POST", path: "/api/v1/formulary/check-interactions",
+			body: map[string]any{
+				"medication_codes": []string{"L04AX03", "J01EA01"},
+			},
+			auth: true, expect: 200,
+		},
+		{
+			name:   "Get formulary info",
+			method: "GET", path: "/api/v1/formulary/info",
+			auth: true, expect: 200,
+		},
+		{
+			name:   "Check allergy conflicts",
+			method: "POST", path: "/api/v1/formulary/check-allergies",
+			body: map[string]any{
+				"medication_codes": []string{"J01CA04"},
+				"allergy_codes":    []string{"91936005"},
+			},
 			auth: true, expect: 200,
 		},
 		{

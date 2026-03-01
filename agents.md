@@ -1,7 +1,7 @@
 # Open Nucleus — Architectural Memory
 
 > Living document. Updated after every major feature or structural change.
-> Last updated: Phase 4.5 — Smoke Test CLI (2026-03-01)
+> Last updated: Phase 5 — Formulary Service (2026-03-01)
 
 ---
 
@@ -170,7 +170,7 @@ CORS → RequestID → AuditLog → JWTAuth → [per-route: RateLimiter → Requ
 - **sync.go** — `syncAdapter` implements `SyncService` (6 methods) via `pool.Conn("sync")`.
 - **conflict.go** — `conflictAdapter` implements `ConflictService` (4 methods) via `pool.Conn("sync")` (conflicts are a sync sub-domain).
 - **sentinel.go** — `sentinelAdapter` implements `SentinelService` (5 methods) via `pool.Conn("sentinel")`.
-- **formulary.go** — `formularyAdapter` implements `FormularyService` (5 methods) via `pool.Conn("formulary")`.
+- **formulary.go** — `formularyAdapter` implements `FormularyService` (16 methods: drug lookup, interactions, allergy checks, dosing stub, stock management, formulary info) via `pool.Conn("formulary")` with full proto→DTO conversion.
 - **anchor.go** — `anchorAdapter` implements `AnchorService` (4 methods) via `pool.Conn("anchor")`.
 - **supply.go** — `supplyAdapter` implements `SupplyService` (5 methods) via `pool.Conn("sentinel")` (supply intelligence from Sentinel).
 
@@ -183,7 +183,7 @@ CORS → RequestID → AuditLog → JWTAuth → [per-route: RateLimiter → Requ
 - **sync.go** — `SyncHandler` holds `service.SyncService`. Methods: `Status`, `Peers`, `Trigger`, `History`, `ExportBundle`, `ImportBundle`.
 - **conflict.go** — `ConflictHandler` holds `service.ConflictService`. Methods: `List`, `GetByID`, `Resolve`, `Defer`.
 - **sentinel.go** — `SentinelHandler` holds `service.SentinelService`. Methods: `ListAlerts`, `Summary`, `GetAlert`, `Acknowledge`, `Dismiss`.
-- **formulary.go** — `FormularyHandler` holds `service.FormularyService`. Methods: `SearchMedications`, `GetMedication`, `CheckInteractions`, `GetAvailability`, `UpdateAvailability`.
+- **formulary.go** — `FormularyHandler` holds `service.FormularyService`. 16 methods: `SearchMedications`, `GetMedication`, `ListMedicationsByCategory`, `CheckInteractions`, `CheckAllergyConflicts`, `ValidateDosing`, `GetDosingOptions`, `GenerateSchedule`, `GetStockLevel`, `UpdateStockLevel`, `RecordDelivery`, `GetStockPrediction`, `GetRedistributionSuggestions`, `GetFormularyInfo`.
 - **anchor.go** — `AnchorHandler` holds `service.AnchorService`. Methods: `Status`, `Verify`, `History`, `Trigger`.
 - **supply.go** — `SupplyHandler` holds `service.SupplyService`. Methods: `Inventory`, `InventoryItem`, `RecordDelivery`, `Predictions`, `Redistribution`.
 - **stubs.go** — `StubHandler()` returns 501 via `model.NotImplementedError()`. Only used for WebSocket endpoint (Phase 5).
@@ -224,7 +224,7 @@ proto/
 ├── sync/v1/
 │   └── sync.proto       ← SyncService (14 RPCs) + ConflictService (4 RPCs) + NodeSyncService (3 RPCs)
 ├── formulary/v1/
-│   └── formulary.proto  ← FormularyService: 5 RPCs (search, get, interactions, availability)
+│   └── formulary.proto  ← FormularyService: 16 RPCs (drug lookup, interactions, allergy, dosing stub, stock, redistribution, info, health)
 ├── anchor/v1/
 │   └── anchor.proto     ← AnchorService: 4 RPCs (status, verify, history, trigger)
 └── sentinel/v1/
@@ -353,7 +353,7 @@ Standalone Go program that boots all 3 services + gateway in-process, runs 17 RE
 | Sync (status/peers/trigger/cancel/history/bundle/transports/events) | Handler complete, gRPC adapter wired to sync service :50052 | sync.go | sync.go |
 | Conflicts (list/get/resolve/defer) | Handler complete, gRPC adapter wired to sync service :50052 | conflict.go | conflict.go |
 | Alerts (list/get/acknowledge/dismiss/summary) | Handler complete, gRPC adapter stubbed | sentinel.go | sentinel.go |
-| Formulary (medications/interactions/availability) | Handler complete, gRPC adapter stubbed | formulary.go | formulary.go |
+| Formulary (16 RPCs: drug lookup, interactions, allergy, dosing, stock, redistribution, info) | Handler complete, gRPC adapter wired to formulary service :50054 | formulary.go | formulary.go |
 | Anchor/IOTA (status/verify/history/trigger) | Handler complete, gRPC adapter stubbed | anchor.go | anchor.go |
 | Supply chain (inventory/deliveries/predictions/redistribution) | Handler complete, gRPC adapter stubbed | supply.go | supply.go |
 | JSON Schema Validation | 6 hardened schemas (Reference, CodeableConcept, status enums, required fields mirror validate.go) | — | validator.go |
@@ -472,6 +472,48 @@ services/sync/
 - **priority.go** — `ClassifyResource()` → 5-tier sync priority based on resource type and status
 - **merge_test.go** — 19 tests
 
+## Formulary Service (services/formulary/)
+
+Port :50054, 16 RPCs. Drug database, interaction checking, allergy cross-reactivity, stock management. Dosing RPCs return "not configured" cleanly (awaiting open-pharm-dosing integration).
+
+```
+services/formulary/
+├── cmd/main.go                  ← gRPC entrypoint
+├── config.yaml                  ← default config (root: formulary_service)
+├── internal/
+│   ├── config/config.go         ← koanf loader
+│   ├── store/
+│   │   ├── schema.go            ← SQLite: stock_levels + deliveries tables
+│   │   ├── stock.go             ← StockStore CRUD
+│   │   ├── drugdb.go            ← In-memory DrugDB from JSON seed data
+│   │   └── interaction.go       ← InteractionIndex: O(1) pair lookup + class + allergy
+│   ├── dosing/engine.go         ← Engine interface + StubEngine
+│   ├── service/formulary.go     ← Core business logic (search, interactions, stock, predictions)
+│   └── server/
+│       ├── server.go            ← gRPC server + mapError
+│       ├── medication_rpcs.go   ← Search, Get, ListByCategory
+│       ├── interaction_rpcs.go  ← CheckInteractions, CheckAllergyConflicts
+│       ├── dosing_rpcs.go       ← Validate, Options, Schedule (stub)
+│       ├── stock_rpcs.go        ← StockLevel, Update, Delivery, Prediction, Redistribution
+│       ├── formulary_rpcs.go    ← GetFormularyInfo
+│       └── health_rpcs.go       ← Health
+├── formulary_test.go            ← 26 integration tests
+├── formularytest/
+│   ├── setup.go                 ← Start(*testing.T, tmpDir)
+│   └── standalone.go            ← StartStandalone(tmpDir)
+└── testdata/
+    ├── medications/             ← 20 WHO essential medicine JSONs
+    └── interactions/            ← 17 interaction rules + 4 allergy cross-reactivity rules
+```
+
+**Key design decisions:**
+- **DrugDB**: In-memory map loaded from embedded JSON. Case-insensitive substring search.
+- **InteractionIndex**: Canonical key `min(a,b):max(a,b)` for O(1) pair lookup. Separate class-level and allergy indexes.
+- **CheckInteractions**: pair lookup → class lookup → allergy check → stock check → classify overall risk.
+- **Stock prediction**: `daysRemaining = quantity / dailyRate`, risk classification (critical/high/moderate/low).
+- **Redistribution**: surplus (>90 days supply) vs shortage (<14 days), suggests transfers.
+- **Dosing**: `Engine` interface with `StubEngine` that returns `configured=false`. 3 dosing RPCs cleanly signal "not configured" without gRPC errors.
+
 ---
 
 ## Phase Roadmap
@@ -483,5 +525,5 @@ services/sync/
 | 3 — Patient Service | First real backend: `services/patient/` + `pkg/fhir` + `pkg/gitstore` + `pkg/sqliteindex`. 38 gRPC RPCs, full write pipeline, 40 tests passing | COMPLETE |
 | 4 — Auth + Sync Services | Auth Service (15 RPCs, Ed25519 + JWT + RBAC) + Sync Service (~25 RPCs + NodeSyncService, FHIR merge driver, event bus) + `pkg/auth` + `pkg/merge`. 62 tests passing | COMPLETE |
 | 4.5 — E2E Smoke Tests | Full-stack E2E tests (11 cases), JWT claims fix, patient gRPC adapter wiring, test helper packages | COMPLETE |
-| 5 — Formulary + Anchor + Supply | Real gRPC backend integration for formulary, IOTA anchoring, supply chain | Not started |
+| 5 — Formulary + Anchor + Supply | Formulary Service COMPLETE (16 RPCs, 20 WHO essential medicines, 17 interaction rules, 4 allergy cross-reactivity rules, stock management, stub dosing, 26 tests passing). Anchor + Supply: Not started | IN PROGRESS |
 | 6 — WebSocket + Hardening | Real-time events, production config, TLS, metrics | Not started |

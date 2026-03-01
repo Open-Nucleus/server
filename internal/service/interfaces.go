@@ -84,11 +84,29 @@ type SentinelService interface {
 
 // FormularyService defines the interface for formulary operations.
 type FormularyService interface {
-	SearchMedications(ctx context.Context, query string, page, perPage int) (*MedicationListResponse, error)
+	// Drug lookup
+	SearchMedications(ctx context.Context, query, category string, page, perPage int) (*MedicationListResponse, error)
 	GetMedication(ctx context.Context, code string) (*MedicationDetail, error)
+	ListMedicationsByCategory(ctx context.Context, category string, page, perPage int) (*MedicationListResponse, error)
+
+	// Safety checks
 	CheckInteractions(ctx context.Context, req *CheckInteractionsRequest) (*CheckInteractionsResponse, error)
-	GetAvailability(ctx context.Context, siteID string) (*AvailabilityResponse, error)
-	UpdateAvailability(ctx context.Context, siteID string, body json.RawMessage) (*UpdateAvailabilityResponse, error)
+	CheckAllergyConflicts(ctx context.Context, req *CheckAllergyConflictsRequest) (*CheckAllergyConflictsResponse, error)
+
+	// Dosing (stub — depends on open-pharm-dosing)
+	ValidateDosing(ctx context.Context, req *ValidateDosingRequest) (*ValidateDosingResponse, error)
+	GetDosingOptions(ctx context.Context, medicationCode string, patientWeightKg float64) (*GetDosingOptionsResponse, error)
+	GenerateSchedule(ctx context.Context, req *GenerateScheduleRequest) (*GenerateScheduleResponse, error)
+
+	// Stock management
+	GetStockLevel(ctx context.Context, siteID, medicationCode string) (*StockLevelResponse, error)
+	UpdateStockLevel(ctx context.Context, req *UpdateStockLevelRequest) (*UpdateStockLevelResponse, error)
+	RecordDelivery(ctx context.Context, req *FormularyDeliveryRequest) (*FormularyDeliveryResponse, error)
+	GetStockPrediction(ctx context.Context, siteID, medicationCode string) (*StockPredictionResponse, error)
+	GetRedistributionSuggestions(ctx context.Context, medicationCode string) (*FormularyRedistributionResponse, error)
+
+	// Formulary metadata
+	GetFormularyInfo(ctx context.Context) (*FormularyInfoResponse, error)
 }
 
 // AnchorService defines the interface for IOTA anchor operations.
@@ -416,47 +434,203 @@ type MedicationListResponse struct {
 }
 
 type MedicationDetail struct {
-	Code      string `json:"code"`
-	Display   string `json:"display"`
-	Form      string `json:"form"`
-	Route     string `json:"route"`
-	Category  string `json:"category"`
-	Available bool   `json:"available"`
+	Code              string   `json:"code"`
+	Display           string   `json:"display"`
+	Form              string   `json:"form"`
+	Route             string   `json:"route"`
+	Category          string   `json:"category"`
+	Available         bool     `json:"available"`
+	WHOEssential      bool     `json:"who_essential"`
+	TherapeuticClass  string   `json:"therapeutic_class"`
+	CommonFrequencies []string `json:"common_frequencies,omitempty"`
+	Strength          string   `json:"strength,omitempty"`
+	Unit              string   `json:"unit,omitempty"`
 }
 
 type CheckInteractionsRequest struct {
 	MedicationCodes []string `json:"medication_codes"`
 	PatientID       string   `json:"patient_id"`
+	AllergyCodes    []string `json:"allergy_codes,omitempty"`
+	SiteID          string   `json:"site_id,omitempty"`
 }
 
 type CheckInteractionsResponse struct {
-	Interactions []InteractionDetail `json:"interactions"`
+	Interactions   []InteractionDetail `json:"interactions"`
+	AllergyAlerts  []AllergyAlertDTO   `json:"allergy_alerts,omitempty"`
+	DosingWarnings []DosingWarningDTO  `json:"dosing_warnings,omitempty"`
+	StockSummary   *StockSummaryDTO    `json:"stock_summary,omitempty"`
+	OverallRisk    string              `json:"overall_risk"`
 }
 
 type InteractionDetail struct {
-	Severity    string `json:"severity"`
-	Type        string `json:"type"`
-	Description string `json:"description"`
-	MedicationA string `json:"medication_a"`
-	MedicationB string `json:"medication_b"`
-	Source      string `json:"source"`
+	Severity       string `json:"severity"`
+	Type           string `json:"type"`
+	Description    string `json:"description"`
+	MedicationA    string `json:"medication_a"`
+	MedicationB    string `json:"medication_b"`
+	Source         string `json:"source"`
+	ClinicalEffect  string `json:"clinical_effect,omitempty"`
+	Recommendation string `json:"recommendation,omitempty"`
 }
 
-type AvailabilityResponse struct {
-	Items  []AvailabilityItem `json:"items"`
-	SiteID string             `json:"site_id"`
+type AllergyAlertDTO struct {
+	Severity             string `json:"severity"`
+	AllergyCode          string `json:"allergy_code"`
+	MedicationCode       string `json:"medication_code"`
+	Description          string `json:"description"`
+	CrossReactivityClass string `json:"cross_reactivity_class,omitempty"`
 }
 
-type AvailabilityItem struct {
+type DosingWarningDTO struct {
 	MedicationCode string `json:"medication_code"`
-	Display        string `json:"display"`
+	Warning        string `json:"warning"`
+	Severity       string `json:"severity"`
+}
+
+type StockSummaryDTO struct {
+	Items []StockItemDTO `json:"items"`
+}
+
+type StockItemDTO struct {
+	MedicationCode string `json:"medication_code"`
+	Available      bool   `json:"available"`
 	Quantity       int    `json:"quantity"`
 	Unit           string `json:"unit"`
-	LastUpdated    string `json:"last_updated"`
 }
 
-type UpdateAvailabilityResponse struct {
-	UpdatedCount int `json:"updated_count"`
+type CheckAllergyConflictsRequest struct {
+	MedicationCodes []string `json:"medication_codes"`
+	AllergyCodes    []string `json:"allergy_codes"`
+}
+
+type CheckAllergyConflictsResponse struct {
+	Alerts []AllergyAlertDTO `json:"alerts"`
+	Safe   bool              `json:"safe"`
+}
+
+type ValidateDosingRequest struct {
+	MedicationCode  string  `json:"medication_code"`
+	DoseValue       float64 `json:"dose_value"`
+	DoseUnit        string  `json:"dose_unit"`
+	Frequency       string  `json:"frequency"`
+	Route           string  `json:"route"`
+	PatientWeightKg float64 `json:"patient_weight_kg"`
+}
+
+type ValidateDosingResponse struct {
+	Valid      bool   `json:"valid"`
+	Message    string `json:"message"`
+	Configured bool   `json:"configured"`
+}
+
+type GetDosingOptionsResponse struct {
+	Options    []DosingOptionDTO `json:"options,omitempty"`
+	Configured bool              `json:"configured"`
+	Message    string            `json:"message"`
+}
+
+type DosingOptionDTO struct {
+	DoseValue  float64 `json:"dose_value"`
+	DoseUnit   string  `json:"dose_unit"`
+	Frequency  string  `json:"frequency"`
+	Route      string  `json:"route"`
+	Indication string  `json:"indication"`
+}
+
+type GenerateScheduleRequest struct {
+	MedicationCode string  `json:"medication_code"`
+	DoseValue      float64 `json:"dose_value"`
+	DoseUnit       string  `json:"dose_unit"`
+	Frequency      string  `json:"frequency"`
+	StartTime      string  `json:"start_time"`
+	DurationDays   int     `json:"duration_days"`
+}
+
+type GenerateScheduleResponse struct {
+	Entries    []ScheduleEntryDTO `json:"entries,omitempty"`
+	Configured bool               `json:"configured"`
+	Message    string             `json:"message"`
+}
+
+type ScheduleEntryDTO struct {
+	Time      string  `json:"time"`
+	DoseValue float64 `json:"dose_value"`
+	DoseUnit  string  `json:"dose_unit"`
+	Note      string  `json:"note,omitempty"`
+}
+
+type StockLevelResponse struct {
+	SiteID               string  `json:"site_id"`
+	MedicationCode       string  `json:"medication_code"`
+	Quantity             int     `json:"quantity"`
+	Unit                 string  `json:"unit"`
+	LastUpdated          string  `json:"last_updated"`
+	EarliestExpiry       string  `json:"earliest_expiry,omitempty"`
+	DailyConsumptionRate float64 `json:"daily_consumption_rate"`
+}
+
+type UpdateStockLevelRequest struct {
+	SiteID         string `json:"site_id"`
+	MedicationCode string `json:"medication_code"`
+	Quantity       int    `json:"quantity"`
+	Unit           string `json:"unit"`
+	Reason         string `json:"reason"`
+	UpdatedBy      string `json:"updated_by"`
+}
+
+type UpdateStockLevelResponse struct {
+	Success     bool   `json:"success"`
+	LastUpdated string `json:"last_updated"`
+}
+
+type FormularyDeliveryRequest struct {
+	SiteID       string                `json:"site_id"`
+	Items        []FormularyDeliveryItem `json:"items"`
+	ReceivedBy   string                `json:"received_by"`
+	DeliveryDate string                `json:"delivery_date"`
+}
+
+type FormularyDeliveryItem struct {
+	MedicationCode string `json:"medication_code"`
+	Quantity       int    `json:"quantity"`
+	Unit           string `json:"unit"`
+	BatchNumber    string `json:"batch_number"`
+	ExpiryDate     string `json:"expiry_date"`
+}
+
+type FormularyDeliveryResponse struct {
+	DeliveryID    string `json:"delivery_id"`
+	ItemsRecorded int    `json:"items_recorded"`
+}
+
+type StockPredictionResponse struct {
+	DaysRemaining     int    `json:"days_remaining"`
+	RiskLevel         string `json:"risk_level"`
+	EarliestExpiry    string `json:"earliest_expiry,omitempty"`
+	ExpiringQuantity  int    `json:"expiring_quantity"`
+	RecommendedAction string `json:"recommended_action"`
+}
+
+type FormularyRedistributionResponse struct {
+	Suggestions []FormularyRedistributionSuggestion `json:"suggestions"`
+}
+
+type FormularyRedistributionSuggestion struct {
+	FromSite          string `json:"from_site"`
+	ToSite            string `json:"to_site"`
+	SuggestedQuantity int    `json:"suggested_quantity"`
+	Rationale         string `json:"rationale"`
+	FromSiteQuantity  int    `json:"from_site_quantity"`
+	ToSiteQuantity    int    `json:"to_site_quantity"`
+}
+
+type FormularyInfoResponse struct {
+	Version              string   `json:"version"`
+	TotalMedications     int      `json:"total_medications"`
+	TotalInteractions    int      `json:"total_interactions"`
+	LastUpdated          string   `json:"last_updated"`
+	Categories           []string `json:"categories"`
+	DosingEngineAvailable bool    `json:"dosing_engine_available"`
 }
 
 // --- Anchor DTOs ---
