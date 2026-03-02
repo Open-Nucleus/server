@@ -250,6 +250,36 @@ func (t *testAnchorSvc) GetHistory(_ context.Context, _, _ int) (*service.Anchor
 func (t *testAnchorSvc) TriggerAnchor(_ context.Context) (*service.AnchorTriggerResponse, error) {
 	return nil, fmt.Errorf("anchor service unavailable: backend not connected")
 }
+func (t *testAnchorSvc) GetNodeDID(_ context.Context) (*service.DIDDocumentResponse, error) {
+	return nil, fmt.Errorf("anchor service unavailable: backend not connected")
+}
+func (t *testAnchorSvc) GetDeviceDID(_ context.Context, _ string) (*service.DIDDocumentResponse, error) {
+	return nil, fmt.Errorf("anchor service unavailable: backend not connected")
+}
+func (t *testAnchorSvc) ResolveDID(_ context.Context, _ string) (*service.DIDDocumentResponse, error) {
+	return nil, fmt.Errorf("anchor service unavailable: backend not connected")
+}
+func (t *testAnchorSvc) IssueDataIntegrityCredential(_ context.Context, _ *service.IssueCredentialRequest) (*service.CredentialResponse, error) {
+	return nil, fmt.Errorf("anchor service unavailable: backend not connected")
+}
+func (t *testAnchorSvc) VerifyCredential(_ context.Context, _ string) (*service.CredentialVerificationResponse, error) {
+	return nil, fmt.Errorf("anchor service unavailable: backend not connected")
+}
+func (t *testAnchorSvc) ListCredentials(_ context.Context, _ string, _, _ int) (*service.CredentialListResponse, error) {
+	return nil, fmt.Errorf("anchor service unavailable: backend not connected")
+}
+func (t *testAnchorSvc) ListBackends(_ context.Context) (*service.BackendListResponse, error) {
+	return nil, fmt.Errorf("anchor service unavailable: backend not connected")
+}
+func (t *testAnchorSvc) GetBackendStatus(_ context.Context, _ string) (*service.BackendStatusResponse, error) {
+	return nil, fmt.Errorf("anchor service unavailable: backend not connected")
+}
+func (t *testAnchorSvc) GetQueueStatus(_ context.Context) (*service.QueueStatusResponse, error) {
+	return nil, fmt.Errorf("anchor service unavailable: backend not connected")
+}
+func (t *testAnchorSvc) Health(_ context.Context) (*service.AnchorHealthResponse, error) {
+	return nil, fmt.Errorf("anchor service unavailable: backend not connected")
+}
 
 type testSupplySvc struct{}
 

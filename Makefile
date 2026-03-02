@@ -1,4 +1,4 @@
-.PHONY: build build-all build-patient build-auth build-sync build-formulary run test test-patient test-auth test-sync test-formulary test-e2e test-all smoke proto-gen lint clean
+.PHONY: build build-all build-patient build-auth build-sync build-formulary build-anchor run test test-patient test-auth test-sync test-formulary test-anchor test-e2e test-all smoke proto-gen lint clean
 
 BINARY := gateway
 BUILD_DIR := bin
@@ -6,7 +6,7 @@ BUILD_DIR := bin
 build:
 	go build -o $(BUILD_DIR)/$(BINARY) ./cmd/gateway
 
-build-all: build build-patient build-auth build-sync build-formulary
+build-all: build build-patient build-auth build-sync build-formulary build-anchor
 
 build-patient:
 	go build -o $(BUILD_DIR)/patient-service ./services/patient/cmd
@@ -19,6 +19,9 @@ build-sync:
 
 build-formulary:
 	go build -o $(BUILD_DIR)/formulary-service ./services/formulary/cmd
+
+build-anchor:
+	go build -o $(BUILD_DIR)/anchor-service ./services/anchor/cmd
 
 run: build
 	./$(BUILD_DIR)/$(BINARY)
@@ -37,6 +40,9 @@ test-sync:
 
 test-formulary:
 	go test -v -race ./services/formulary/...
+
+test-anchor:
+	go test -v -race ./services/anchor/... ./pkg/openanchor/...
 
 test-e2e:
 	go test -v -race -count=1 ./test/e2e/...

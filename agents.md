@@ -1,7 +1,7 @@
 # Open Nucleus — Architectural Memory
 
 > Living document. Updated after every major feature or structural change.
-> Last updated: Phase 5 — Formulary Service (2026-03-01)
+> Last updated: Phase 5 — Anchor Service (2026-03-02)
 
 ---
 
@@ -171,7 +171,7 @@ CORS → RequestID → AuditLog → JWTAuth → [per-route: RateLimiter → Requ
 - **conflict.go** — `conflictAdapter` implements `ConflictService` (4 methods) via `pool.Conn("sync")` (conflicts are a sync sub-domain).
 - **sentinel.go** — `sentinelAdapter` implements `SentinelService` (5 methods) via `pool.Conn("sentinel")`.
 - **formulary.go** — `formularyAdapter` implements `FormularyService` (16 methods: drug lookup, interactions, allergy checks, dosing stub, stock management, formulary info) via `pool.Conn("formulary")` with full proto→DTO conversion.
-- **anchor.go** — `anchorAdapter` implements `AnchorService` (4 methods) via `pool.Conn("anchor")`.
+- **anchor.go** — `anchorAdapter` implements `AnchorService` (14 methods: anchor status/trigger/verify/history, DID node/device/resolve, credentials issue/verify/list, backends list/status, queue status, health) via `pool.Conn("anchor")` with full proto→DTO conversion.
 - **supply.go** — `supplyAdapter` implements `SupplyService` (5 methods) via `pool.Conn("sentinel")` (supply intelligence from Sentinel).
 
 **Key pattern:** Handlers never touch gRPC directly. The service layer translates between HTTP DTOs and gRPC request/response types. This is where multi-service orchestration will live (e.g., MedRequest → Formulary check).
@@ -184,7 +184,7 @@ CORS → RequestID → AuditLog → JWTAuth → [per-route: RateLimiter → Requ
 - **conflict.go** — `ConflictHandler` holds `service.ConflictService`. Methods: `List`, `GetByID`, `Resolve`, `Defer`.
 - **sentinel.go** — `SentinelHandler` holds `service.SentinelService`. Methods: `ListAlerts`, `Summary`, `GetAlert`, `Acknowledge`, `Dismiss`.
 - **formulary.go** — `FormularyHandler` holds `service.FormularyService`. 16 methods: `SearchMedications`, `GetMedication`, `ListMedicationsByCategory`, `CheckInteractions`, `CheckAllergyConflicts`, `ValidateDosing`, `GetDosingOptions`, `GenerateSchedule`, `GetStockLevel`, `UpdateStockLevel`, `RecordDelivery`, `GetStockPrediction`, `GetRedistributionSuggestions`, `GetFormularyInfo`.
-- **anchor.go** — `AnchorHandler` holds `service.AnchorService`. Methods: `Status`, `Verify`, `History`, `Trigger`.
+- **anchor.go** — `AnchorHandler` holds `service.AnchorService`. 13 methods: `Status`, `Verify`, `History`, `Trigger`, `NodeDID`, `DeviceDID`, `ResolveDID`, `IssueCredential`, `VerifyCredentialHandler`, `ListCredentials`, `ListBackends`, `BackendStatus`, `QueueStatus`.
 - **supply.go** — `SupplyHandler` holds `service.SupplyService`. Methods: `Inventory`, `InventoryItem`, `RecordDelivery`, `Predictions`, `Redistribution`.
 - **stubs.go** — `StubHandler()` returns 501 via `model.NotImplementedError()`. Only used for WebSocket endpoint (Phase 5).
 
@@ -226,7 +226,7 @@ proto/
 ├── formulary/v1/
 │   └── formulary.proto  ← FormularyService: 16 RPCs (drug lookup, interactions, allergy, dosing stub, stock, redistribution, info, health)
 ├── anchor/v1/
-│   └── anchor.proto     ← AnchorService: 4 RPCs (status, verify, history, trigger)
+│   └── anchor.proto     ← AnchorService: 14 RPCs (anchoring, DID, credentials, backend, health)
 └── sentinel/v1/
     └── sentinel.proto   ← SentinelService: 5 alert RPCs + 5 supply chain RPCs
 ```
@@ -333,7 +333,7 @@ Exported test helpers that wrap internal service setup for E2E tests (Go's `inte
 Each package also exports a `StartStandalone()` function that returns `(env, cleanup, error)` instead of requiring `*testing.T`. Used by the smoke test CLI.
 
 ### Interactive Smoke Test CLI (`cmd/smoke/`)
-Standalone Go program that boots all 3 services + gateway in-process, runs 17 REST steps with colored PASS/FAIL output. No external deps, no `*testing.T` — just `go run ./cmd/smoke` or `make smoke`. Exercises: health, auth enforcement, full CRUD (patient + 5 clinical resources), timeline, history, sync, conflicts, schema rejection, and delete. Exit code 0/1 for CI.
+Standalone Go program that boots all 5 services (Auth, Patient, Sync, Formulary, Anchor) + gateway in-process, runs 27 REST steps with colored PASS/FAIL output. No external deps, no `*testing.T` — just `go run ./cmd/smoke` or `make smoke`. Exercises: health, auth enforcement, full CRUD (patient + 5 clinical resources), timeline, history, sync, conflicts, formulary (search, interactions, allergy), anchor (status, trigger, DID, backends, queue), schema rejection, and delete. Exit code 0/1 for CI.
 
 ---
 
@@ -354,7 +354,7 @@ Standalone Go program that boots all 3 services + gateway in-process, runs 17 RE
 | Conflicts (list/get/resolve/defer) | Handler complete, gRPC adapter wired to sync service :50052 | conflict.go | conflict.go |
 | Alerts (list/get/acknowledge/dismiss/summary) | Handler complete, gRPC adapter stubbed | sentinel.go | sentinel.go |
 | Formulary (16 RPCs: drug lookup, interactions, allergy, dosing, stock, redistribution, info) | Handler complete, gRPC adapter wired to formulary service :50054 | formulary.go | formulary.go |
-| Anchor/IOTA (status/verify/history/trigger) | Handler complete, gRPC adapter stubbed | anchor.go | anchor.go |
+| Anchor (14 RPCs: anchoring, DID, credentials, backend, queue, health) | Handler complete, gRPC adapter wired to anchor service :50055 | anchor.go | anchor.go |
 | Supply chain (inventory/deliveries/predictions/redistribution) | Handler complete, gRPC adapter stubbed | supply.go | supply.go |
 | JSON Schema Validation | 6 hardened schemas (Reference, CodeableConcept, status enums, required fields mirror validate.go) | — | validator.go |
 | WebSocket (/ws) | 501 stub | stubs.go | — |
@@ -514,6 +514,57 @@ services/formulary/
 - **Redistribution**: surplus (>90 days supply) vs shortage (<14 days), suggests transfers.
 - **Dosing**: `Engine` interface with `StubEngine` that returns `configured=false`. 3 dosing RPCs cleanly signal "not configured" without gRPC errors.
 
+## pkg/openanchor — Anchor Cryptography Library
+
+Interfaces + local implementations for Merkle trees, DID:key, and Verifiable Credentials. No external dependencies beyond Go stdlib. Designed to be replaced by the real `open-anchor` library later.
+
+- **interfaces.go** — `AnchorEngine`, `IdentityEngine`, `MerkleTree` interfaces + all types (`DIDDocument`, `VerifiableCredential`, `CredentialProof`, `AnchorReceipt`, `CredentialClaims`, `VerificationResult`, `AnchorResult`, `FileEntry`) + sentinel errors
+- **merkle.go** — SHA-256 Merkle tree: sort by path, `H(path||fileHash)` per leaf, binary tree bottom-up, duplicate odd leaf
+- **base58.go** — Base58btc encoder/decoder (Bitcoin alphabet, ~60 lines)
+- **didkey.go** — `did:key` from Ed25519: multicodec prefix `0xed01` + pubkey → base58btc → `did:key:z...`. `ResolveDIDKey()` parses back to `DIDDocument`
+- **credential.go** — `IssueCredentialLocal()` — build VC, sign canonicalized payload with Ed25519. `VerifyCredentialLocal()` — resolve issuer DID, verify signature
+- **stub_backend.go** — `StubBackend`: `Anchor()` returns `ErrBackendNotConfigured`, `Available()` returns false, `Name()` returns "none"
+- **local_identity.go** — `LocalIdentityEngine`: delegates to DIDKeyFromEd25519, ResolveDIDKey, IssueCredentialLocal, VerifyCredentialLocal
+- **openanchor_test.go** — 13 unit tests (Merkle, base58, DID:key, VC, stub backend)
+
+## Anchor Service (services/anchor/)
+
+Port :50055, 14 RPCs. Merkle anchoring, DID management, Verifiable Credentials, queue management. Blockchain backend uses StubBackend (anchors queued in SQLite but never submitted).
+
+```
+services/anchor/
+├── cmd/main.go                          ← gRPC entrypoint
+├── config.yaml                          ← default config (root: anchor_service)
+├── internal/
+│   ├── config/config.go                 ← koanf loader
+│   ├── store/
+│   │   ├── schema.go                    ← SQLite: anchor_queue table + indexes
+│   │   ├── queue.go                     ← AnchorQueue: Enqueue, ListPending, CountPending, CountTotal
+│   │   ├── anchors.go                   ← Git-backed anchor record CRUD (.nucleus/anchors/)
+│   │   ├── credentials.go              ← Git-backed credential CRUD (.nucleus/credentials/)
+│   │   └── dids.go                      ← Git-backed DID document CRUD (.nucleus/dids/)
+│   ├── service/anchor.go               ← Core business logic (14 methods)
+│   └── server/
+│       ├── server.go                    ← gRPC server struct + mapError
+│       ├── anchor_rpcs.go              ← GetStatus, TriggerAnchor, Verify, GetHistory
+│       ├── did_rpcs.go                 ← GetNodeDID, GetDeviceDID, ResolveDID
+│       ├── credential_rpcs.go          ← IssueDataIntegrityCredential, VerifyCredential, ListCredentials
+│       ├── backend_rpcs.go             ← ListBackends, GetBackendStatus, GetQueueStatus
+│       └── health_rpcs.go             ← Health
+├── anchor_test.go                       ← 19 integration tests
+├── anchortest/
+│   ├── setup.go                         ← Start(*testing.T, tmpDir)
+│   └── standalone.go                    ← StartStandalone(tmpDir)
+```
+
+**Key design decisions:**
+- **Crypto in `pkg/openanchor/`**: Clean swap to real open-anchor later; service codes to interfaces.
+- **did:key only** (no ledger DIDs in V1): Fully offline, deterministic from Ed25519.
+- **SQLite for queue, Git for records/credentials/DIDs**: Queue is transient; records are source of truth (syncs via Git).
+- **StubBackend**: Returns `ErrBackendNotConfigured`. Queue fills, never drains. Same pattern as formulary dosing stub.
+- **Merkle tree excludes `.nucleus/`**: Only clinical data files are included in the tree; internal metadata is excluded.
+- **TriggerAnchor workflow**: TreeWalk → SHA-256 each file → Merkle root → skip if unchanged (unless manual) → attempt engine.Anchor() → enqueue on failure → save record in Git.
+
 ---
 
 ## Phase Roadmap
@@ -525,5 +576,5 @@ services/formulary/
 | 3 — Patient Service | First real backend: `services/patient/` + `pkg/fhir` + `pkg/gitstore` + `pkg/sqliteindex`. 38 gRPC RPCs, full write pipeline, 40 tests passing | COMPLETE |
 | 4 — Auth + Sync Services | Auth Service (15 RPCs, Ed25519 + JWT + RBAC) + Sync Service (~25 RPCs + NodeSyncService, FHIR merge driver, event bus) + `pkg/auth` + `pkg/merge`. 62 tests passing | COMPLETE |
 | 4.5 — E2E Smoke Tests | Full-stack E2E tests (11 cases), JWT claims fix, patient gRPC adapter wiring, test helper packages | COMPLETE |
-| 5 — Formulary + Anchor + Supply | Formulary Service COMPLETE (16 RPCs, 20 WHO essential medicines, 17 interaction rules, 4 allergy cross-reactivity rules, stock management, stub dosing, 26 tests passing). Anchor + Supply: Not started | IN PROGRESS |
+| 5 — Formulary + Anchor + Supply | Formulary Service COMPLETE (16 RPCs, 26 tests). Anchor Service COMPLETE (14 RPCs, 19 tests, Merkle tree, did:key, Verifiable Credentials). Supply: Not started | IN PROGRESS |
 | 6 — WebSocket + Hardening | Real-time events, production config, TLS, metrics | Not started |

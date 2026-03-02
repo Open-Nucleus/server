@@ -1,0 +1,11 @@
+anchor_service:
+  grpc_port: 50055
+  sqlite:
+    db_path: /var/lib/open-nucleus/anchor-queue.db
+  git:
+    repo_path: /var/lib/open-nucleus/data
+    author_name: open-nucleus-anchor
+    author_email: anchor@open-nucleus.local
+  logging:
+    level: info
+    format: json

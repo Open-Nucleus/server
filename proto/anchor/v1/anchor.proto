@@ -7,19 +7,58 @@ option go_package = "github.com/FibrinLab/open-nucleus/gen/proto/anchor/v1;ancho
 import "common/v1/metadata.proto";
 
 service AnchorService {
+  // Anchoring
   rpc GetStatus(GetAnchorStatusRequest) returns (GetAnchorStatusResponse);
+  rpc TriggerAnchor(TriggerAnchorRequest) returns (TriggerAnchorResponse);
   rpc VerifyAnchor(VerifyAnchorRequest) returns (VerifyAnchorResponse);
   rpc GetHistory(GetAnchorHistoryRequest) returns (GetAnchorHistoryResponse);
-  rpc TriggerAnchor(TriggerAnchorRequest) returns (TriggerAnchorResponse);
+
+  // DID
+  rpc GetNodeDID(GetNodeDIDRequest) returns (GetNodeDIDResponse);
+  rpc GetDeviceDID(GetDeviceDIDRequest) returns (GetDeviceDIDResponse);
+  rpc ResolveDID(ResolveDIDRequest) returns (ResolveDIDResponse);
+
+  // Credentials
+  rpc IssueDataIntegrityCredential(IssueCredentialRequest) returns (IssueCredentialResponse);
+  rpc VerifyCredential(VerifyCredentialRequest) returns (VerifyCredentialResponse);
+  rpc ListCredentials(ListCredentialsRequest) returns (ListCredentialsResponse);
+
+  // Backend
+  rpc ListBackends(ListBackendsRequest) returns (ListBackendsResponse);
+  rpc GetBackendStatus(GetBackendStatusRequest) returns (GetBackendStatusResponse);
+  rpc GetQueueStatus(GetQueueStatusRequest) returns (GetQueueStatusResponse);
+
+  // Health
+  rpc Health(HealthRequest) returns (HealthResponse);
 }
+
+// --- Anchoring ---
 
 message GetAnchorStatusRequest {}
 
 message GetAnchorStatusResponse {
   string state = 1;
-  string last_anchor = 2;
-  string tangle_node = 3;
-  int32 pending_commits = 4;
+  string last_anchor_id = 2;
+  string last_anchor_time = 3;
+  string merkle_root = 4;
+  string node_did = 5;
+  int32 queue_depth = 6;
+  string backend = 7;
+  int32 pending_commits = 8;
+}
+
+message TriggerAnchorRequest {
+  bool manual = 1;
+}
+
+message TriggerAnchorResponse {
+  string anchor_id = 1;
+  string state = 2;
+  string merkle_root = 3;
+  string git_head = 4;
+  bool skipped = 5;
+  string message = 6;
+  common.v1.GitMetadata git = 7;
 }
 
 message VerifyAnchorRequest {
@@ -29,9 +68,10 @@ message VerifyAnchorRequest {
 message VerifyAnchorResponse {
   bool verified = 1;
   string anchor_id = 2;
-  string tangle_message_id = 3;
+  string merkle_root = 3;
   string anchored_at = 4;
   string commit_hash = 5;
+  string state = 6;
 }
 
 message GetAnchorHistoryRequest {
@@ -39,22 +79,162 @@ message GetAnchorHistoryRequest {
 }
 
 message GetAnchorHistoryResponse {
-  repeated AnchorEvent events = 1;
+  repeated AnchorRecord records = 1;
   common.v1.PaginationResponse pagination = 2;
 }
 
-message AnchorEvent {
+message AnchorRecord {
   string anchor_id = 1;
-  string commit_hash = 2;
-  string tangle_message_id = 3;
-  string timestamp = 4;
+  string merkle_root = 2;
+  string git_head = 3;
+  string state = 4;
+  string timestamp = 5;
+  string backend = 6;
+  string tx_id = 7;
+  string node_did = 8;
+}
+
+// --- DID ---
+
+message GetNodeDIDRequest {}
+
+message GetNodeDIDResponse {
+  DIDDocument document = 1;
+}
+
+message GetDeviceDIDRequest {
+  string device_id = 1;
+}
+
+message GetDeviceDIDResponse {
+  DIDDocument document = 1;
+}
+
+message ResolveDIDRequest {
+  string did = 1;
+}
+
+message ResolveDIDResponse {
+  DIDDocument document = 1;
+}
+
+message DIDDocument {
+  string id = 1;
+  repeated string context = 2;
+  repeated VerificationMethod verification_method = 3;
+  repeated string authentication = 4;
+  repeated string assertion_method = 5;
+  string created = 6;
+}
+
+message VerificationMethod {
+  string id = 1;
+  string type = 2;
+  string controller = 3;
+  string public_key_multibase = 4;
+}
+
+// --- Credentials ---
+
+message IssueCredentialRequest {
+  string anchor_id = 1;
+  repeated string types = 2;
+  map<string, string> additional_claims = 3;
+}
+
+message IssueCredentialResponse {
+  VerifiableCredential credential = 1;
+}
+
+message VerifyCredentialRequest {
+  string credential_json = 1;
+}
+
+message VerifyCredentialResponse {
+  bool valid = 1;
+  string issuer = 2;
+  string message = 3;
+}
+
+message ListCredentialsRequest {
+  string type = 1;
+  common.v1.PaginationRequest pagination = 2;
+}
+
+message ListCredentialsResponse {
+  repeated VerifiableCredential credentials = 1;
+  common.v1.PaginationResponse pagination = 2;
+}
+
+message VerifiableCredential {
+  string id = 1;
+  repeated string context = 2;
+  repeated string type = 3;
+  string issuer = 4;
+  string issuance_date = 5;
+  string expiration_date = 6;
+  string credential_subject_json = 7;
+  CredentialProof proof = 8;
+}
+
+message CredentialProof {
+  string type = 1;
+  string created = 2;
+  string verification_method = 3;
+  string proof_purpose = 4;
+  string proof_value = 5;
+}
+
+// --- Backend ---
+
+message ListBackendsRequest {}
+
+message ListBackendsResponse {
+  repeated BackendInfo backends = 1;
+}
+
+message BackendInfo {
+  string name = 1;
+  bool available = 2;
+  string description = 3;
+}
+
+message GetBackendStatusRequest {
+  string name = 1;
+}
+
+message GetBackendStatusResponse {
+  string name = 1;
+  bool available = 2;
+  string description = 3;
+  int32 anchored_count = 4;
+  string last_anchor_time = 5;
+}
+
+message GetQueueStatusRequest {}
+
+message GetQueueStatusResponse {
+  int32 pending = 1;
+  int32 total_processed = 2;
+  repeated QueueEntry entries = 3;
+}
+
+message QueueEntry {
+  string anchor_id = 1;
+  string merkle_root = 2;
+  string git_head = 3;
+  string enqueued_at = 4;
   string state = 5;
 }
 
-message TriggerAnchorRequest {}
+// --- Health ---
 
-message TriggerAnchorResponse {
-  string anchor_id = 1;
-  string state = 2;
-  common.v1.GitMetadata git = 3;
+message HealthRequest {}
+
+message HealthResponse {
+  string status = 1;
+  string node_did = 2;
+  string backend = 3;
+  int32 anchor_count = 4;
+  int32 queue_depth = 5;
 }

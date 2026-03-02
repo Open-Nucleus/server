@@ -384,6 +384,7 @@ func New(cfg Config) http.Handler {
 
 			// Anchor/IOTA endpoints
 			r.Route("/anchor", func(r chi.Router) {
+				// Anchoring
 				r.With(
 					cfg.RateLimiter.Middleware(middleware.CategoryRead),
 					middleware.RequirePermission(model.PermAnchorRead),
@@ -403,6 +404,54 @@ func New(cfg Config) http.Handler {
 					cfg.RateLimiter.Middleware(middleware.CategoryWrite),
 					middleware.RequirePermission(model.PermAnchorTrigger),
 				).Post("/trigger", cfg.AnchorHandler.Trigger)
+
+				// DID
+				r.With(
+					cfg.RateLimiter.Middleware(middleware.CategoryRead),
+					middleware.RequirePermission(model.PermAnchorRead),
+				).Get("/did/node", cfg.AnchorHandler.NodeDID)
+
+				r.With(
+					cfg.RateLimiter.Middleware(middleware.CategoryRead),
+					middleware.RequirePermission(model.PermAnchorRead),
+				).Get("/did/device/{device_id}", cfg.AnchorHandler.DeviceDID)
+
+				r.With(
+					cfg.RateLimiter.Middleware(middleware.CategoryRead),
+					middleware.RequirePermission(model.PermAnchorRead),
+				).Get("/did/resolve", cfg.AnchorHandler.ResolveDID)
+
+				// Credentials
+				r.With(
+					cfg.RateLimiter.Middleware(middleware.CategoryWrite),
+					middleware.RequirePermission(model.PermAnchorTrigger),
+				).Post("/credentials/issue", cfg.AnchorHandler.IssueCredential)
+
+				r.With(
+					cfg.RateLimiter.Middleware(middleware.CategoryWrite),
+					middleware.RequirePermission(model.PermAnchorRead),
+				).Post("/credentials/verify", cfg.AnchorHandler.VerifyCredentialHandler)
+
+				r.With(
+					cfg.RateLimiter.Middleware(middleware.CategoryRead),
+					middleware.RequirePermission(model.PermAnchorRead),
+				).Get("/credentials", cfg.AnchorHandler.ListCredentials)
+
+				// Backend
+				r.With(
+					cfg.RateLimiter.Middleware(middleware.CategoryRead),
+					middleware.RequirePermission(model.PermAnchorRead),
+				).Get("/backends", cfg.AnchorHandler.ListBackends)
+
+				r.With(
+					cfg.RateLimiter.Middleware(middleware.CategoryRead),
+					middleware.RequirePermission(model.PermAnchorRead),
+				).Get("/backends/{name}", cfg.AnchorHandler.BackendStatus)
+
+				r.With(
+					cfg.RateLimiter.Middleware(middleware.CategoryRead),
+					middleware.RequirePermission(model.PermAnchorRead),
+				).Get("/queue", cfg.AnchorHandler.QueueStatus)
 			})
 
 			// Supply chain endpoints

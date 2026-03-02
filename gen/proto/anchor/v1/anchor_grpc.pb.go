@@ -19,20 +19,45 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AnchorService_GetStatus_FullMethodName     = "/anchor.v1.AnchorService/GetStatus"
-	AnchorService_VerifyAnchor_FullMethodName  = "/anchor.v1.AnchorService/VerifyAnchor"
-	AnchorService_GetHistory_FullMethodName    = "/anchor.v1.AnchorService/GetHistory"
-	AnchorService_TriggerAnchor_FullMethodName = "/anchor.v1.AnchorService/TriggerAnchor"
+	AnchorService_GetStatus_FullMethodName                    = "/anchor.v1.AnchorService/GetStatus"
+	AnchorService_TriggerAnchor_FullMethodName                = "/anchor.v1.AnchorService/TriggerAnchor"
+	AnchorService_VerifyAnchor_FullMethodName                 = "/anchor.v1.AnchorService/VerifyAnchor"
+	AnchorService_GetHistory_FullMethodName                   = "/anchor.v1.AnchorService/GetHistory"
+	AnchorService_GetNodeDID_FullMethodName                   = "/anchor.v1.AnchorService/GetNodeDID"
+	AnchorService_GetDeviceDID_FullMethodName                 = "/anchor.v1.AnchorService/GetDeviceDID"
+	AnchorService_ResolveDID_FullMethodName                   = "/anchor.v1.AnchorService/ResolveDID"
+	AnchorService_IssueDataIntegrityCredential_FullMethodName = "/anchor.v1.AnchorService/IssueDataIntegrityCredential"
+	AnchorService_VerifyCredential_FullMethodName             = "/anchor.v1.AnchorService/VerifyCredential"
+	AnchorService_ListCredentials_FullMethodName              = "/anchor.v1.AnchorService/ListCredentials"
+	AnchorService_ListBackends_FullMethodName                 = "/anchor.v1.AnchorService/ListBackends"
+	AnchorService_GetBackendStatus_FullMethodName             = "/anchor.v1.AnchorService/GetBackendStatus"
+	AnchorService_GetQueueStatus_FullMethodName               = "/anchor.v1.AnchorService/GetQueueStatus"
+	AnchorService_Health_FullMethodName                       = "/anchor.v1.AnchorService/Health"
 )
 
 // AnchorServiceClient is the client API for AnchorService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type AnchorServiceClient interface {
+	// Anchoring
 	GetStatus(ctx context.Context, in *GetAnchorStatusRequest, opts ...grpc.CallOption) (*GetAnchorStatusResponse, error)
+	TriggerAnchor(ctx context.Context, in *TriggerAnchorRequest, opts ...grpc.CallOption) (*TriggerAnchorResponse, error)
 	VerifyAnchor(ctx context.Context, in *VerifyAnchorRequest, opts ...grpc.CallOption) (*VerifyAnchorResponse, error)
 	GetHistory(ctx context.Context, in *GetAnchorHistoryRequest, opts ...grpc.CallOption) (*GetAnchorHistoryResponse, error)
-	TriggerAnchor(ctx context.Context, in *TriggerAnchorRequest, opts ...grpc.CallOption) (*TriggerAnchorResponse, error)
+	// DID
+	GetNodeDID(ctx context.Context, in *GetNodeDIDRequest, opts ...grpc.CallOption) (*GetNodeDIDResponse, error)
+	GetDeviceDID(ctx context.Context, in *GetDeviceDIDRequest, opts ...grpc.CallOption) (*GetDeviceDIDResponse, error)
+	ResolveDID(ctx context.Context, in *ResolveDIDRequest, opts ...grpc.CallOption) (*ResolveDIDResponse, error)
+	// Credentials
+	IssueDataIntegrityCredential(ctx context.Context, in *IssueCredentialRequest, opts ...grpc.CallOption) (*IssueCredentialResponse, error)
+	VerifyCredential(ctx context.Context, in *VerifyCredentialRequest, opts ...grpc.CallOption) (*VerifyCredentialResponse, error)
+	ListCredentials(ctx context.Context, in *ListCredentialsRequest, opts ...grpc.CallOption) (*ListCredentialsResponse, error)
+	// Backend
+	ListBackends(ctx context.Context, in *ListBackendsRequest, opts ...grpc.CallOption) (*ListBackendsResponse, error)
+	GetBackendStatus(ctx context.Context, in *GetBackendStatusRequest, opts ...grpc.CallOption) (*GetBackendStatusResponse, error)
+	GetQueueStatus(ctx context.Context, in *GetQueueStatusRequest, opts ...grpc.CallOption) (*GetQueueStatusResponse, error)
+	// Health
+	Health(ctx context.Context, in *HealthRequest, opts ...grpc.CallOption) (*HealthResponse, error)
 }
 
 type anchorServiceClient struct {
@@ -47,6 +72,16 @@ func (c *anchorServiceClient) GetStatus(ctx context.Context, in *GetAnchorStatus
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetAnchorStatusResponse)
 	err := c.cc.Invoke(ctx, AnchorService_GetStatus_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *anchorServiceClient) TriggerAnchor(ctx context.Context, in *TriggerAnchorRequest, opts ...grpc.CallOption) (*TriggerAnchorResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(TriggerAnchorResponse)
+	err := c.cc.Invoke(ctx, AnchorService_TriggerAnchor_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -73,10 +108,100 @@ func (c *anchorServiceClient) GetHistory(ctx context.Context, in *GetAnchorHisto
 	return out, nil
 }
 
-func (c *anchorServiceClient) TriggerAnchor(ctx context.Context, in *TriggerAnchorRequest, opts ...grpc.CallOption) (*TriggerAnchorResponse, error) {
+func (c *anchorServiceClient) GetNodeDID(ctx context.Context, in *GetNodeDIDRequest, opts ...grpc.CallOption) (*GetNodeDIDResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(TriggerAnchorResponse)
-	err := c.cc.Invoke(ctx, AnchorService_TriggerAnchor_FullMethodName, in, out, cOpts...)
+	out := new(GetNodeDIDResponse)
+	err := c.cc.Invoke(ctx, AnchorService_GetNodeDID_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *anchorServiceClient) GetDeviceDID(ctx context.Context, in *GetDeviceDIDRequest, opts ...grpc.CallOption) (*GetDeviceDIDResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetDeviceDIDResponse)
+	err := c.cc.Invoke(ctx, AnchorService_GetDeviceDID_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *anchorServiceClient) ResolveDID(ctx context.Context, in *ResolveDIDRequest, opts ...grpc.CallOption) (*ResolveDIDResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ResolveDIDResponse)
+	err := c.cc.Invoke(ctx, AnchorService_ResolveDID_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *anchorServiceClient) IssueDataIntegrityCredential(ctx context.Context, in *IssueCredentialRequest, opts ...grpc.CallOption) (*IssueCredentialResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(IssueCredentialResponse)
+	err := c.cc.Invoke(ctx, AnchorService_IssueDataIntegrityCredential_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *anchorServiceClient) VerifyCredential(ctx context.Context, in *VerifyCredentialRequest, opts ...grpc.CallOption) (*VerifyCredentialResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(VerifyCredentialResponse)
+	err := c.cc.Invoke(ctx, AnchorService_VerifyCredential_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *anchorServiceClient) ListCredentials(ctx context.Context, in *ListCredentialsRequest, opts ...grpc.CallOption) (*ListCredentialsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListCredentialsResponse)
+	err := c.cc.Invoke(ctx, AnchorService_ListCredentials_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *anchorServiceClient) ListBackends(ctx context.Context, in *ListBackendsRequest, opts ...grpc.CallOption) (*ListBackendsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListBackendsResponse)
+	err := c.cc.Invoke(ctx, AnchorService_ListBackends_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *anchorServiceClient) GetBackendStatus(ctx context.Context, in *GetBackendStatusRequest, opts ...grpc.CallOption) (*GetBackendStatusResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetBackendStatusResponse)
+	err := c.cc.Invoke(ctx, AnchorService_GetBackendStatus_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *anchorServiceClient) GetQueueStatus(ctx context.Context, in *GetQueueStatusRequest, opts ...grpc.CallOption) (*GetQueueStatusResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetQueueStatusResponse)
+	err := c.cc.Invoke(ctx, AnchorService_GetQueueStatus_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *anchorServiceClient) Health(ctx context.Context, in *HealthRequest, opts ...grpc.CallOption) (*HealthResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(HealthResponse)
+	err := c.cc.Invoke(ctx, AnchorService_Health_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -87,10 +212,25 @@ func (c *anchorServiceClient) TriggerAnchor(ctx context.Context, in *TriggerAnch
 // All implementations must embed UnimplementedAnchorServiceServer
 // for forward compatibility.
 type AnchorServiceServer interface {
+	// Anchoring
 	GetStatus(context.Context, *GetAnchorStatusRequest) (*GetAnchorStatusResponse, error)
+	TriggerAnchor(context.Context, *TriggerAnchorRequest) (*TriggerAnchorResponse, error)
 	VerifyAnchor(context.Context, *VerifyAnchorRequest) (*VerifyAnchorResponse, error)
 	GetHistory(context.Context, *GetAnchorHistoryRequest) (*GetAnchorHistoryResponse, error)
-	TriggerAnchor(context.Context, *TriggerAnchorRequest) (*TriggerAnchorResponse, error)
+	// DID
+	GetNodeDID(context.Context, *GetNodeDIDRequest) (*GetNodeDIDResponse, error)
+	GetDeviceDID(context.Context, *GetDeviceDIDRequest) (*GetDeviceDIDResponse, error)
+	ResolveDID(context.Context, *ResolveDIDRequest) (*ResolveDIDResponse, error)
+	// Credentials
+	IssueDataIntegrityCredential(context.Context, *IssueCredentialRequest) (*IssueCredentialResponse, error)
+	VerifyCredential(context.Context, *VerifyCredentialRequest) (*VerifyCredentialResponse, error)
+	ListCredentials(context.Context, *ListCredentialsRequest) (*ListCredentialsResponse, error)
+	// Backend
+	ListBackends(context.Context, *ListBackendsRequest) (*ListBackendsResponse, error)
+	GetBackendStatus(context.Context, *GetBackendStatusRequest) (*GetBackendStatusResponse, error)
+	GetQueueStatus(context.Context, *GetQueueStatusRequest) (*GetQueueStatusResponse, error)
+	// Health
+	Health(context.Context, *HealthRequest) (*HealthResponse, error)
 	mustEmbedUnimplementedAnchorServiceServer()
 }
 
@@ -104,14 +244,44 @@ type UnimplementedAnchorServiceServer struct{}
 func (UnimplementedAnchorServiceServer) GetStatus(context.Context, *GetAnchorStatusRequest) (*GetAnchorStatusResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetStatus not implemented")
 }
+func (UnimplementedAnchorServiceServer) TriggerAnchor(context.Context, *TriggerAnchorRequest) (*TriggerAnchorResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method TriggerAnchor not implemented")
+}
 func (UnimplementedAnchorServiceServer) VerifyAnchor(context.Context, *VerifyAnchorRequest) (*VerifyAnchorResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method VerifyAnchor not implemented")
 }
 func (UnimplementedAnchorServiceServer) GetHistory(context.Context, *GetAnchorHistoryRequest) (*GetAnchorHistoryResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetHistory not implemented")
 }
-func (UnimplementedAnchorServiceServer) TriggerAnchor(context.Context, *TriggerAnchorRequest) (*TriggerAnchorResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method TriggerAnchor not implemented")
+func (UnimplementedAnchorServiceServer) GetNodeDID(context.Context, *GetNodeDIDRequest) (*GetNodeDIDResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetNodeDID not implemented")
+}
+func (UnimplementedAnchorServiceServer) GetDeviceDID(context.Context, *GetDeviceDIDRequest) (*GetDeviceDIDResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetDeviceDID not implemented")
+}
+func (UnimplementedAnchorServiceServer) ResolveDID(context.Context, *ResolveDIDRequest) (*ResolveDIDResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ResolveDID not implemented")
+}
+func (UnimplementedAnchorServiceServer) IssueDataIntegrityCredential(context.Context, *IssueCredentialRequest) (*IssueCredentialResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method IssueDataIntegrityCredential not implemented")
+}
+func (UnimplementedAnchorServiceServer) VerifyCredential(context.Context, *VerifyCredentialRequest) (*VerifyCredentialResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method VerifyCredential not implemented")
+}
+func (UnimplementedAnchorServiceServer) ListCredentials(context.Context, *ListCredentialsRequest) (*ListCredentialsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListCredentials not implemented")
+}
+func (UnimplementedAnchorServiceServer) ListBackends(context.Context, *ListBackendsRequest) (*ListBackendsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListBackends not implemented")
+}
+func (UnimplementedAnchorServiceServer) GetBackendStatus(context.Context, *GetBackendStatusRequest) (*GetBackendStatusResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetBackendStatus not implemented")
+}
+func (UnimplementedAnchorServiceServer) GetQueueStatus(context.Context, *GetQueueStatusRequest) (*GetQueueStatusResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetQueueStatus not implemented")
+}
+func (UnimplementedAnchorServiceServer) Health(context.Context, *HealthRequest) (*HealthResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Health not implemented")
 }
 func (UnimplementedAnchorServiceServer) mustEmbedUnimplementedAnchorServiceServer() {}
 func (UnimplementedAnchorServiceServer) testEmbeddedByValue()                       {}
@@ -152,6 +322,24 @@ func _AnchorService_GetStatus_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AnchorService_TriggerAnchor_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TriggerAnchorRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AnchorServiceServer).TriggerAnchor(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AnchorService_TriggerAnchor_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AnchorServiceServer).TriggerAnchor(ctx, req.(*TriggerAnchorRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AnchorService_VerifyAnchor_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(VerifyAnchorRequest)
 	if err := dec(in); err != nil {
@@ -188,20 +376,182 @@ func _AnchorService_GetHistory_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AnchorService_TriggerAnchor_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(TriggerAnchorRequest)
+func _AnchorService_GetNodeDID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetNodeDIDRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AnchorServiceServer).TriggerAnchor(ctx, in)
+		return srv.(AnchorServiceServer).GetNodeDID(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AnchorService_TriggerAnchor_FullMethodName,
+		FullMethod: AnchorService_GetNodeDID_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AnchorServiceServer).TriggerAnchor(ctx, req.(*TriggerAnchorRequest))
+		return srv.(AnchorServiceServer).GetNodeDID(ctx, req.(*GetNodeDIDRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AnchorService_GetDeviceDID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetDeviceDIDRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AnchorServiceServer).GetDeviceDID(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AnchorService_GetDeviceDID_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AnchorServiceServer).GetDeviceDID(ctx, req.(*GetDeviceDIDRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AnchorService_ResolveDID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ResolveDIDRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AnchorServiceServer).ResolveDID(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AnchorService_ResolveDID_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AnchorServiceServer).ResolveDID(ctx, req.(*ResolveDIDRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AnchorService_IssueDataIntegrityCredential_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(IssueCredentialRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AnchorServiceServer).IssueDataIntegrityCredential(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AnchorService_IssueDataIntegrityCredential_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AnchorServiceServer).IssueDataIntegrityCredential(ctx, req.(*IssueCredentialRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AnchorService_VerifyCredential_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(VerifyCredentialRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AnchorServiceServer).VerifyCredential(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AnchorService_VerifyCredential_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AnchorServiceServer).VerifyCredential(ctx, req.(*VerifyCredentialRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AnchorService_ListCredentials_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListCredentialsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AnchorServiceServer).ListCredentials(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AnchorService_ListCredentials_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AnchorServiceServer).ListCredentials(ctx, req.(*ListCredentialsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AnchorService_ListBackends_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListBackendsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AnchorServiceServer).ListBackends(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AnchorService_ListBackends_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AnchorServiceServer).ListBackends(ctx, req.(*ListBackendsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AnchorService_GetBackendStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetBackendStatusRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AnchorServiceServer).GetBackendStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AnchorService_GetBackendStatus_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AnchorServiceServer).GetBackendStatus(ctx, req.(*GetBackendStatusRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AnchorService_GetQueueStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetQueueStatusRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AnchorServiceServer).GetQueueStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AnchorService_GetQueueStatus_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AnchorServiceServer).GetQueueStatus(ctx, req.(*GetQueueStatusRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AnchorService_Health_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HealthRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AnchorServiceServer).Health(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AnchorService_Health_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AnchorServiceServer).Health(ctx, req.(*HealthRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -218,6 +568,10 @@ var AnchorService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AnchorService_GetStatus_Handler,
 		},
 		{
+			MethodName: "TriggerAnchor",
+			Handler:    _AnchorService_TriggerAnchor_Handler,
+		},
+		{
 			MethodName: "VerifyAnchor",
 			Handler:    _AnchorService_VerifyAnchor_Handler,
 		},
@@ -226,8 +580,44 @@ var AnchorService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AnchorService_GetHistory_Handler,
 		},
 		{
-			MethodName: "TriggerAnchor",
-			Handler:    _AnchorService_TriggerAnchor_Handler,
+			MethodName: "GetNodeDID",
+			Handler:    _AnchorService_GetNodeDID_Handler,
+		},
+		{
+			MethodName: "GetDeviceDID",
+			Handler:    _AnchorService_GetDeviceDID_Handler,
+		},
+		{
+			MethodName: "ResolveDID",
+			Handler:    _AnchorService_ResolveDID_Handler,
+		},
+		{
+			MethodName: "IssueDataIntegrityCredential",
+			Handler:    _AnchorService_IssueDataIntegrityCredential_Handler,
+		},
+		{
+			MethodName: "VerifyCredential",
+			Handler:    _AnchorService_VerifyCredential_Handler,
+		},
+		{
+			MethodName: "ListCredentials",
+			Handler:    _AnchorService_ListCredentials_Handler,
+		},
+		{
+			MethodName: "ListBackends",
+			Handler:    _AnchorService_ListBackends_Handler,
+		},
+		{
+			MethodName: "GetBackendStatus",
+			Handler:    _AnchorService_GetBackendStatus_Handler,
+		},
+		{
+			MethodName: "GetQueueStatus",
+			Handler:    _AnchorService_GetQueueStatus_Handler,
+		},
+		{
+			MethodName: "Health",
+			Handler:    _AnchorService_Health_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

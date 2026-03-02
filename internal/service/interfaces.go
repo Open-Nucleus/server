@@ -109,12 +109,31 @@ type FormularyService interface {
 	GetFormularyInfo(ctx context.Context) (*FormularyInfoResponse, error)
 }
 
-// AnchorService defines the interface for IOTA anchor operations.
+// AnchorService defines the interface for anchor operations.
 type AnchorService interface {
+	// Anchoring
 	GetStatus(ctx context.Context) (*AnchorStatusResponse, error)
 	Verify(ctx context.Context, commitHash string) (*AnchorVerifyResponse, error)
 	GetHistory(ctx context.Context, page, perPage int) (*AnchorHistoryResponse, error)
 	TriggerAnchor(ctx context.Context) (*AnchorTriggerResponse, error)
+
+	// DID
+	GetNodeDID(ctx context.Context) (*DIDDocumentResponse, error)
+	GetDeviceDID(ctx context.Context, deviceID string) (*DIDDocumentResponse, error)
+	ResolveDID(ctx context.Context, did string) (*DIDDocumentResponse, error)
+
+	// Credentials
+	IssueDataIntegrityCredential(ctx context.Context, req *IssueCredentialRequest) (*CredentialResponse, error)
+	VerifyCredential(ctx context.Context, credentialJSON string) (*CredentialVerificationResponse, error)
+	ListCredentials(ctx context.Context, credType string, page, perPage int) (*CredentialListResponse, error)
+
+	// Backend
+	ListBackends(ctx context.Context) (*BackendListResponse, error)
+	GetBackendStatus(ctx context.Context, name string) (*BackendStatusResponse, error)
+	GetQueueStatus(ctx context.Context) (*QueueStatusResponse, error)
+
+	// Health
+	Health(ctx context.Context) (*AnchorHealthResponse, error)
 }
 
 // SupplyService defines the interface for supply chain operations.
@@ -637,39 +656,146 @@ type FormularyInfoResponse struct {
 
 type AnchorStatusResponse struct {
 	State          string `json:"state"`
-	LastAnchor     string `json:"last_anchor"`
-	TangleNode     string `json:"tangle_node"`
+	LastAnchorID   string `json:"last_anchor_id"`
+	LastAnchorTime string `json:"last_anchor_time"`
+	MerkleRoot     string `json:"merkle_root"`
+	NodeDID        string `json:"node_did"`
+	QueueDepth     int    `json:"queue_depth"`
+	Backend        string `json:"backend"`
 	PendingCommits int    `json:"pending_commits"`
 }
 
 type AnchorVerifyResponse struct {
-	Verified        bool   `json:"verified"`
-	AnchorID        string `json:"anchor_id"`
-	TangleMessageID string `json:"tangle_message_id"`
-	AnchoredAt      string `json:"anchored_at"`
-	CommitHash      string `json:"commit_hash"`
+	Verified   bool   `json:"verified"`
+	AnchorID   string `json:"anchor_id"`
+	MerkleRoot string `json:"merkle_root"`
+	AnchoredAt string `json:"anchored_at"`
+	CommitHash string `json:"commit_hash"`
+	State      string `json:"state"`
 }
 
 type AnchorHistoryResponse struct {
-	Events     []AnchorEvent `json:"events"`
-	Page       int           `json:"page"`
-	PerPage    int           `json:"per_page"`
-	Total      int           `json:"total"`
-	TotalPages int           `json:"total_pages"`
+	Records    []AnchorRecord `json:"records"`
+	Page       int            `json:"page"`
+	PerPage    int            `json:"per_page"`
+	Total      int            `json:"total"`
+	TotalPages int            `json:"total_pages"`
 }
 
-type AnchorEvent struct {
-	AnchorID        string `json:"anchor_id"`
-	CommitHash      string `json:"commit_hash"`
-	TangleMessageID string `json:"tangle_message_id"`
-	Timestamp       string `json:"timestamp"`
-	State           string `json:"state"`
+type AnchorRecord struct {
+	AnchorID   string `json:"anchor_id"`
+	MerkleRoot string `json:"merkle_root"`
+	GitHead    string `json:"git_head"`
+	State      string `json:"state"`
+	Timestamp  string `json:"timestamp"`
+	Backend    string `json:"backend"`
+	TxID       string `json:"tx_id"`
+	NodeDID    string `json:"node_did"`
 }
 
 type AnchorTriggerResponse struct {
-	AnchorID string   `json:"anchor_id"`
-	State    string   `json:"state"`
-	Git      *GitMeta `json:"git"`
+	AnchorID   string   `json:"anchor_id"`
+	State      string   `json:"state"`
+	MerkleRoot string   `json:"merkle_root"`
+	GitHead    string   `json:"git_head"`
+	Skipped    bool     `json:"skipped"`
+	Message    string   `json:"message"`
+	Git        *GitMeta `json:"git"`
+}
+
+type DIDDocumentResponse struct {
+	ID                 string                     `json:"id"`
+	Context            []string                   `json:"@context"`
+	VerificationMethod []VerificationMethodDTO    `json:"verificationMethod"`
+	Authentication     []string                   `json:"authentication"`
+	AssertionMethod    []string                   `json:"assertionMethod"`
+	Created            string                     `json:"created,omitempty"`
+}
+
+type VerificationMethodDTO struct {
+	ID                 string `json:"id"`
+	Type               string `json:"type"`
+	Controller         string `json:"controller"`
+	PublicKeyMultibase string `json:"publicKeyMultibase"`
+}
+
+type IssueCredentialRequest struct {
+	AnchorID         string            `json:"anchor_id"`
+	Types            []string          `json:"types,omitempty"`
+	AdditionalClaims map[string]string `json:"additional_claims,omitempty"`
+}
+
+type CredentialResponse struct {
+	ID                    string                 `json:"id"`
+	Context               []string               `json:"@context"`
+	Type                  []string               `json:"type"`
+	Issuer                string                 `json:"issuer"`
+	IssuanceDate          string                 `json:"issuanceDate"`
+	ExpirationDate        string                 `json:"expirationDate,omitempty"`
+	CredentialSubjectJSON string                 `json:"credentialSubjectJson"`
+	Proof                 *CredentialProofDTO    `json:"proof"`
+}
+
+type CredentialProofDTO struct {
+	Type               string `json:"type"`
+	Created            string `json:"created"`
+	VerificationMethod string `json:"verificationMethod"`
+	ProofPurpose       string `json:"proofPurpose"`
+	ProofValue         string `json:"proofValue"`
+}
+
+type CredentialVerificationResponse struct {
+	Valid   bool   `json:"valid"`
+	Issuer  string `json:"issuer"`
+	Message string `json:"message"`
+}
+
+type CredentialListResponse struct {
+	Credentials []CredentialResponse `json:"credentials"`
+	Page        int                  `json:"page"`
+	PerPage     int                  `json:"per_page"`
+	Total       int                  `json:"total"`
+	TotalPages  int                  `json:"total_pages"`
+}
+
+type BackendListResponse struct {
+	Backends []BackendInfoDTO `json:"backends"`
+}
+
+type BackendInfoDTO struct {
+	Name        string `json:"name"`
+	Available   bool   `json:"available"`
+	Description string `json:"description"`
+}
+
+type BackendStatusResponse struct {
+	Name           string `json:"name"`
+	Available      bool   `json:"available"`
+	Description    string `json:"description"`
+	AnchoredCount  int    `json:"anchored_count"`
+	LastAnchorTime string `json:"last_anchor_time"`
+}
+
+type QueueStatusResponse struct {
+	Pending        int             `json:"pending"`
+	TotalProcessed int             `json:"total_processed"`
+	Entries        []QueueEntryDTO `json:"entries"`
+}
+
+type QueueEntryDTO struct {
+	AnchorID   string `json:"anchor_id"`
+	MerkleRoot string `json:"merkle_root"`
+	GitHead    string `json:"git_head"`
+	EnqueuedAt string `json:"enqueued_at"`
+	State      string `json:"state"`
+}
+
+type AnchorHealthResponse struct {
+	Status      string `json:"status"`
+	NodeDID     string `json:"node_did"`
+	Backend     string `json:"backend"`
+	AnchorCount int    `json:"anchor_count"`
+	QueueDepth  int    `json:"queue_depth"`
 }
 
 // --- Supply Chain DTOs ---

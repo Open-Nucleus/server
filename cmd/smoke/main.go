@@ -27,6 +27,7 @@ import (
 	"github.com/FibrinLab/open-nucleus/internal/router"
 	"github.com/FibrinLab/open-nucleus/internal/service"
 	"github.com/FibrinLab/open-nucleus/pkg/auth"
+	"github.com/FibrinLab/open-nucleus/services/anchor/anchortest"
 	"github.com/FibrinLab/open-nucleus/services/auth/authtest"
 	"github.com/FibrinLab/open-nucleus/services/formulary/formularytest"
 	"github.com/FibrinLab/open-nucleus/services/patient/patienttest"
@@ -65,7 +66,7 @@ type stack struct {
 	accessToken string
 }
 
-func wireGateway(aEnv *authtest.StandaloneEnv, pEnv *patienttest.Env, sEnv *synctest.Env, fEnv *formularytest.Env) (*stack, error) {
+func wireGateway(aEnv *authtest.StandaloneEnv, pEnv *patienttest.Env, sEnv *synctest.Env, fEnv *formularytest.Env, ancEnv *anchortest.Env) (*stack, error) {
 	gatewayCfg := &config.Config{
 		Auth: config.AuthConfig{
 			JWTIssuer:     "open-nucleus-auth",
@@ -77,6 +78,7 @@ func wireGateway(aEnv *authtest.StandaloneEnv, pEnv *patienttest.Env, sEnv *sync
 			PatientService:   pEnv.Addr,
 			SyncService:      sEnv.Addr,
 			FormularyService: fEnv.Addr,
+			AnchorService:    ancEnv.Addr,
 			DialTimeout:      5 * time.Second,
 			RequestTimeout:   30 * time.Second,
 		},
@@ -281,8 +283,15 @@ func main() {
 	addCleanup(formularyCleanup)
 	fmt.Printf("  Formulary       %s%s%s\n", colorDim, fEnv.Addr, colorReset)
 
+	ancEnv, anchorCleanup, err := anchortest.StartStandalone(tmpDir)
+	if err != nil {
+		fatal("start anchor: %v", err)
+	}
+	addCleanup(anchorCleanup)
+	fmt.Printf("  Anchor          %s%s%s\n", colorDim, ancEnv.Addr, colorReset)
+
 	// Wire gateway
-	st, err := wireGateway(aEnv, pEnv, sEnv, fEnv)
+	st, err := wireGateway(aEnv, pEnv, sEnv, fEnv, ancEnv)
 	if err != nil {
 		fatal("wire gateway: %v", err)
 	}
@@ -503,6 +512,32 @@ func main() {
 				"medication_codes": []string{"J01CA04"},
 				"allergy_codes":    []string{"91936005"},
 			},
+			auth: true, expect: 200,
+		},
+		// --- Anchor steps ---
+		{
+			name:   "Anchor status",
+			method: "GET", path: "/api/v1/anchor/status",
+			auth: true, expect: 200,
+		},
+		{
+			name:   "Trigger anchor",
+			method: "POST", path: "/api/v1/anchor/trigger",
+			auth: true, expect: 200,
+		},
+		{
+			name:   "Get node DID",
+			method: "GET", path: "/api/v1/anchor/did/node",
+			auth: true, expect: 200,
+		},
+		{
+			name:   "List backends",
+			method: "GET", path: "/api/v1/anchor/backends",
+			auth: true, expect: 200,
+		},
+		{
+			name:   "Queue status",
+			method: "GET", path: "/api/v1/anchor/queue",
 			auth: true, expect: 200,
 		},
 		{

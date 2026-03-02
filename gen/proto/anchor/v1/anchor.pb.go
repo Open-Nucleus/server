@@ -61,9 +61,13 @@ func (*GetAnchorStatusRequest) Descriptor() ([]byte, []int) {
 type GetAnchorStatusResponse struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	State          string                 `protobuf:"bytes,1,opt,name=state,proto3" json:"state,omitempty"`
-	LastAnchor     string                 `protobuf:"bytes,2,opt,name=last_anchor,json=lastAnchor,proto3" json:"last_anchor,omitempty"`
-	TangleNode     string                 `protobuf:"bytes,3,opt,name=tangle_node,json=tangleNode,proto3" json:"tangle_node,omitempty"`
-	PendingCommits int32                  `protobuf:"varint,4,opt,name=pending_commits,json=pendingCommits,proto3" json:"pending_commits,omitempty"`
+	LastAnchorId   string                 `protobuf:"bytes,2,opt,name=last_anchor_id,json=lastAnchorId,proto3" json:"last_anchor_id,omitempty"`
+	LastAnchorTime string                 `protobuf:"bytes,3,opt,name=last_anchor_time,json=lastAnchorTime,proto3" json:"last_anchor_time,omitempty"`
+	MerkleRoot     string                 `protobuf:"bytes,4,opt,name=merkle_root,json=merkleRoot,proto3" json:"merkle_root,omitempty"`
+	NodeDid        string                 `protobuf:"bytes,5,opt,name=node_did,json=nodeDid,proto3" json:"node_did,omitempty"`
+	QueueDepth     int32                  `protobuf:"varint,6,opt,name=queue_depth,json=queueDepth,proto3" json:"queue_depth,omitempty"`
+	Backend        string                 `protobuf:"bytes,7,opt,name=backend,proto3" json:"backend,omitempty"`
+	PendingCommits int32                  `protobuf:"varint,8,opt,name=pending_commits,json=pendingCommits,proto3" json:"pending_commits,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -105,16 +109,44 @@ func (x *GetAnchorStatusResponse) GetState() string {
 	return ""
 }
 
-func (x *GetAnchorStatusResponse) GetLastAnchor() string {
+func (x *GetAnchorStatusResponse) GetLastAnchorId() string {
 	if x != nil {
-		return x.LastAnchor
+		return x.LastAnchorId
 	}
 	return ""
 }
 
-func (x *GetAnchorStatusResponse) GetTangleNode() string {
+func (x *GetAnchorStatusResponse) GetLastAnchorTime() string {
 	if x != nil {
-		return x.TangleNode
+		return x.LastAnchorTime
+	}
+	return ""
+}
+
+func (x *GetAnchorStatusResponse) GetMerkleRoot() string {
+	if x != nil {
+		return x.MerkleRoot
+	}
+	return ""
+}
+
+func (x *GetAnchorStatusResponse) GetNodeDid() string {
+	if x != nil {
+		return x.NodeDid
+	}
+	return ""
+}
+
+func (x *GetAnchorStatusResponse) GetQueueDepth() int32 {
+	if x != nil {
+		return x.QueueDepth
+	}
+	return 0
+}
+
+func (x *GetAnchorStatusResponse) GetBackend() string {
+	if x != nil {
+		return x.Backend
 	}
 	return ""
 }
@@ -126,6 +158,142 @@ func (x *GetAnchorStatusResponse) GetPendingCommits() int32 {
 	return 0
 }
 
+type TriggerAnchorRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Manual        bool                   `protobuf:"varint,1,opt,name=manual,proto3" json:"manual,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TriggerAnchorRequest) Reset() {
+	*x = TriggerAnchorRequest{}
+	mi := &file_anchor_v1_anchor_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TriggerAnchorRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TriggerAnchorRequest) ProtoMessage() {}
+
+func (x *TriggerAnchorRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_anchor_v1_anchor_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TriggerAnchorRequest.ProtoReflect.Descriptor instead.
+func (*TriggerAnchorRequest) Descriptor() ([]byte, []int) {
+	return file_anchor_v1_anchor_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *TriggerAnchorRequest) GetManual() bool {
+	if x != nil {
+		return x.Manual
+	}
+	return false
+}
+
+type TriggerAnchorResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AnchorId      string                 `protobuf:"bytes,1,opt,name=anchor_id,json=anchorId,proto3" json:"anchor_id,omitempty"`
+	State         string                 `protobuf:"bytes,2,opt,name=state,proto3" json:"state,omitempty"`
+	MerkleRoot    string                 `protobuf:"bytes,3,opt,name=merkle_root,json=merkleRoot,proto3" json:"merkle_root,omitempty"`
+	GitHead       string                 `protobuf:"bytes,4,opt,name=git_head,json=gitHead,proto3" json:"git_head,omitempty"`
+	Skipped       bool                   `protobuf:"varint,5,opt,name=skipped,proto3" json:"skipped,omitempty"`
+	Message       string                 `protobuf:"bytes,6,opt,name=message,proto3" json:"message,omitempty"`
+	Git           *v1.GitMetadata        `protobuf:"bytes,7,opt,name=git,proto3" json:"git,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TriggerAnchorResponse) Reset() {
+	*x = TriggerAnchorResponse{}
+	mi := &file_anchor_v1_anchor_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TriggerAnchorResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TriggerAnchorResponse) ProtoMessage() {}
+
+func (x *TriggerAnchorResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_anchor_v1_anchor_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TriggerAnchorResponse.ProtoReflect.Descriptor instead.
+func (*TriggerAnchorResponse) Descriptor() ([]byte, []int) {
+	return file_anchor_v1_anchor_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *TriggerAnchorResponse) GetAnchorId() string {
+	if x != nil {
+		return x.AnchorId
+	}
+	return ""
+}
+
+func (x *TriggerAnchorResponse) GetState() string {
+	if x != nil {
+		return x.State
+	}
+	return ""
+}
+
+func (x *TriggerAnchorResponse) GetMerkleRoot() string {
+	if x != nil {
+		return x.MerkleRoot
+	}
+	return ""
+}
+
+func (x *TriggerAnchorResponse) GetGitHead() string {
+	if x != nil {
+		return x.GitHead
+	}
+	return ""
+}
+
+func (x *TriggerAnchorResponse) GetSkipped() bool {
+	if x != nil {
+		return x.Skipped
+	}
+	return false
+}
+
+func (x *TriggerAnchorResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+func (x *TriggerAnchorResponse) GetGit() *v1.GitMetadata {
+	if x != nil {
+		return x.Git
+	}
+	return nil
+}
+
 type VerifyAnchorRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	CommitHash    string                 `protobuf:"bytes,1,opt,name=commit_hash,json=commitHash,proto3" json:"commit_hash,omitempty"`
@@ -135,7 +303,7 @@ type VerifyAnchorRequest struct {
 
 func (x *VerifyAnchorRequest) Reset() {
 	*x = VerifyAnchorRequest{}
-	mi := &file_anchor_v1_anchor_proto_msgTypes[2]
+	mi := &file_anchor_v1_anchor_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -147,7 +315,7 @@ func (x *VerifyAnchorRequest) String() string {
 func (*VerifyAnchorRequest) ProtoMessage() {}
 
 func (x *VerifyAnchorRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_anchor_v1_anchor_proto_msgTypes[2]
+	mi := &file_anchor_v1_anchor_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -160,7 +328,7 @@ func (x *VerifyAnchorRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use VerifyAnchorRequest.ProtoReflect.Descriptor instead.
 func (*VerifyAnchorRequest) Descriptor() ([]byte, []int) {
-	return file_anchor_v1_anchor_proto_rawDescGZIP(), []int{2}
+	return file_anchor_v1_anchor_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *VerifyAnchorRequest) GetCommitHash() string {
@@ -171,19 +339,20 @@ func (x *VerifyAnchorRequest) GetCommitHash() string {
 }
 
 type VerifyAnchorResponse struct {
-	state           protoimpl.MessageState `protogen:"open.v1"`
-	Verified        bool                   `protobuf:"varint,1,opt,name=verified,proto3" json:"verified,omitempty"`
-	AnchorId        string                 `protobuf:"bytes,2,opt,name=anchor_id,json=anchorId,proto3" json:"anchor_id,omitempty"`
-	TangleMessageId string                 `protobuf:"bytes,3,opt,name=tangle_message_id,json=tangleMessageId,proto3" json:"tangle_message_id,omitempty"`
-	AnchoredAt      string                 `protobuf:"bytes,4,opt,name=anchored_at,json=anchoredAt,proto3" json:"anchored_at,omitempty"`
-	CommitHash      string                 `protobuf:"bytes,5,opt,name=commit_hash,json=commitHash,proto3" json:"commit_hash,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Verified      bool                   `protobuf:"varint,1,opt,name=verified,proto3" json:"verified,omitempty"`
+	AnchorId      string                 `protobuf:"bytes,2,opt,name=anchor_id,json=anchorId,proto3" json:"anchor_id,omitempty"`
+	MerkleRoot    string                 `protobuf:"bytes,3,opt,name=merkle_root,json=merkleRoot,proto3" json:"merkle_root,omitempty"`
+	AnchoredAt    string                 `protobuf:"bytes,4,opt,name=anchored_at,json=anchoredAt,proto3" json:"anchored_at,omitempty"`
+	CommitHash    string                 `protobuf:"bytes,5,opt,name=commit_hash,json=commitHash,proto3" json:"commit_hash,omitempty"`
+	State         string                 `protobuf:"bytes,6,opt,name=state,proto3" json:"state,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *VerifyAnchorResponse) Reset() {
 	*x = VerifyAnchorResponse{}
-	mi := &file_anchor_v1_anchor_proto_msgTypes[3]
+	mi := &file_anchor_v1_anchor_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -195,7 +364,7 @@ func (x *VerifyAnchorResponse) String() string {
 func (*VerifyAnchorResponse) ProtoMessage() {}
 
 func (x *VerifyAnchorResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_anchor_v1_anchor_proto_msgTypes[3]
+	mi := &file_anchor_v1_anchor_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -208,7 +377,7 @@ func (x *VerifyAnchorResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use VerifyAnchorResponse.ProtoReflect.Descriptor instead.
 func (*VerifyAnchorResponse) Descriptor() ([]byte, []int) {
-	return file_anchor_v1_anchor_proto_rawDescGZIP(), []int{3}
+	return file_anchor_v1_anchor_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *VerifyAnchorResponse) GetVerified() bool {
@@ -225,9 +394,9 @@ func (x *VerifyAnchorResponse) GetAnchorId() string {
 	return ""
 }
 
-func (x *VerifyAnchorResponse) GetTangleMessageId() string {
+func (x *VerifyAnchorResponse) GetMerkleRoot() string {
 	if x != nil {
-		return x.TangleMessageId
+		return x.MerkleRoot
 	}
 	return ""
 }
@@ -246,6 +415,13 @@ func (x *VerifyAnchorResponse) GetCommitHash() string {
 	return ""
 }
 
+func (x *VerifyAnchorResponse) GetState() string {
+	if x != nil {
+		return x.State
+	}
+	return ""
+}
+
 type GetAnchorHistoryRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Pagination    *v1.PaginationRequest  `protobuf:"bytes,1,opt,name=pagination,proto3" json:"pagination,omitempty"`
@@ -255,7 +431,7 @@ type GetAnchorHistoryRequest struct {
 
 func (x *GetAnchorHistoryRequest) Reset() {
 	*x = GetAnchorHistoryRequest{}
-	mi := &file_anchor_v1_anchor_proto_msgTypes[4]
+	mi := &file_anchor_v1_anchor_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -267,7 +443,7 @@ func (x *GetAnchorHistoryRequest) String() string {
 func (*GetAnchorHistoryRequest) ProtoMessage() {}
 
 func (x *GetAnchorHistoryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_anchor_v1_anchor_proto_msgTypes[4]
+	mi := &file_anchor_v1_anchor_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -280,7 +456,7 @@ func (x *GetAnchorHistoryRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetAnchorHistoryRequest.ProtoReflect.Descriptor instead.
 func (*GetAnchorHistoryRequest) Descriptor() ([]byte, []int) {
-	return file_anchor_v1_anchor_proto_rawDescGZIP(), []int{4}
+	return file_anchor_v1_anchor_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *GetAnchorHistoryRequest) GetPagination() *v1.PaginationRequest {
@@ -292,7 +468,7 @@ func (x *GetAnchorHistoryRequest) GetPagination() *v1.PaginationRequest {
 
 type GetAnchorHistoryResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Events        []*AnchorEvent         `protobuf:"bytes,1,rep,name=events,proto3" json:"events,omitempty"`
+	Records       []*AnchorRecord        `protobuf:"bytes,1,rep,name=records,proto3" json:"records,omitempty"`
 	Pagination    *v1.PaginationResponse `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -300,7 +476,7 @@ type GetAnchorHistoryResponse struct {
 
 func (x *GetAnchorHistoryResponse) Reset() {
 	*x = GetAnchorHistoryResponse{}
-	mi := &file_anchor_v1_anchor_proto_msgTypes[5]
+	mi := &file_anchor_v1_anchor_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -312,7 +488,7 @@ func (x *GetAnchorHistoryResponse) String() string {
 func (*GetAnchorHistoryResponse) ProtoMessage() {}
 
 func (x *GetAnchorHistoryResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_anchor_v1_anchor_proto_msgTypes[5]
+	mi := &file_anchor_v1_anchor_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -325,12 +501,12 @@ func (x *GetAnchorHistoryResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetAnchorHistoryResponse.ProtoReflect.Descriptor instead.
 func (*GetAnchorHistoryResponse) Descriptor() ([]byte, []int) {
-	return file_anchor_v1_anchor_proto_rawDescGZIP(), []int{5}
+	return file_anchor_v1_anchor_proto_rawDescGZIP(), []int{7}
 }
 
-func (x *GetAnchorHistoryResponse) GetEvents() []*AnchorEvent {
+func (x *GetAnchorHistoryResponse) GetRecords() []*AnchorRecord {
 	if x != nil {
-		return x.Events
+		return x.Records
 	}
 	return nil
 }
@@ -342,32 +518,35 @@ func (x *GetAnchorHistoryResponse) GetPagination() *v1.PaginationResponse {
 	return nil
 }
 
-type AnchorEvent struct {
-	state           protoimpl.MessageState `protogen:"open.v1"`
-	AnchorId        string                 `protobuf:"bytes,1,opt,name=anchor_id,json=anchorId,proto3" json:"anchor_id,omitempty"`
-	CommitHash      string                 `protobuf:"bytes,2,opt,name=commit_hash,json=commitHash,proto3" json:"commit_hash,omitempty"`
-	TangleMessageId string                 `protobuf:"bytes,3,opt,name=tangle_message_id,json=tangleMessageId,proto3" json:"tangle_message_id,omitempty"`
-	Timestamp       string                 `protobuf:"bytes,4,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
-	State           string                 `protobuf:"bytes,5,opt,name=state,proto3" json:"state,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+type AnchorRecord struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AnchorId      string                 `protobuf:"bytes,1,opt,name=anchor_id,json=anchorId,proto3" json:"anchor_id,omitempty"`
+	MerkleRoot    string                 `protobuf:"bytes,2,opt,name=merkle_root,json=merkleRoot,proto3" json:"merkle_root,omitempty"`
+	GitHead       string                 `protobuf:"bytes,3,opt,name=git_head,json=gitHead,proto3" json:"git_head,omitempty"`
+	State         string                 `protobuf:"bytes,4,opt,name=state,proto3" json:"state,omitempty"`
+	Timestamp     string                 `protobuf:"bytes,5,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	Backend       string                 `protobuf:"bytes,6,opt,name=backend,proto3" json:"backend,omitempty"`
+	TxId          string                 `protobuf:"bytes,7,opt,name=tx_id,json=txId,proto3" json:"tx_id,omitempty"`
+	NodeDid       string                 `protobuf:"bytes,8,opt,name=node_did,json=nodeDid,proto3" json:"node_did,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
-func (x *AnchorEvent) Reset() {
-	*x = AnchorEvent{}
-	mi := &file_anchor_v1_anchor_proto_msgTypes[6]
+func (x *AnchorRecord) Reset() {
+	*x = AnchorRecord{}
+	mi := &file_anchor_v1_anchor_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *AnchorEvent) String() string {
+func (x *AnchorRecord) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*AnchorEvent) ProtoMessage() {}
+func (*AnchorRecord) ProtoMessage() {}
 
-func (x *AnchorEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_anchor_v1_anchor_proto_msgTypes[6]
+func (x *AnchorRecord) ProtoReflect() protoreflect.Message {
+	mi := &file_anchor_v1_anchor_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -378,67 +557,88 @@ func (x *AnchorEvent) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use AnchorEvent.ProtoReflect.Descriptor instead.
-func (*AnchorEvent) Descriptor() ([]byte, []int) {
-	return file_anchor_v1_anchor_proto_rawDescGZIP(), []int{6}
+// Deprecated: Use AnchorRecord.ProtoReflect.Descriptor instead.
+func (*AnchorRecord) Descriptor() ([]byte, []int) {
+	return file_anchor_v1_anchor_proto_rawDescGZIP(), []int{8}
 }
 
-func (x *AnchorEvent) GetAnchorId() string {
+func (x *AnchorRecord) GetAnchorId() string {
 	if x != nil {
 		return x.AnchorId
 	}
 	return ""
 }
 
-func (x *AnchorEvent) GetCommitHash() string {
+func (x *AnchorRecord) GetMerkleRoot() string {
 	if x != nil {
-		return x.CommitHash
+		return x.MerkleRoot
 	}
 	return ""
 }
 
-func (x *AnchorEvent) GetTangleMessageId() string {
+func (x *AnchorRecord) GetGitHead() string {
 	if x != nil {
-		return x.TangleMessageId
+		return x.GitHead
 	}
 	return ""
 }
 
-func (x *AnchorEvent) GetTimestamp() string {
+func (x *AnchorRecord) GetState() string {
+	if x != nil {
+		return x.State
+	}
+	return ""
+}
+
+func (x *AnchorRecord) GetTimestamp() string {
 	if x != nil {
 		return x.Timestamp
 	}
 	return ""
 }
 
-func (x *AnchorEvent) GetState() string {
+func (x *AnchorRecord) GetBackend() string {
 	if x != nil {
-		return x.State
+		return x.Backend
 	}
 	return ""
 }
 
-type TriggerAnchorRequest struct {
+func (x *AnchorRecord) GetTxId() string {
+	if x != nil {
+		return x.TxId
+	}
+	return ""
+}
+
+func (x *AnchorRecord) GetNodeDid() string {
+	if x != nil {
+		return x.NodeDid
+	}
+	return ""
+}
+
+type GetNodeDIDRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *TriggerAnchorRequest) Reset() {
-	*x = TriggerAnchorRequest{}
-	mi := &file_anchor_v1_anchor_proto_msgTypes[7]
+func (x *GetNodeDIDRequest) Reset() {
+	*x = GetNodeDIDRequest{}
+	mi := &file_anchor_v1_anchor_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *TriggerAnchorRequest) String() string {
+func (x *GetNodeDIDRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*TriggerAnchorRequest) ProtoMessage() {}
+func (*GetNodeDIDRequest) ProtoMessage() {}
 
-func (x *TriggerAnchorRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_anchor_v1_anchor_proto_msgTypes[7]
+func (x *GetNodeDIDRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_anchor_v1_anchor_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -449,35 +649,33 @@ func (x *TriggerAnchorRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use TriggerAnchorRequest.ProtoReflect.Descriptor instead.
-func (*TriggerAnchorRequest) Descriptor() ([]byte, []int) {
-	return file_anchor_v1_anchor_proto_rawDescGZIP(), []int{7}
+// Deprecated: Use GetNodeDIDRequest.ProtoReflect.Descriptor instead.
+func (*GetNodeDIDRequest) Descriptor() ([]byte, []int) {
+	return file_anchor_v1_anchor_proto_rawDescGZIP(), []int{9}
 }
 
-type TriggerAnchorResponse struct {
+type GetNodeDIDResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	AnchorId      string                 `protobuf:"bytes,1,opt,name=anchor_id,json=anchorId,proto3" json:"anchor_id,omitempty"`
-	State         string                 `protobuf:"bytes,2,opt,name=state,proto3" json:"state,omitempty"`
-	Git           *v1.GitMetadata        `protobuf:"bytes,3,opt,name=git,proto3" json:"git,omitempty"`
+	Document      *DIDDocument           `protobuf:"bytes,1,opt,name=document,proto3" json:"document,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *TriggerAnchorResponse) Reset() {
-	*x = TriggerAnchorResponse{}
-	mi := &file_anchor_v1_anchor_proto_msgTypes[8]
+func (x *GetNodeDIDResponse) Reset() {
+	*x = GetNodeDIDResponse{}
+	mi := &file_anchor_v1_anchor_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *TriggerAnchorResponse) String() string {
+func (x *GetNodeDIDResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*TriggerAnchorResponse) ProtoMessage() {}
+func (*GetNodeDIDResponse) ProtoMessage() {}
 
-func (x *TriggerAnchorResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_anchor_v1_anchor_proto_msgTypes[8]
+func (x *GetNodeDIDResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_anchor_v1_anchor_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -488,30 +686,1376 @@ func (x *TriggerAnchorResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use TriggerAnchorResponse.ProtoReflect.Descriptor instead.
-func (*TriggerAnchorResponse) Descriptor() ([]byte, []int) {
-	return file_anchor_v1_anchor_proto_rawDescGZIP(), []int{8}
+// Deprecated: Use GetNodeDIDResponse.ProtoReflect.Descriptor instead.
+func (*GetNodeDIDResponse) Descriptor() ([]byte, []int) {
+	return file_anchor_v1_anchor_proto_rawDescGZIP(), []int{10}
 }
 
-func (x *TriggerAnchorResponse) GetAnchorId() string {
+func (x *GetNodeDIDResponse) GetDocument() *DIDDocument {
+	if x != nil {
+		return x.Document
+	}
+	return nil
+}
+
+type GetDeviceDIDRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	DeviceId      string                 `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetDeviceDIDRequest) Reset() {
+	*x = GetDeviceDIDRequest{}
+	mi := &file_anchor_v1_anchor_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetDeviceDIDRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetDeviceDIDRequest) ProtoMessage() {}
+
+func (x *GetDeviceDIDRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_anchor_v1_anchor_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetDeviceDIDRequest.ProtoReflect.Descriptor instead.
+func (*GetDeviceDIDRequest) Descriptor() ([]byte, []int) {
+	return file_anchor_v1_anchor_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *GetDeviceDIDRequest) GetDeviceId() string {
+	if x != nil {
+		return x.DeviceId
+	}
+	return ""
+}
+
+type GetDeviceDIDResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Document      *DIDDocument           `protobuf:"bytes,1,opt,name=document,proto3" json:"document,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetDeviceDIDResponse) Reset() {
+	*x = GetDeviceDIDResponse{}
+	mi := &file_anchor_v1_anchor_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetDeviceDIDResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetDeviceDIDResponse) ProtoMessage() {}
+
+func (x *GetDeviceDIDResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_anchor_v1_anchor_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetDeviceDIDResponse.ProtoReflect.Descriptor instead.
+func (*GetDeviceDIDResponse) Descriptor() ([]byte, []int) {
+	return file_anchor_v1_anchor_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *GetDeviceDIDResponse) GetDocument() *DIDDocument {
+	if x != nil {
+		return x.Document
+	}
+	return nil
+}
+
+type ResolveDIDRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Did           string                 `protobuf:"bytes,1,opt,name=did,proto3" json:"did,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResolveDIDRequest) Reset() {
+	*x = ResolveDIDRequest{}
+	mi := &file_anchor_v1_anchor_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResolveDIDRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResolveDIDRequest) ProtoMessage() {}
+
+func (x *ResolveDIDRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_anchor_v1_anchor_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResolveDIDRequest.ProtoReflect.Descriptor instead.
+func (*ResolveDIDRequest) Descriptor() ([]byte, []int) {
+	return file_anchor_v1_anchor_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *ResolveDIDRequest) GetDid() string {
+	if x != nil {
+		return x.Did
+	}
+	return ""
+}
+
+type ResolveDIDResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Document      *DIDDocument           `protobuf:"bytes,1,opt,name=document,proto3" json:"document,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResolveDIDResponse) Reset() {
+	*x = ResolveDIDResponse{}
+	mi := &file_anchor_v1_anchor_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResolveDIDResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResolveDIDResponse) ProtoMessage() {}
+
+func (x *ResolveDIDResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_anchor_v1_anchor_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResolveDIDResponse.ProtoReflect.Descriptor instead.
+func (*ResolveDIDResponse) Descriptor() ([]byte, []int) {
+	return file_anchor_v1_anchor_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *ResolveDIDResponse) GetDocument() *DIDDocument {
+	if x != nil {
+		return x.Document
+	}
+	return nil
+}
+
+type DIDDocument struct {
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	Id                 string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Context            []string               `protobuf:"bytes,2,rep,name=context,proto3" json:"context,omitempty"`
+	VerificationMethod []*VerificationMethod  `protobuf:"bytes,3,rep,name=verification_method,json=verificationMethod,proto3" json:"verification_method,omitempty"`
+	Authentication     []string               `protobuf:"bytes,4,rep,name=authentication,proto3" json:"authentication,omitempty"`
+	AssertionMethod    []string               `protobuf:"bytes,5,rep,name=assertion_method,json=assertionMethod,proto3" json:"assertion_method,omitempty"`
+	Created            string                 `protobuf:"bytes,6,opt,name=created,proto3" json:"created,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *DIDDocument) Reset() {
+	*x = DIDDocument{}
+	mi := &file_anchor_v1_anchor_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DIDDocument) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DIDDocument) ProtoMessage() {}
+
+func (x *DIDDocument) ProtoReflect() protoreflect.Message {
+	mi := &file_anchor_v1_anchor_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DIDDocument.ProtoReflect.Descriptor instead.
+func (*DIDDocument) Descriptor() ([]byte, []int) {
+	return file_anchor_v1_anchor_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *DIDDocument) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *DIDDocument) GetContext() []string {
+	if x != nil {
+		return x.Context
+	}
+	return nil
+}
+
+func (x *DIDDocument) GetVerificationMethod() []*VerificationMethod {
+	if x != nil {
+		return x.VerificationMethod
+	}
+	return nil
+}
+
+func (x *DIDDocument) GetAuthentication() []string {
+	if x != nil {
+		return x.Authentication
+	}
+	return nil
+}
+
+func (x *DIDDocument) GetAssertionMethod() []string {
+	if x != nil {
+		return x.AssertionMethod
+	}
+	return nil
+}
+
+func (x *DIDDocument) GetCreated() string {
+	if x != nil {
+		return x.Created
+	}
+	return ""
+}
+
+type VerificationMethod struct {
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	Id                 string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Type               string                 `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"`
+	Controller         string                 `protobuf:"bytes,3,opt,name=controller,proto3" json:"controller,omitempty"`
+	PublicKeyMultibase string                 `protobuf:"bytes,4,opt,name=public_key_multibase,json=publicKeyMultibase,proto3" json:"public_key_multibase,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *VerificationMethod) Reset() {
+	*x = VerificationMethod{}
+	mi := &file_anchor_v1_anchor_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *VerificationMethod) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*VerificationMethod) ProtoMessage() {}
+
+func (x *VerificationMethod) ProtoReflect() protoreflect.Message {
+	mi := &file_anchor_v1_anchor_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use VerificationMethod.ProtoReflect.Descriptor instead.
+func (*VerificationMethod) Descriptor() ([]byte, []int) {
+	return file_anchor_v1_anchor_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *VerificationMethod) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *VerificationMethod) GetType() string {
+	if x != nil {
+		return x.Type
+	}
+	return ""
+}
+
+func (x *VerificationMethod) GetController() string {
+	if x != nil {
+		return x.Controller
+	}
+	return ""
+}
+
+func (x *VerificationMethod) GetPublicKeyMultibase() string {
+	if x != nil {
+		return x.PublicKeyMultibase
+	}
+	return ""
+}
+
+type IssueCredentialRequest struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	AnchorId         string                 `protobuf:"bytes,1,opt,name=anchor_id,json=anchorId,proto3" json:"anchor_id,omitempty"`
+	Types            []string               `protobuf:"bytes,2,rep,name=types,proto3" json:"types,omitempty"`
+	AdditionalClaims map[string]string      `protobuf:"bytes,3,rep,name=additional_claims,json=additionalClaims,proto3" json:"additional_claims,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *IssueCredentialRequest) Reset() {
+	*x = IssueCredentialRequest{}
+	mi := &file_anchor_v1_anchor_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *IssueCredentialRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*IssueCredentialRequest) ProtoMessage() {}
+
+func (x *IssueCredentialRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_anchor_v1_anchor_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use IssueCredentialRequest.ProtoReflect.Descriptor instead.
+func (*IssueCredentialRequest) Descriptor() ([]byte, []int) {
+	return file_anchor_v1_anchor_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *IssueCredentialRequest) GetAnchorId() string {
 	if x != nil {
 		return x.AnchorId
 	}
 	return ""
 }
 
-func (x *TriggerAnchorResponse) GetState() string {
+func (x *IssueCredentialRequest) GetTypes() []string {
+	if x != nil {
+		return x.Types
+	}
+	return nil
+}
+
+func (x *IssueCredentialRequest) GetAdditionalClaims() map[string]string {
+	if x != nil {
+		return x.AdditionalClaims
+	}
+	return nil
+}
+
+type IssueCredentialResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Credential    *VerifiableCredential  `protobuf:"bytes,1,opt,name=credential,proto3" json:"credential,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *IssueCredentialResponse) Reset() {
+	*x = IssueCredentialResponse{}
+	mi := &file_anchor_v1_anchor_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *IssueCredentialResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*IssueCredentialResponse) ProtoMessage() {}
+
+func (x *IssueCredentialResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_anchor_v1_anchor_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use IssueCredentialResponse.ProtoReflect.Descriptor instead.
+func (*IssueCredentialResponse) Descriptor() ([]byte, []int) {
+	return file_anchor_v1_anchor_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *IssueCredentialResponse) GetCredential() *VerifiableCredential {
+	if x != nil {
+		return x.Credential
+	}
+	return nil
+}
+
+type VerifyCredentialRequest struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	CredentialJson string                 `protobuf:"bytes,1,opt,name=credential_json,json=credentialJson,proto3" json:"credential_json,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *VerifyCredentialRequest) Reset() {
+	*x = VerifyCredentialRequest{}
+	mi := &file_anchor_v1_anchor_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *VerifyCredentialRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*VerifyCredentialRequest) ProtoMessage() {}
+
+func (x *VerifyCredentialRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_anchor_v1_anchor_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use VerifyCredentialRequest.ProtoReflect.Descriptor instead.
+func (*VerifyCredentialRequest) Descriptor() ([]byte, []int) {
+	return file_anchor_v1_anchor_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *VerifyCredentialRequest) GetCredentialJson() string {
+	if x != nil {
+		return x.CredentialJson
+	}
+	return ""
+}
+
+type VerifyCredentialResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Valid         bool                   `protobuf:"varint,1,opt,name=valid,proto3" json:"valid,omitempty"`
+	Issuer        string                 `protobuf:"bytes,2,opt,name=issuer,proto3" json:"issuer,omitempty"`
+	Message       string                 `protobuf:"bytes,3,opt,name=message,proto3" json:"message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *VerifyCredentialResponse) Reset() {
+	*x = VerifyCredentialResponse{}
+	mi := &file_anchor_v1_anchor_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *VerifyCredentialResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*VerifyCredentialResponse) ProtoMessage() {}
+
+func (x *VerifyCredentialResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_anchor_v1_anchor_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use VerifyCredentialResponse.ProtoReflect.Descriptor instead.
+func (*VerifyCredentialResponse) Descriptor() ([]byte, []int) {
+	return file_anchor_v1_anchor_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *VerifyCredentialResponse) GetValid() bool {
+	if x != nil {
+		return x.Valid
+	}
+	return false
+}
+
+func (x *VerifyCredentialResponse) GetIssuer() string {
+	if x != nil {
+		return x.Issuer
+	}
+	return ""
+}
+
+func (x *VerifyCredentialResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+type ListCredentialsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Type          string                 `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
+	Pagination    *v1.PaginationRequest  `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListCredentialsRequest) Reset() {
+	*x = ListCredentialsRequest{}
+	mi := &file_anchor_v1_anchor_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListCredentialsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListCredentialsRequest) ProtoMessage() {}
+
+func (x *ListCredentialsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_anchor_v1_anchor_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListCredentialsRequest.ProtoReflect.Descriptor instead.
+func (*ListCredentialsRequest) Descriptor() ([]byte, []int) {
+	return file_anchor_v1_anchor_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *ListCredentialsRequest) GetType() string {
+	if x != nil {
+		return x.Type
+	}
+	return ""
+}
+
+func (x *ListCredentialsRequest) GetPagination() *v1.PaginationRequest {
+	if x != nil {
+		return x.Pagination
+	}
+	return nil
+}
+
+type ListCredentialsResponse struct {
+	state         protoimpl.MessageState  `protogen:"open.v1"`
+	Credentials   []*VerifiableCredential `protobuf:"bytes,1,rep,name=credentials,proto3" json:"credentials,omitempty"`
+	Pagination    *v1.PaginationResponse  `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListCredentialsResponse) Reset() {
+	*x = ListCredentialsResponse{}
+	mi := &file_anchor_v1_anchor_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListCredentialsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListCredentialsResponse) ProtoMessage() {}
+
+func (x *ListCredentialsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_anchor_v1_anchor_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListCredentialsResponse.ProtoReflect.Descriptor instead.
+func (*ListCredentialsResponse) Descriptor() ([]byte, []int) {
+	return file_anchor_v1_anchor_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *ListCredentialsResponse) GetCredentials() []*VerifiableCredential {
+	if x != nil {
+		return x.Credentials
+	}
+	return nil
+}
+
+func (x *ListCredentialsResponse) GetPagination() *v1.PaginationResponse {
+	if x != nil {
+		return x.Pagination
+	}
+	return nil
+}
+
+type VerifiableCredential struct {
+	state                 protoimpl.MessageState `protogen:"open.v1"`
+	Id                    string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Context               []string               `protobuf:"bytes,2,rep,name=context,proto3" json:"context,omitempty"`
+	Type                  []string               `protobuf:"bytes,3,rep,name=type,proto3" json:"type,omitempty"`
+	Issuer                string                 `protobuf:"bytes,4,opt,name=issuer,proto3" json:"issuer,omitempty"`
+	IssuanceDate          string                 `protobuf:"bytes,5,opt,name=issuance_date,json=issuanceDate,proto3" json:"issuance_date,omitempty"`
+	ExpirationDate        string                 `protobuf:"bytes,6,opt,name=expiration_date,json=expirationDate,proto3" json:"expiration_date,omitempty"`
+	CredentialSubjectJson string                 `protobuf:"bytes,7,opt,name=credential_subject_json,json=credentialSubjectJson,proto3" json:"credential_subject_json,omitempty"`
+	Proof                 *CredentialProof       `protobuf:"bytes,8,opt,name=proof,proto3" json:"proof,omitempty"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
+}
+
+func (x *VerifiableCredential) Reset() {
+	*x = VerifiableCredential{}
+	mi := &file_anchor_v1_anchor_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *VerifiableCredential) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*VerifiableCredential) ProtoMessage() {}
+
+func (x *VerifiableCredential) ProtoReflect() protoreflect.Message {
+	mi := &file_anchor_v1_anchor_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use VerifiableCredential.ProtoReflect.Descriptor instead.
+func (*VerifiableCredential) Descriptor() ([]byte, []int) {
+	return file_anchor_v1_anchor_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *VerifiableCredential) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *VerifiableCredential) GetContext() []string {
+	if x != nil {
+		return x.Context
+	}
+	return nil
+}
+
+func (x *VerifiableCredential) GetType() []string {
+	if x != nil {
+		return x.Type
+	}
+	return nil
+}
+
+func (x *VerifiableCredential) GetIssuer() string {
+	if x != nil {
+		return x.Issuer
+	}
+	return ""
+}
+
+func (x *VerifiableCredential) GetIssuanceDate() string {
+	if x != nil {
+		return x.IssuanceDate
+	}
+	return ""
+}
+
+func (x *VerifiableCredential) GetExpirationDate() string {
+	if x != nil {
+		return x.ExpirationDate
+	}
+	return ""
+}
+
+func (x *VerifiableCredential) GetCredentialSubjectJson() string {
+	if x != nil {
+		return x.CredentialSubjectJson
+	}
+	return ""
+}
+
+func (x *VerifiableCredential) GetProof() *CredentialProof {
+	if x != nil {
+		return x.Proof
+	}
+	return nil
+}
+
+type CredentialProof struct {
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	Type               string                 `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
+	Created            string                 `protobuf:"bytes,2,opt,name=created,proto3" json:"created,omitempty"`
+	VerificationMethod string                 `protobuf:"bytes,3,opt,name=verification_method,json=verificationMethod,proto3" json:"verification_method,omitempty"`
+	ProofPurpose       string                 `protobuf:"bytes,4,opt,name=proof_purpose,json=proofPurpose,proto3" json:"proof_purpose,omitempty"`
+	ProofValue         string                 `protobuf:"bytes,5,opt,name=proof_value,json=proofValue,proto3" json:"proof_value,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *CredentialProof) Reset() {
+	*x = CredentialProof{}
+	mi := &file_anchor_v1_anchor_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CredentialProof) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CredentialProof) ProtoMessage() {}
+
+func (x *CredentialProof) ProtoReflect() protoreflect.Message {
+	mi := &file_anchor_v1_anchor_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CredentialProof.ProtoReflect.Descriptor instead.
+func (*CredentialProof) Descriptor() ([]byte, []int) {
+	return file_anchor_v1_anchor_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *CredentialProof) GetType() string {
+	if x != nil {
+		return x.Type
+	}
+	return ""
+}
+
+func (x *CredentialProof) GetCreated() string {
+	if x != nil {
+		return x.Created
+	}
+	return ""
+}
+
+func (x *CredentialProof) GetVerificationMethod() string {
+	if x != nil {
+		return x.VerificationMethod
+	}
+	return ""
+}
+
+func (x *CredentialProof) GetProofPurpose() string {
+	if x != nil {
+		return x.ProofPurpose
+	}
+	return ""
+}
+
+func (x *CredentialProof) GetProofValue() string {
+	if x != nil {
+		return x.ProofValue
+	}
+	return ""
+}
+
+type ListBackendsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListBackendsRequest) Reset() {
+	*x = ListBackendsRequest{}
+	mi := &file_anchor_v1_anchor_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListBackendsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListBackendsRequest) ProtoMessage() {}
+
+func (x *ListBackendsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_anchor_v1_anchor_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListBackendsRequest.ProtoReflect.Descriptor instead.
+func (*ListBackendsRequest) Descriptor() ([]byte, []int) {
+	return file_anchor_v1_anchor_proto_rawDescGZIP(), []int{25}
+}
+
+type ListBackendsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Backends      []*BackendInfo         `protobuf:"bytes,1,rep,name=backends,proto3" json:"backends,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListBackendsResponse) Reset() {
+	*x = ListBackendsResponse{}
+	mi := &file_anchor_v1_anchor_proto_msgTypes[26]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListBackendsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListBackendsResponse) ProtoMessage() {}
+
+func (x *ListBackendsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_anchor_v1_anchor_proto_msgTypes[26]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListBackendsResponse.ProtoReflect.Descriptor instead.
+func (*ListBackendsResponse) Descriptor() ([]byte, []int) {
+	return file_anchor_v1_anchor_proto_rawDescGZIP(), []int{26}
+}
+
+func (x *ListBackendsResponse) GetBackends() []*BackendInfo {
+	if x != nil {
+		return x.Backends
+	}
+	return nil
+}
+
+type BackendInfo struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Available     bool                   `protobuf:"varint,2,opt,name=available,proto3" json:"available,omitempty"`
+	Description   string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BackendInfo) Reset() {
+	*x = BackendInfo{}
+	mi := &file_anchor_v1_anchor_proto_msgTypes[27]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BackendInfo) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BackendInfo) ProtoMessage() {}
+
+func (x *BackendInfo) ProtoReflect() protoreflect.Message {
+	mi := &file_anchor_v1_anchor_proto_msgTypes[27]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BackendInfo.ProtoReflect.Descriptor instead.
+func (*BackendInfo) Descriptor() ([]byte, []int) {
+	return file_anchor_v1_anchor_proto_rawDescGZIP(), []int{27}
+}
+
+func (x *BackendInfo) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *BackendInfo) GetAvailable() bool {
+	if x != nil {
+		return x.Available
+	}
+	return false
+}
+
+func (x *BackendInfo) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+type GetBackendStatusRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetBackendStatusRequest) Reset() {
+	*x = GetBackendStatusRequest{}
+	mi := &file_anchor_v1_anchor_proto_msgTypes[28]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetBackendStatusRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetBackendStatusRequest) ProtoMessage() {}
+
+func (x *GetBackendStatusRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_anchor_v1_anchor_proto_msgTypes[28]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetBackendStatusRequest.ProtoReflect.Descriptor instead.
+func (*GetBackendStatusRequest) Descriptor() ([]byte, []int) {
+	return file_anchor_v1_anchor_proto_rawDescGZIP(), []int{28}
+}
+
+func (x *GetBackendStatusRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+type GetBackendStatusResponse struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Name           string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Available      bool                   `protobuf:"varint,2,opt,name=available,proto3" json:"available,omitempty"`
+	Description    string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	AnchoredCount  int32                  `protobuf:"varint,4,opt,name=anchored_count,json=anchoredCount,proto3" json:"anchored_count,omitempty"`
+	LastAnchorTime string                 `protobuf:"bytes,5,opt,name=last_anchor_time,json=lastAnchorTime,proto3" json:"last_anchor_time,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *GetBackendStatusResponse) Reset() {
+	*x = GetBackendStatusResponse{}
+	mi := &file_anchor_v1_anchor_proto_msgTypes[29]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetBackendStatusResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetBackendStatusResponse) ProtoMessage() {}
+
+func (x *GetBackendStatusResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_anchor_v1_anchor_proto_msgTypes[29]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetBackendStatusResponse.ProtoReflect.Descriptor instead.
+func (*GetBackendStatusResponse) Descriptor() ([]byte, []int) {
+	return file_anchor_v1_anchor_proto_rawDescGZIP(), []int{29}
+}
+
+func (x *GetBackendStatusResponse) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *GetBackendStatusResponse) GetAvailable() bool {
+	if x != nil {
+		return x.Available
+	}
+	return false
+}
+
+func (x *GetBackendStatusResponse) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *GetBackendStatusResponse) GetAnchoredCount() int32 {
+	if x != nil {
+		return x.AnchoredCount
+	}
+	return 0
+}
+
+func (x *GetBackendStatusResponse) GetLastAnchorTime() string {
+	if x != nil {
+		return x.LastAnchorTime
+	}
+	return ""
+}
+
+type GetQueueStatusRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetQueueStatusRequest) Reset() {
+	*x = GetQueueStatusRequest{}
+	mi := &file_anchor_v1_anchor_proto_msgTypes[30]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetQueueStatusRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetQueueStatusRequest) ProtoMessage() {}
+
+func (x *GetQueueStatusRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_anchor_v1_anchor_proto_msgTypes[30]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetQueueStatusRequest.ProtoReflect.Descriptor instead.
+func (*GetQueueStatusRequest) Descriptor() ([]byte, []int) {
+	return file_anchor_v1_anchor_proto_rawDescGZIP(), []int{30}
+}
+
+type GetQueueStatusResponse struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Pending        int32                  `protobuf:"varint,1,opt,name=pending,proto3" json:"pending,omitempty"`
+	TotalProcessed int32                  `protobuf:"varint,2,opt,name=total_processed,json=totalProcessed,proto3" json:"total_processed,omitempty"`
+	Entries        []*QueueEntry          `protobuf:"bytes,3,rep,name=entries,proto3" json:"entries,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *GetQueueStatusResponse) Reset() {
+	*x = GetQueueStatusResponse{}
+	mi := &file_anchor_v1_anchor_proto_msgTypes[31]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetQueueStatusResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetQueueStatusResponse) ProtoMessage() {}
+
+func (x *GetQueueStatusResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_anchor_v1_anchor_proto_msgTypes[31]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetQueueStatusResponse.ProtoReflect.Descriptor instead.
+func (*GetQueueStatusResponse) Descriptor() ([]byte, []int) {
+	return file_anchor_v1_anchor_proto_rawDescGZIP(), []int{31}
+}
+
+func (x *GetQueueStatusResponse) GetPending() int32 {
+	if x != nil {
+		return x.Pending
+	}
+	return 0
+}
+
+func (x *GetQueueStatusResponse) GetTotalProcessed() int32 {
+	if x != nil {
+		return x.TotalProcessed
+	}
+	return 0
+}
+
+func (x *GetQueueStatusResponse) GetEntries() []*QueueEntry {
+	if x != nil {
+		return x.Entries
+	}
+	return nil
+}
+
+type QueueEntry struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AnchorId      string                 `protobuf:"bytes,1,opt,name=anchor_id,json=anchorId,proto3" json:"anchor_id,omitempty"`
+	MerkleRoot    string                 `protobuf:"bytes,2,opt,name=merkle_root,json=merkleRoot,proto3" json:"merkle_root,omitempty"`
+	GitHead       string                 `protobuf:"bytes,3,opt,name=git_head,json=gitHead,proto3" json:"git_head,omitempty"`
+	EnqueuedAt    string                 `protobuf:"bytes,4,opt,name=enqueued_at,json=enqueuedAt,proto3" json:"enqueued_at,omitempty"`
+	State         string                 `protobuf:"bytes,5,opt,name=state,proto3" json:"state,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *QueueEntry) Reset() {
+	*x = QueueEntry{}
+	mi := &file_anchor_v1_anchor_proto_msgTypes[32]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *QueueEntry) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QueueEntry) ProtoMessage() {}
+
+func (x *QueueEntry) ProtoReflect() protoreflect.Message {
+	mi := &file_anchor_v1_anchor_proto_msgTypes[32]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use QueueEntry.ProtoReflect.Descriptor instead.
+func (*QueueEntry) Descriptor() ([]byte, []int) {
+	return file_anchor_v1_anchor_proto_rawDescGZIP(), []int{32}
+}
+
+func (x *QueueEntry) GetAnchorId() string {
+	if x != nil {
+		return x.AnchorId
+	}
+	return ""
+}
+
+func (x *QueueEntry) GetMerkleRoot() string {
+	if x != nil {
+		return x.MerkleRoot
+	}
+	return ""
+}
+
+func (x *QueueEntry) GetGitHead() string {
+	if x != nil {
+		return x.GitHead
+	}
+	return ""
+}
+
+func (x *QueueEntry) GetEnqueuedAt() string {
+	if x != nil {
+		return x.EnqueuedAt
+	}
+	return ""
+}
+
+func (x *QueueEntry) GetState() string {
 	if x != nil {
 		return x.State
 	}
 	return ""
 }
 
-func (x *TriggerAnchorResponse) GetGit() *v1.GitMetadata {
+type HealthRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *HealthRequest) Reset() {
+	*x = HealthRequest{}
+	mi := &file_anchor_v1_anchor_proto_msgTypes[33]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *HealthRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HealthRequest) ProtoMessage() {}
+
+func (x *HealthRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_anchor_v1_anchor_proto_msgTypes[33]
 	if x != nil {
-		return x.Git
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
 	}
-	return nil
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use HealthRequest.ProtoReflect.Descriptor instead.
+func (*HealthRequest) Descriptor() ([]byte, []int) {
+	return file_anchor_v1_anchor_proto_rawDescGZIP(), []int{33}
+}
+
+type HealthResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Status        string                 `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
+	NodeDid       string                 `protobuf:"bytes,2,opt,name=node_did,json=nodeDid,proto3" json:"node_did,omitempty"`
+	Backend       string                 `protobuf:"bytes,3,opt,name=backend,proto3" json:"backend,omitempty"`
+	AnchorCount   int32                  `protobuf:"varint,4,opt,name=anchor_count,json=anchorCount,proto3" json:"anchor_count,omitempty"`
+	QueueDepth    int32                  `protobuf:"varint,5,opt,name=queue_depth,json=queueDepth,proto3" json:"queue_depth,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *HealthResponse) Reset() {
+	*x = HealthResponse{}
+	mi := &file_anchor_v1_anchor_proto_msgTypes[34]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *HealthResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HealthResponse) ProtoMessage() {}
+
+func (x *HealthResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_anchor_v1_anchor_proto_msgTypes[34]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use HealthResponse.ProtoReflect.Descriptor instead.
+func (*HealthResponse) Descriptor() ([]byte, []int) {
+	return file_anchor_v1_anchor_proto_rawDescGZIP(), []int{34}
+}
+
+func (x *HealthResponse) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
+func (x *HealthResponse) GetNodeDid() string {
+	if x != nil {
+		return x.NodeDid
+	}
+	return ""
+}
+
+func (x *HealthResponse) GetBackend() string {
+	if x != nil {
+		return x.Backend
+	}
+	return ""
+}
+
+func (x *HealthResponse) GetAnchorCount() int32 {
+	if x != nil {
+		return x.AnchorCount
+	}
+	return 0
+}
+
+func (x *HealthResponse) GetQueueDepth() int32 {
+	if x != nil {
+		return x.QueueDepth
+	}
+	return 0
 }
 
 var File_anchor_v1_anchor_proto protoreflect.FileDescriptor
@@ -519,52 +2063,184 @@ var File_anchor_v1_anchor_proto protoreflect.FileDescriptor
 const file_anchor_v1_anchor_proto_rawDesc = "" +
 	"\n" +
 	"\x16anchor/v1/anchor.proto\x12\tanchor.v1\x1a\x18common/v1/metadata.proto\"\x18\n" +
-	"\x16GetAnchorStatusRequest\"\x9a\x01\n" +
+	"\x16GetAnchorStatusRequest\"\x9f\x02\n" +
 	"\x17GetAnchorStatusResponse\x12\x14\n" +
-	"\x05state\x18\x01 \x01(\tR\x05state\x12\x1f\n" +
-	"\vlast_anchor\x18\x02 \x01(\tR\n" +
-	"lastAnchor\x12\x1f\n" +
-	"\vtangle_node\x18\x03 \x01(\tR\n" +
-	"tangleNode\x12'\n" +
-	"\x0fpending_commits\x18\x04 \x01(\x05R\x0ependingCommits\"6\n" +
+	"\x05state\x18\x01 \x01(\tR\x05state\x12$\n" +
+	"\x0elast_anchor_id\x18\x02 \x01(\tR\flastAnchorId\x12(\n" +
+	"\x10last_anchor_time\x18\x03 \x01(\tR\x0elastAnchorTime\x12\x1f\n" +
+	"\vmerkle_root\x18\x04 \x01(\tR\n" +
+	"merkleRoot\x12\x19\n" +
+	"\bnode_did\x18\x05 \x01(\tR\anodeDid\x12\x1f\n" +
+	"\vqueue_depth\x18\x06 \x01(\x05R\n" +
+	"queueDepth\x12\x18\n" +
+	"\abackend\x18\a \x01(\tR\abackend\x12'\n" +
+	"\x0fpending_commits\x18\b \x01(\x05R\x0ependingCommits\".\n" +
+	"\x14TriggerAnchorRequest\x12\x16\n" +
+	"\x06manual\x18\x01 \x01(\bR\x06manual\"\xe4\x01\n" +
+	"\x15TriggerAnchorResponse\x12\x1b\n" +
+	"\tanchor_id\x18\x01 \x01(\tR\banchorId\x12\x14\n" +
+	"\x05state\x18\x02 \x01(\tR\x05state\x12\x1f\n" +
+	"\vmerkle_root\x18\x03 \x01(\tR\n" +
+	"merkleRoot\x12\x19\n" +
+	"\bgit_head\x18\x04 \x01(\tR\agitHead\x12\x18\n" +
+	"\askipped\x18\x05 \x01(\bR\askipped\x12\x18\n" +
+	"\amessage\x18\x06 \x01(\tR\amessage\x12(\n" +
+	"\x03git\x18\a \x01(\v2\x16.common.v1.GitMetadataR\x03git\"6\n" +
 	"\x13VerifyAnchorRequest\x12\x1f\n" +
 	"\vcommit_hash\x18\x01 \x01(\tR\n" +
-	"commitHash\"\xbd\x01\n" +
+	"commitHash\"\xc8\x01\n" +
 	"\x14VerifyAnchorResponse\x12\x1a\n" +
 	"\bverified\x18\x01 \x01(\bR\bverified\x12\x1b\n" +
-	"\tanchor_id\x18\x02 \x01(\tR\banchorId\x12*\n" +
-	"\x11tangle_message_id\x18\x03 \x01(\tR\x0ftangleMessageId\x12\x1f\n" +
+	"\tanchor_id\x18\x02 \x01(\tR\banchorId\x12\x1f\n" +
+	"\vmerkle_root\x18\x03 \x01(\tR\n" +
+	"merkleRoot\x12\x1f\n" +
 	"\vanchored_at\x18\x04 \x01(\tR\n" +
 	"anchoredAt\x12\x1f\n" +
 	"\vcommit_hash\x18\x05 \x01(\tR\n" +
-	"commitHash\"W\n" +
+	"commitHash\x12\x14\n" +
+	"\x05state\x18\x06 \x01(\tR\x05state\"W\n" +
 	"\x17GetAnchorHistoryRequest\x12<\n" +
 	"\n" +
 	"pagination\x18\x01 \x01(\v2\x1c.common.v1.PaginationRequestR\n" +
-	"pagination\"\x89\x01\n" +
-	"\x18GetAnchorHistoryResponse\x12.\n" +
-	"\x06events\x18\x01 \x03(\v2\x16.anchor.v1.AnchorEventR\x06events\x12=\n" +
+	"pagination\"\x8c\x01\n" +
+	"\x18GetAnchorHistoryResponse\x121\n" +
+	"\arecords\x18\x01 \x03(\v2\x17.anchor.v1.AnchorRecordR\arecords\x12=\n" +
 	"\n" +
 	"pagination\x18\x02 \x01(\v2\x1d.common.v1.PaginationResponseR\n" +
-	"pagination\"\xab\x01\n" +
-	"\vAnchorEvent\x12\x1b\n" +
+	"pagination\"\xe5\x01\n" +
+	"\fAnchorRecord\x12\x1b\n" +
 	"\tanchor_id\x18\x01 \x01(\tR\banchorId\x12\x1f\n" +
-	"\vcommit_hash\x18\x02 \x01(\tR\n" +
-	"commitHash\x12*\n" +
-	"\x11tangle_message_id\x18\x03 \x01(\tR\x0ftangleMessageId\x12\x1c\n" +
-	"\ttimestamp\x18\x04 \x01(\tR\ttimestamp\x12\x14\n" +
-	"\x05state\x18\x05 \x01(\tR\x05state\"\x16\n" +
-	"\x14TriggerAnchorRequest\"t\n" +
-	"\x15TriggerAnchorResponse\x12\x1b\n" +
+	"\vmerkle_root\x18\x02 \x01(\tR\n" +
+	"merkleRoot\x12\x19\n" +
+	"\bgit_head\x18\x03 \x01(\tR\agitHead\x12\x14\n" +
+	"\x05state\x18\x04 \x01(\tR\x05state\x12\x1c\n" +
+	"\ttimestamp\x18\x05 \x01(\tR\ttimestamp\x12\x18\n" +
+	"\abackend\x18\x06 \x01(\tR\abackend\x12\x13\n" +
+	"\x05tx_id\x18\a \x01(\tR\x04txId\x12\x19\n" +
+	"\bnode_did\x18\b \x01(\tR\anodeDid\"\x13\n" +
+	"\x11GetNodeDIDRequest\"H\n" +
+	"\x12GetNodeDIDResponse\x122\n" +
+	"\bdocument\x18\x01 \x01(\v2\x16.anchor.v1.DIDDocumentR\bdocument\"2\n" +
+	"\x13GetDeviceDIDRequest\x12\x1b\n" +
+	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\"J\n" +
+	"\x14GetDeviceDIDResponse\x122\n" +
+	"\bdocument\x18\x01 \x01(\v2\x16.anchor.v1.DIDDocumentR\bdocument\"%\n" +
+	"\x11ResolveDIDRequest\x12\x10\n" +
+	"\x03did\x18\x01 \x01(\tR\x03did\"H\n" +
+	"\x12ResolveDIDResponse\x122\n" +
+	"\bdocument\x18\x01 \x01(\v2\x16.anchor.v1.DIDDocumentR\bdocument\"\xf4\x01\n" +
+	"\vDIDDocument\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x18\n" +
+	"\acontext\x18\x02 \x03(\tR\acontext\x12N\n" +
+	"\x13verification_method\x18\x03 \x03(\v2\x1d.anchor.v1.VerificationMethodR\x12verificationMethod\x12&\n" +
+	"\x0eauthentication\x18\x04 \x03(\tR\x0eauthentication\x12)\n" +
+	"\x10assertion_method\x18\x05 \x03(\tR\x0fassertionMethod\x12\x18\n" +
+	"\acreated\x18\x06 \x01(\tR\acreated\"\x8a\x01\n" +
+	"\x12VerificationMethod\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
+	"\x04type\x18\x02 \x01(\tR\x04type\x12\x1e\n" +
+	"\n" +
+	"controller\x18\x03 \x01(\tR\n" +
+	"controller\x120\n" +
+	"\x14public_key_multibase\x18\x04 \x01(\tR\x12publicKeyMultibase\"\xf6\x01\n" +
+	"\x16IssueCredentialRequest\x12\x1b\n" +
 	"\tanchor_id\x18\x01 \x01(\tR\banchorId\x12\x14\n" +
-	"\x05state\x18\x02 \x01(\tR\x05state\x12(\n" +
-	"\x03git\x18\x03 \x01(\v2\x16.common.v1.GitMetadataR\x03git2\xdf\x02\n" +
+	"\x05types\x18\x02 \x03(\tR\x05types\x12d\n" +
+	"\x11additional_claims\x18\x03 \x03(\v27.anchor.v1.IssueCredentialRequest.AdditionalClaimsEntryR\x10additionalClaims\x1aC\n" +
+	"\x15AdditionalClaimsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"Z\n" +
+	"\x17IssueCredentialResponse\x12?\n" +
+	"\n" +
+	"credential\x18\x01 \x01(\v2\x1f.anchor.v1.VerifiableCredentialR\n" +
+	"credential\"B\n" +
+	"\x17VerifyCredentialRequest\x12'\n" +
+	"\x0fcredential_json\x18\x01 \x01(\tR\x0ecredentialJson\"b\n" +
+	"\x18VerifyCredentialResponse\x12\x14\n" +
+	"\x05valid\x18\x01 \x01(\bR\x05valid\x12\x16\n" +
+	"\x06issuer\x18\x02 \x01(\tR\x06issuer\x12\x18\n" +
+	"\amessage\x18\x03 \x01(\tR\amessage\"j\n" +
+	"\x16ListCredentialsRequest\x12\x12\n" +
+	"\x04type\x18\x01 \x01(\tR\x04type\x12<\n" +
+	"\n" +
+	"pagination\x18\x02 \x01(\v2\x1c.common.v1.PaginationRequestR\n" +
+	"pagination\"\x9b\x01\n" +
+	"\x17ListCredentialsResponse\x12A\n" +
+	"\vcredentials\x18\x01 \x03(\v2\x1f.anchor.v1.VerifiableCredentialR\vcredentials\x12=\n" +
+	"\n" +
+	"pagination\x18\x02 \x01(\v2\x1d.common.v1.PaginationResponseR\n" +
+	"pagination\"\xa4\x02\n" +
+	"\x14VerifiableCredential\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x18\n" +
+	"\acontext\x18\x02 \x03(\tR\acontext\x12\x12\n" +
+	"\x04type\x18\x03 \x03(\tR\x04type\x12\x16\n" +
+	"\x06issuer\x18\x04 \x01(\tR\x06issuer\x12#\n" +
+	"\rissuance_date\x18\x05 \x01(\tR\fissuanceDate\x12'\n" +
+	"\x0fexpiration_date\x18\x06 \x01(\tR\x0eexpirationDate\x126\n" +
+	"\x17credential_subject_json\x18\a \x01(\tR\x15credentialSubjectJson\x120\n" +
+	"\x05proof\x18\b \x01(\v2\x1a.anchor.v1.CredentialProofR\x05proof\"\xb6\x01\n" +
+	"\x0fCredentialProof\x12\x12\n" +
+	"\x04type\x18\x01 \x01(\tR\x04type\x12\x18\n" +
+	"\acreated\x18\x02 \x01(\tR\acreated\x12/\n" +
+	"\x13verification_method\x18\x03 \x01(\tR\x12verificationMethod\x12#\n" +
+	"\rproof_purpose\x18\x04 \x01(\tR\fproofPurpose\x12\x1f\n" +
+	"\vproof_value\x18\x05 \x01(\tR\n" +
+	"proofValue\"\x15\n" +
+	"\x13ListBackendsRequest\"J\n" +
+	"\x14ListBackendsResponse\x122\n" +
+	"\bbackends\x18\x01 \x03(\v2\x16.anchor.v1.BackendInfoR\bbackends\"a\n" +
+	"\vBackendInfo\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1c\n" +
+	"\tavailable\x18\x02 \x01(\bR\tavailable\x12 \n" +
+	"\vdescription\x18\x03 \x01(\tR\vdescription\"-\n" +
+	"\x17GetBackendStatusRequest\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\"\xbf\x01\n" +
+	"\x18GetBackendStatusResponse\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1c\n" +
+	"\tavailable\x18\x02 \x01(\bR\tavailable\x12 \n" +
+	"\vdescription\x18\x03 \x01(\tR\vdescription\x12%\n" +
+	"\x0eanchored_count\x18\x04 \x01(\x05R\ranchoredCount\x12(\n" +
+	"\x10last_anchor_time\x18\x05 \x01(\tR\x0elastAnchorTime\"\x17\n" +
+	"\x15GetQueueStatusRequest\"\x8c\x01\n" +
+	"\x16GetQueueStatusResponse\x12\x18\n" +
+	"\apending\x18\x01 \x01(\x05R\apending\x12'\n" +
+	"\x0ftotal_processed\x18\x02 \x01(\x05R\x0etotalProcessed\x12/\n" +
+	"\aentries\x18\x03 \x03(\v2\x15.anchor.v1.QueueEntryR\aentries\"\x9c\x01\n" +
+	"\n" +
+	"QueueEntry\x12\x1b\n" +
+	"\tanchor_id\x18\x01 \x01(\tR\banchorId\x12\x1f\n" +
+	"\vmerkle_root\x18\x02 \x01(\tR\n" +
+	"merkleRoot\x12\x19\n" +
+	"\bgit_head\x18\x03 \x01(\tR\agitHead\x12\x1f\n" +
+	"\venqueued_at\x18\x04 \x01(\tR\n" +
+	"enqueuedAt\x12\x14\n" +
+	"\x05state\x18\x05 \x01(\tR\x05state\"\x0f\n" +
+	"\rHealthRequest\"\xa1\x01\n" +
+	"\x0eHealthResponse\x12\x16\n" +
+	"\x06status\x18\x01 \x01(\tR\x06status\x12\x19\n" +
+	"\bnode_did\x18\x02 \x01(\tR\anodeDid\x12\x18\n" +
+	"\abackend\x18\x03 \x01(\tR\abackend\x12!\n" +
+	"\fanchor_count\x18\x04 \x01(\x05R\vanchorCount\x12\x1f\n" +
+	"\vqueue_depth\x18\x05 \x01(\x05R\n" +
+	"queueDepth2\xa8\t\n" +
 	"\rAnchorService\x12R\n" +
-	"\tGetStatus\x12!.anchor.v1.GetAnchorStatusRequest\x1a\".anchor.v1.GetAnchorStatusResponse\x12O\n" +
+	"\tGetStatus\x12!.anchor.v1.GetAnchorStatusRequest\x1a\".anchor.v1.GetAnchorStatusResponse\x12R\n" +
+	"\rTriggerAnchor\x12\x1f.anchor.v1.TriggerAnchorRequest\x1a .anchor.v1.TriggerAnchorResponse\x12O\n" +
 	"\fVerifyAnchor\x12\x1e.anchor.v1.VerifyAnchorRequest\x1a\x1f.anchor.v1.VerifyAnchorResponse\x12U\n" +
 	"\n" +
-	"GetHistory\x12\".anchor.v1.GetAnchorHistoryRequest\x1a#.anchor.v1.GetAnchorHistoryResponse\x12R\n" +
-	"\rTriggerAnchor\x12\x1f.anchor.v1.TriggerAnchorRequest\x1a .anchor.v1.TriggerAnchorResponseB@Z>github.com/FibrinLab/open-nucleus/gen/proto/anchor/v1;anchorv1b\x06proto3"
+	"GetHistory\x12\".anchor.v1.GetAnchorHistoryRequest\x1a#.anchor.v1.GetAnchorHistoryResponse\x12I\n" +
+	"\n" +
+	"GetNodeDID\x12\x1c.anchor.v1.GetNodeDIDRequest\x1a\x1d.anchor.v1.GetNodeDIDResponse\x12O\n" +
+	"\fGetDeviceDID\x12\x1e.anchor.v1.GetDeviceDIDRequest\x1a\x1f.anchor.v1.GetDeviceDIDResponse\x12I\n" +
+	"\n" +
+	"ResolveDID\x12\x1c.anchor.v1.ResolveDIDRequest\x1a\x1d.anchor.v1.ResolveDIDResponse\x12e\n" +
+	"\x1cIssueDataIntegrityCredential\x12!.anchor.v1.IssueCredentialRequest\x1a\".anchor.v1.IssueCredentialResponse\x12[\n" +
+	"\x10VerifyCredential\x12\".anchor.v1.VerifyCredentialRequest\x1a#.anchor.v1.VerifyCredentialResponse\x12X\n" +
+	"\x0fListCredentials\x12!.anchor.v1.ListCredentialsRequest\x1a\".anchor.v1.ListCredentialsResponse\x12O\n" +
+	"\fListBackends\x12\x1e.anchor.v1.ListBackendsRequest\x1a\x1f.anchor.v1.ListBackendsResponse\x12[\n" +
+	"\x10GetBackendStatus\x12\".anchor.v1.GetBackendStatusRequest\x1a#.anchor.v1.GetBackendStatusResponse\x12U\n" +
+	"\x0eGetQueueStatus\x12 .anchor.v1.GetQueueStatusRequest\x1a!.anchor.v1.GetQueueStatusResponse\x12=\n" +
+	"\x06Health\x12\x18.anchor.v1.HealthRequest\x1a\x19.anchor.v1.HealthResponseB@Z>github.com/FibrinLab/open-nucleus/gen/proto/anchor/v1;anchorv1b\x06proto3"
 
 var (
 	file_anchor_v1_anchor_proto_rawDescOnce sync.Once
@@ -578,39 +2254,98 @@ func file_anchor_v1_anchor_proto_rawDescGZIP() []byte {
 	return file_anchor_v1_anchor_proto_rawDescData
 }
 
-var file_anchor_v1_anchor_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_anchor_v1_anchor_proto_msgTypes = make([]protoimpl.MessageInfo, 36)
 var file_anchor_v1_anchor_proto_goTypes = []any{
 	(*GetAnchorStatusRequest)(nil),   // 0: anchor.v1.GetAnchorStatusRequest
 	(*GetAnchorStatusResponse)(nil),  // 1: anchor.v1.GetAnchorStatusResponse
-	(*VerifyAnchorRequest)(nil),      // 2: anchor.v1.VerifyAnchorRequest
-	(*VerifyAnchorResponse)(nil),     // 3: anchor.v1.VerifyAnchorResponse
-	(*GetAnchorHistoryRequest)(nil),  // 4: anchor.v1.GetAnchorHistoryRequest
-	(*GetAnchorHistoryResponse)(nil), // 5: anchor.v1.GetAnchorHistoryResponse
-	(*AnchorEvent)(nil),              // 6: anchor.v1.AnchorEvent
-	(*TriggerAnchorRequest)(nil),     // 7: anchor.v1.TriggerAnchorRequest
-	(*TriggerAnchorResponse)(nil),    // 8: anchor.v1.TriggerAnchorResponse
-	(*v1.PaginationRequest)(nil),     // 9: common.v1.PaginationRequest
-	(*v1.PaginationResponse)(nil),    // 10: common.v1.PaginationResponse
-	(*v1.GitMetadata)(nil),           // 11: common.v1.GitMetadata
+	(*TriggerAnchorRequest)(nil),     // 2: anchor.v1.TriggerAnchorRequest
+	(*TriggerAnchorResponse)(nil),    // 3: anchor.v1.TriggerAnchorResponse
+	(*VerifyAnchorRequest)(nil),      // 4: anchor.v1.VerifyAnchorRequest
+	(*VerifyAnchorResponse)(nil),     // 5: anchor.v1.VerifyAnchorResponse
+	(*GetAnchorHistoryRequest)(nil),  // 6: anchor.v1.GetAnchorHistoryRequest
+	(*GetAnchorHistoryResponse)(nil), // 7: anchor.v1.GetAnchorHistoryResponse
+	(*AnchorRecord)(nil),             // 8: anchor.v1.AnchorRecord
+	(*GetNodeDIDRequest)(nil),        // 9: anchor.v1.GetNodeDIDRequest
+	(*GetNodeDIDResponse)(nil),       // 10: anchor.v1.GetNodeDIDResponse
+	(*GetDeviceDIDRequest)(nil),      // 11: anchor.v1.GetDeviceDIDRequest
+	(*GetDeviceDIDResponse)(nil),     // 12: anchor.v1.GetDeviceDIDResponse
+	(*ResolveDIDRequest)(nil),        // 13: anchor.v1.ResolveDIDRequest
+	(*ResolveDIDResponse)(nil),       // 14: anchor.v1.ResolveDIDResponse
+	(*DIDDocument)(nil),              // 15: anchor.v1.DIDDocument
+	(*VerificationMethod)(nil),       // 16: anchor.v1.VerificationMethod
+	(*IssueCredentialRequest)(nil),   // 17: anchor.v1.IssueCredentialRequest
+	(*IssueCredentialResponse)(nil),  // 18: anchor.v1.IssueCredentialResponse
+	(*VerifyCredentialRequest)(nil),  // 19: anchor.v1.VerifyCredentialRequest
+	(*VerifyCredentialResponse)(nil), // 20: anchor.v1.VerifyCredentialResponse
+	(*ListCredentialsRequest)(nil),   // 21: anchor.v1.ListCredentialsRequest
+	(*ListCredentialsResponse)(nil),  // 22: anchor.v1.ListCredentialsResponse
+	(*VerifiableCredential)(nil),     // 23: anchor.v1.VerifiableCredential
+	(*CredentialProof)(nil),          // 24: anchor.v1.CredentialProof
+	(*ListBackendsRequest)(nil),      // 25: anchor.v1.ListBackendsRequest
+	(*ListBackendsResponse)(nil),     // 26: anchor.v1.ListBackendsResponse
+	(*BackendInfo)(nil),              // 27: anchor.v1.BackendInfo
+	(*GetBackendStatusRequest)(nil),  // 28: anchor.v1.GetBackendStatusRequest
+	(*GetBackendStatusResponse)(nil), // 29: anchor.v1.GetBackendStatusResponse
+	(*GetQueueStatusRequest)(nil),    // 30: anchor.v1.GetQueueStatusRequest
+	(*GetQueueStatusResponse)(nil),   // 31: anchor.v1.GetQueueStatusResponse
+	(*QueueEntry)(nil),               // 32: anchor.v1.QueueEntry
+	(*HealthRequest)(nil),            // 33: anchor.v1.HealthRequest
+	(*HealthResponse)(nil),           // 34: anchor.v1.HealthResponse
+	nil,                              // 35: anchor.v1.IssueCredentialRequest.AdditionalClaimsEntry
+	(*v1.GitMetadata)(nil),           // 36: common.v1.GitMetadata
+	(*v1.PaginationRequest)(nil),     // 37: common.v1.PaginationRequest
+	(*v1.PaginationResponse)(nil),    // 38: common.v1.PaginationResponse
 }
 var file_anchor_v1_anchor_proto_depIdxs = []int32{
-	9,  // 0: anchor.v1.GetAnchorHistoryRequest.pagination:type_name -> common.v1.PaginationRequest
-	6,  // 1: anchor.v1.GetAnchorHistoryResponse.events:type_name -> anchor.v1.AnchorEvent
-	10, // 2: anchor.v1.GetAnchorHistoryResponse.pagination:type_name -> common.v1.PaginationResponse
-	11, // 3: anchor.v1.TriggerAnchorResponse.git:type_name -> common.v1.GitMetadata
-	0,  // 4: anchor.v1.AnchorService.GetStatus:input_type -> anchor.v1.GetAnchorStatusRequest
-	2,  // 5: anchor.v1.AnchorService.VerifyAnchor:input_type -> anchor.v1.VerifyAnchorRequest
-	4,  // 6: anchor.v1.AnchorService.GetHistory:input_type -> anchor.v1.GetAnchorHistoryRequest
-	7,  // 7: anchor.v1.AnchorService.TriggerAnchor:input_type -> anchor.v1.TriggerAnchorRequest
-	1,  // 8: anchor.v1.AnchorService.GetStatus:output_type -> anchor.v1.GetAnchorStatusResponse
-	3,  // 9: anchor.v1.AnchorService.VerifyAnchor:output_type -> anchor.v1.VerifyAnchorResponse
-	5,  // 10: anchor.v1.AnchorService.GetHistory:output_type -> anchor.v1.GetAnchorHistoryResponse
-	8,  // 11: anchor.v1.AnchorService.TriggerAnchor:output_type -> anchor.v1.TriggerAnchorResponse
-	8,  // [8:12] is the sub-list for method output_type
-	4,  // [4:8] is the sub-list for method input_type
-	4,  // [4:4] is the sub-list for extension type_name
-	4,  // [4:4] is the sub-list for extension extendee
-	0,  // [0:4] is the sub-list for field type_name
+	36, // 0: anchor.v1.TriggerAnchorResponse.git:type_name -> common.v1.GitMetadata
+	37, // 1: anchor.v1.GetAnchorHistoryRequest.pagination:type_name -> common.v1.PaginationRequest
+	8,  // 2: anchor.v1.GetAnchorHistoryResponse.records:type_name -> anchor.v1.AnchorRecord
+	38, // 3: anchor.v1.GetAnchorHistoryResponse.pagination:type_name -> common.v1.PaginationResponse
+	15, // 4: anchor.v1.GetNodeDIDResponse.document:type_name -> anchor.v1.DIDDocument
+	15, // 5: anchor.v1.GetDeviceDIDResponse.document:type_name -> anchor.v1.DIDDocument
+	15, // 6: anchor.v1.ResolveDIDResponse.document:type_name -> anchor.v1.DIDDocument
+	16, // 7: anchor.v1.DIDDocument.verification_method:type_name -> anchor.v1.VerificationMethod
+	35, // 8: anchor.v1.IssueCredentialRequest.additional_claims:type_name -> anchor.v1.IssueCredentialRequest.AdditionalClaimsEntry
+	23, // 9: anchor.v1.IssueCredentialResponse.credential:type_name -> anchor.v1.VerifiableCredential
+	37, // 10: anchor.v1.ListCredentialsRequest.pagination:type_name -> common.v1.PaginationRequest
+	23, // 11: anchor.v1.ListCredentialsResponse.credentials:type_name -> anchor.v1.VerifiableCredential
+	38, // 12: anchor.v1.ListCredentialsResponse.pagination:type_name -> common.v1.PaginationResponse
+	24, // 13: anchor.v1.VerifiableCredential.proof:type_name -> anchor.v1.CredentialProof
+	27, // 14: anchor.v1.ListBackendsResponse.backends:type_name -> anchor.v1.BackendInfo
+	32, // 15: anchor.v1.GetQueueStatusResponse.entries:type_name -> anchor.v1.QueueEntry
+	0,  // 16: anchor.v1.AnchorService.GetStatus:input_type -> anchor.v1.GetAnchorStatusRequest
+	2,  // 17: anchor.v1.AnchorService.TriggerAnchor:input_type -> anchor.v1.TriggerAnchorRequest
+	4,  // 18: anchor.v1.AnchorService.VerifyAnchor:input_type -> anchor.v1.VerifyAnchorRequest
+	6,  // 19: anchor.v1.AnchorService.GetHistory:input_type -> anchor.v1.GetAnchorHistoryRequest
+	9,  // 20: anchor.v1.AnchorService.GetNodeDID:input_type -> anchor.v1.GetNodeDIDRequest
+	11, // 21: anchor.v1.AnchorService.GetDeviceDID:input_type -> anchor.v1.GetDeviceDIDRequest
+	13, // 22: anchor.v1.AnchorService.ResolveDID:input_type -> anchor.v1.ResolveDIDRequest
+	17, // 23: anchor.v1.AnchorService.IssueDataIntegrityCredential:input_type -> anchor.v1.IssueCredentialRequest
+	19, // 24: anchor.v1.AnchorService.VerifyCredential:input_type -> anchor.v1.VerifyCredentialRequest
+	21, // 25: anchor.v1.AnchorService.ListCredentials:input_type -> anchor.v1.ListCredentialsRequest
+	25, // 26: anchor.v1.AnchorService.ListBackends:input_type -> anchor.v1.ListBackendsRequest
+	28, // 27: anchor.v1.AnchorService.GetBackendStatus:input_type -> anchor.v1.GetBackendStatusRequest
+	30, // 28: anchor.v1.AnchorService.GetQueueStatus:input_type -> anchor.v1.GetQueueStatusRequest
+	33, // 29: anchor.v1.AnchorService.Health:input_type -> anchor.v1.HealthRequest
+	1,  // 30: anchor.v1.AnchorService.GetStatus:output_type -> anchor.v1.GetAnchorStatusResponse
+	3,  // 31: anchor.v1.AnchorService.TriggerAnchor:output_type -> anchor.v1.TriggerAnchorResponse
+	5,  // 32: anchor.v1.AnchorService.VerifyAnchor:output_type -> anchor.v1.VerifyAnchorResponse
+	7,  // 33: anchor.v1.AnchorService.GetHistory:output_type -> anchor.v1.GetAnchorHistoryResponse
+	10, // 34: anchor.v1.AnchorService.GetNodeDID:output_type -> anchor.v1.GetNodeDIDResponse
+	12, // 35: anchor.v1.AnchorService.GetDeviceDID:output_type -> anchor.v1.GetDeviceDIDResponse
+	14, // 36: anchor.v1.AnchorService.ResolveDID:output_type -> anchor.v1.ResolveDIDResponse
+	18, // 37: anchor.v1.AnchorService.IssueDataIntegrityCredential:output_type -> anchor.v1.IssueCredentialResponse
+	20, // 38: anchor.v1.AnchorService.VerifyCredential:output_type -> anchor.v1.VerifyCredentialResponse
+	22, // 39: anchor.v1.AnchorService.ListCredentials:output_type -> anchor.v1.ListCredentialsResponse
+	26, // 40: anchor.v1.AnchorService.ListBackends:output_type -> anchor.v1.ListBackendsResponse
+	29, // 41: anchor.v1.AnchorService.GetBackendStatus:output_type -> anchor.v1.GetBackendStatusResponse
+	31, // 42: anchor.v1.AnchorService.GetQueueStatus:output_type -> anchor.v1.GetQueueStatusResponse
+	34, // 43: anchor.v1.AnchorService.Health:output_type -> anchor.v1.HealthResponse
+	30, // [30:44] is the sub-list for method output_type
+	16, // [16:30] is the sub-list for method input_type
+	16, // [16:16] is the sub-list for extension type_name
+	16, // [16:16] is the sub-list for extension extendee
+	0,  // [0:16] is the sub-list for field type_name
 }
 
 func init() { file_anchor_v1_anchor_proto_init() }
@@ -624,7 +2359,7 @@ func file_anchor_v1_anchor_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_anchor_v1_anchor_proto_rawDesc), len(file_anchor_v1_anchor_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   9,
+			NumMessages:   36,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
