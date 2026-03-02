@@ -7,3 +7,10 @@ bin/
 *.out
 .env
 agents.md
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+.venv/

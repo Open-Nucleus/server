@@ -1,0 +1,25 @@
+grpc_port: 50056
+http_port: 8090
+
+sync_grpc_address: "localhost:50052"
+patient_service_address: "localhost:50051"
+
+repo_path: "/var/lib/open-nucleus/data"
+sqlite_path: "/var/lib/open-nucleus/index.db"
+
+hardware_profile: "pi4_8gb"
+
+ollama:
+  enabled: false
+  port: 11434
+  model: "gemma2:2b"
+  timeout: 120
+  allow_patient_data: false
+  max_restarts: 5
+
+skills:
+  - idsr_cholera
+  - idsr_measles
+  - stockout_prediction
+  - medication_interaction
+  - vital_sign_trend

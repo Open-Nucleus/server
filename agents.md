@@ -1,7 +1,7 @@
 # Open Nucleus — Architectural Memory
 
 > Living document. Updated after every major feature or structural change.
-> Last updated: Phase 5 — Anchor Service (2026-03-02)
+> Last updated: Phase 5 — Sentinel Agent Service (2026-03-02)
 
 ---
 
@@ -11,7 +11,7 @@
 Open Nucleus is an open-source, offline-first electronic health record (EHR) system designed for military forward operating bases, disaster relief zones, and small clinics in sub-Saharan Africa. It assumes zero connectivity as the default and treats network access as a bonus.
 
 ### Core Architecture
-Microservices in Go (Patient, Sync, Auth, Formulary, Anchor services) plus a Python Sentinel Agent, fronted by a Go API Gateway on port 8080 (REST/JSON). The Flutter frontend lives in a separate repo (open-nucleus-app) and consumes the gateway as a pure REST client.
+Microservices in Go (Patient, Sync, Auth, Formulary, Anchor services) plus a **Python Sentinel Agent** on port :50056 (gRPC) / :8090 (HTTP), fronted by a Go API Gateway on port 8080 (REST/JSON). The Flutter frontend lives in a separate repo (open-nucleus-app) and consumes the gateway as a pure REST client.
 Dual-layer data model: FHIR R4 resources are stored as JSON files in a Git repository (source of truth) with a SQLite database as a rebuildable query index. Every clinical write commits to Git first, then upserts SQLite. If SQLite is lost, it rebuilds from Git.
 Git-based sync: Nodes discover each other via Wi-Fi Direct, Bluetooth, or local network and sync using Git fetch/merge/push. A FHIR-aware merge driver classifies conflicts into auto-merge (safe), review (flag for clinician), or block (clinical safety risk). Transport is pluggable and automatic.
 Sentinel Agent: A "sleeper" AI agent that wakes on sync events, crawls the merged dataset for epidemiological outbreak signals, cross-site medication conflicts, missed referral follow-ups, and supply stockout predictions. V1 is rule-based using WHO IDSR thresholds.
@@ -169,10 +169,10 @@ CORS → RequestID → AuditLog → JWTAuth → [per-route: RateLimiter → Requ
 - **patient.go** — `patientAdapter` implements `PatientService` (24 methods: list/get/search/create/update/delete + match/history/timeline + 15 clinical sub-resource methods) via `pool.Conn("patient")`.
 - **sync.go** — `syncAdapter` implements `SyncService` (6 methods) via `pool.Conn("sync")`.
 - **conflict.go** — `conflictAdapter` implements `ConflictService` (4 methods) via `pool.Conn("sync")` (conflicts are a sync sub-domain).
-- **sentinel.go** — `sentinelAdapter` implements `SentinelService` (5 methods) via `pool.Conn("sentinel")`.
+- **sentinel.go** — `sentinelAdapter` implements `SentinelService` (5 methods) via `pool.Conn("sentinel")` with full proto→DTO conversion (real gRPC calls to Python Sentinel Agent :50056).
 - **formulary.go** — `formularyAdapter` implements `FormularyService` (16 methods: drug lookup, interactions, allergy checks, dosing stub, stock management, formulary info) via `pool.Conn("formulary")` with full proto→DTO conversion.
 - **anchor.go** — `anchorAdapter` implements `AnchorService` (14 methods: anchor status/trigger/verify/history, DID node/device/resolve, credentials issue/verify/list, backends list/status, queue status, health) via `pool.Conn("anchor")` with full proto→DTO conversion.
-- **supply.go** — `supplyAdapter` implements `SupplyService` (5 methods) via `pool.Conn("sentinel")` (supply intelligence from Sentinel).
+- **supply.go** — `supplyAdapter` implements `SupplyService` (5 methods) via `pool.Conn("sentinel")` with full proto→DTO conversion (real gRPC calls to Python Sentinel Agent :50056).
 
 **Key pattern:** Handlers never touch gRPC directly. The service layer translates between HTTP DTOs and gRPC request/response types. This is where multi-service orchestration will live (e.g., MedRequest → Formulary check).
 
@@ -352,10 +352,10 @@ Standalone Go program that boots all 5 services (Auth, Patient, Sync, Formulary,
 | Allergy Intolerances (list/create/update) | Handler complete, gRPC adapter wired to patient service :50051 | clinical.go | patient.go |
 | Sync (status/peers/trigger/cancel/history/bundle/transports/events) | Handler complete, gRPC adapter wired to sync service :50052 | sync.go | sync.go |
 | Conflicts (list/get/resolve/defer) | Handler complete, gRPC adapter wired to sync service :50052 | conflict.go | conflict.go |
-| Alerts (list/get/acknowledge/dismiss/summary) | Handler complete, gRPC adapter stubbed | sentinel.go | sentinel.go |
+| Alerts (list/get/acknowledge/dismiss/summary) | Handler complete, gRPC adapter wired to sentinel service :50056 | sentinel.go | sentinel.go |
 | Formulary (16 RPCs: drug lookup, interactions, allergy, dosing, stock, redistribution, info) | Handler complete, gRPC adapter wired to formulary service :50054 | formulary.go | formulary.go |
 | Anchor (14 RPCs: anchoring, DID, credentials, backend, queue, health) | Handler complete, gRPC adapter wired to anchor service :50055 | anchor.go | anchor.go |
-| Supply chain (inventory/deliveries/predictions/redistribution) | Handler complete, gRPC adapter stubbed | supply.go | supply.go |
+| Supply chain (inventory/deliveries/predictions/redistribution) | Handler complete, gRPC adapter wired to sentinel service :50056 | supply.go | supply.go |
 | JSON Schema Validation | 6 hardened schemas (Reference, CodeableConcept, status enums, required fields mirror validate.go) | — | validator.go |
 | WebSocket (/ws) | 501 stub | stubs.go | — |
 
@@ -565,6 +565,56 @@ services/anchor/
 - **Merkle tree excludes `.nucleus/`**: Only clinical data files are included in the tree; internal metadata is excluded.
 - **TriggerAnchor workflow**: TreeWalk → SHA-256 each file → Merkle root → skip if unchanged (unless manual) → attempt engine.Anchor() → enqueue on failure → save record in Git.
 
+## Sentinel Agent Service (services/sentinel/) — Python
+
+Port :50056 (gRPC), :8090 (HTTP management). The first Python microservice. Implements all 10 sentinel proto RPCs (5 alert + 5 supply) with in-memory stores and seed data. Stubs `open-sentinel` interfaces for future swap.
+
+```
+services/sentinel/
+├── pyproject.toml                       ← Python project config
+├── requirements.txt                     ← Pinned deps
+├── config.yaml                          ← Default config
+├── proto_gen.sh                         ← Generate Python proto stubs
+├── src/sentinel/
+│   ├── main.py                          ← Async entrypoint (gRPC + HTTP + background tasks)
+│   ├── config.py                        ← SentinelConfig + OllamaConfig dataclasses, YAML loader
+│   ├── sync_subscriber.py               ← Sync Service event stream skeleton (stub)
+│   ├── fhir_output.py                   ← Alert → FHIR DetectedIssue conversion, EmissionQueue
+│   ├── gen/                             ← Generated proto Python code (committed)
+│   │   ├── common/v1/                   ← PaginationRequest/Response
+│   │   └── sentinel/v1/                 ← SentinelService stub/servicer, all message types
+│   ├── server/
+│   │   ├── servicer.py                  ← SentinelServiceServicer (10 RPCs)
+│   │   └── converters.py                ← Proto ↔ domain model converters
+│   ├── http/
+│   │   └── health_server.py             ← aiohttp server (13 HTTP endpoints)
+│   ├── store/
+│   │   ├── models.py                    ← Alert, InventoryItem, DeliveryRecord, SupplyPrediction, etc.
+│   │   ├── alert_store.py               ← Thread-safe in-memory alert store
+│   │   ├── inventory_store.py           ← Thread-safe in-memory inventory store
+│   │   └── seed.py                      ← 5 alerts + 10 inventory items + predictions + redistributions
+│   ├── ollama/
+│   │   └── sidecar.py                   ← OllamaSidecar: start/stop/watchdog/health
+│   └── agent/
+│       ├── interfaces.py                ← ABCs: SentinelSkill, DataAdapter, AlertOutput, MemoryStore, LLMEngine
+│       └── stub.py                      ← StubAgent (logs "open-sentinel not configured")
+└── tests/                               ← 68 pytest tests
+    ├── conftest.py                      ← Fixtures: seeded stores, in-process gRPC server
+    ├── test_config.py                   ← 4 tests
+    ├── test_alert_store.py              ← 11 tests
+    ├── test_inventory_store.py          ← 11 tests
+    ├── test_grpc_servicer.py            ← 17 tests (all 10 RPCs)
+    ├── test_health_server.py            ← 13 tests (all HTTP endpoints)
+    └── test_fhir_output.py              ← 12 tests (FHIR conversion, provenance, queue)
+```
+
+**Key design decisions:**
+- **In-memory stores**: Thread-safe dicts with seed data. No SQLite/Git yet — stores are populated at startup and persist for session lifetime.
+- **Seed data**: 5 realistic alerts (cholera cluster, measles, stockout, drug interaction, BP trend) + 10 WHO essential medicines across 2 sites + supply predictions + redistribution suggestions.
+- **StubAgent pattern**: Same as formulary dosing stub — clean interfaces with stub implementations that log "not configured". When `open-sentinel` exists, swap StubAgent for real SentinelAgent.
+- **FHIR output**: Full DetectedIssue conversion with AI provenance tags (rule-only vs ai-generated), severity mapping, reasoning extensions. EmissionQueue stubs the Patient Service write-back.
+- **Ollama sidecar**: Process manager with crash recovery (max 5 restarts), health monitoring, watchdog loop. Disabled by default.
+
 ---
 
 ## Phase Roadmap
@@ -576,5 +626,5 @@ services/anchor/
 | 3 — Patient Service | First real backend: `services/patient/` + `pkg/fhir` + `pkg/gitstore` + `pkg/sqliteindex`. 38 gRPC RPCs, full write pipeline, 40 tests passing | COMPLETE |
 | 4 — Auth + Sync Services | Auth Service (15 RPCs, Ed25519 + JWT + RBAC) + Sync Service (~25 RPCs + NodeSyncService, FHIR merge driver, event bus) + `pkg/auth` + `pkg/merge`. 62 tests passing | COMPLETE |
 | 4.5 — E2E Smoke Tests | Full-stack E2E tests (11 cases), JWT claims fix, patient gRPC adapter wiring, test helper packages | COMPLETE |
-| 5 — Formulary + Anchor + Supply | Formulary Service COMPLETE (16 RPCs, 26 tests). Anchor Service COMPLETE (14 RPCs, 19 tests, Merkle tree, did:key, Verifiable Credentials). Supply: Not started | IN PROGRESS |
+| 5 — Formulary + Anchor + Sentinel | Formulary COMPLETE (16 RPCs, 26 tests). Anchor COMPLETE (14 RPCs, 19 tests). Sentinel Agent COMPLETE (10 RPCs, 13 HTTP endpoints, 68 tests). Go gateway adapters wired for all 3. | COMPLETE |
 | 6 — WebSocket + Hardening | Real-time events, production config, TLS, metrics | Not started |
