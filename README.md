@@ -7,14 +7,20 @@ Open-source, offline-first electronic health record (EHR) system for military fo
 ## Quick Start
 
 ```bash
-# Build all (gateway + 5 services)
+# Build all (gateway + 5 Go services)
 make build-all
 
 # Run gateway (starts on :8080)
 make run
 
+# Run Sentinel Agent (Python, starts on :50056 gRPC + :8090 HTTP)
+make run-sentinel
+
 # Test everything (race detection)
 make test-all
+
+# Test Sentinel Agent (Python, 68 tests)
+make test-sentinel
 
 # Interactive smoke test (boots all services in-process, 27 REST steps)
 make smoke
@@ -31,10 +37,10 @@ Flutter App (HTTP REST/JSON)
    +----+-----+
         | gRPC
         v
-  +----------------------------------------------+
-  | Auth :50053  | Patient :50051  | Sync :50052  |
-  | Formulary :50054 | Anchor :50055 | Sentinel   |
-  +----------------------------------------------+
+  +------------------------------------------------------+
+  | Auth :50053  | Patient :50051  | Sync :50052          |
+  | Formulary :50054 | Anchor :50055 | Sentinel :50056    |
+  +------------------------------------------------------+
 ```
 
 **Dual-layer data model:** FHIR R4 resources stored as JSON files in a Git repository (source of truth) with SQLite as a rebuildable query index. Every clinical write commits to Git first, then upserts SQLite. If SQLite is lost, it rebuilds from Git.
@@ -52,7 +58,7 @@ Flutter App (HTTP REST/JSON)
 | **Sync** | :50052 | ~25 | Transport-agnostic sync, FHIR-aware merge driver, conflict resolution, event bus |
 | **Formulary** | :50054 | 16 | WHO essential medicines, drug interactions, allergy cross-reactivity, stock management |
 | **Anchor** | :50055 | 14 | Merkle tree, did:key, Verifiable Credentials, queue management |
-| **Sentinel** | :50056 | — | Not started (rule-based AI agent for outbreak/safety signals) |
+| **Sentinel** | :50056 | 10 | Python agent — alerts, supply intelligence, Ollama sidecar, HTTP mgmt API (:8090) |
 
 The gateway starts even if backends are down — unavailable services return 503.
 
@@ -83,7 +89,8 @@ services/
 ├── auth/                        Auth Service (Ed25519 challenge-response)
 ├── sync/                        Sync Service (transport-agnostic, conflict resolution)
 ├── formulary/                   Formulary Service (drug DB, interactions, stock)
-└── anchor/                      Anchor Service (Merkle anchoring, DID, VCs)
+├── anchor/                      Anchor Service (Merkle anchoring, DID, VCs)
+└── sentinel/                    Sentinel Agent (Python — alerts, supply, Ollama sidecar)
 proto/                           Protobuf definitions (common, auth, patient, sync, formulary, anchor, sentinel)
 schemas/                         6 JSON schemas for FHIR resource validation
 ```
@@ -121,6 +128,7 @@ make test-auth       # Auth service + pkg/auth
 make test-sync       # Sync service + pkg/merge
 make test-formulary  # Formulary service
 make test-anchor     # Anchor service + pkg/openanchor
+make test-sentinel   # Sentinel agent (Python, 68 tests)
 make test-e2e        # End-to-end tests
 make smoke           # Interactive smoke test (27 steps, colored output)
 ```
@@ -141,9 +149,12 @@ All settings in [`config.yaml`](./config.yaml) — server port, gRPC service add
 
 ```bash
 make build           # Build gateway binary
-make build-all       # Build all 6 binaries
+make build-all       # Build all 6 Go binaries
+make build-sentinel  # Install Sentinel Agent (Python)
 make run             # Build + run gateway
-make proto-gen       # Regenerate protobuf code (requires buf)
+make run-sentinel    # Run Sentinel Agent (Python)
+make proto-gen       # Regenerate Go protobuf code (requires buf)
+make proto-gen-python # Regenerate Python protobuf code
 make lint            # Run golangci-lint
 make clean           # Remove build artifacts
 ```
