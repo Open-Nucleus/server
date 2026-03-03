@@ -4,7 +4,7 @@ import (
 	"context"
 
 	anchorv1 "github.com/FibrinLab/open-nucleus/gen/proto/anchor/v1"
-	"github.com/FibrinLab/open-nucleus/pkg/openanchor"
+	"github.com/FibrinLab/open-nucleus/pkg/merge/openanchor"
 )
 
 func (s *Server) GetNodeDID(_ context.Context, _ *anchorv1.GetNodeDIDRequest) (*anchorv1.GetNodeDIDResponse, error) {

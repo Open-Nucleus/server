@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/FibrinLab/open-nucleus/pkg/gitstore"
-	"github.com/FibrinLab/open-nucleus/pkg/openanchor"
+	"github.com/FibrinLab/open-nucleus/pkg/merge/openanchor"
 )
 
 // DIDStore manages Git-backed DID documents.

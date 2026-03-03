@@ -13,7 +13,7 @@ import (
 
 	anchorv1 "github.com/FibrinLab/open-nucleus/gen/proto/anchor/v1"
 	"github.com/FibrinLab/open-nucleus/pkg/gitstore"
-	"github.com/FibrinLab/open-nucleus/pkg/openanchor"
+	"github.com/FibrinLab/open-nucleus/pkg/merge/openanchor"
 	"github.com/FibrinLab/open-nucleus/services/anchor/internal/config"
 	"github.com/FibrinLab/open-nucleus/services/anchor/internal/server"
 	"github.com/FibrinLab/open-nucleus/services/anchor/internal/service"

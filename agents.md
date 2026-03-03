@@ -538,7 +538,7 @@ services/formulary/
 - **Redistribution**: surplus (>90 days supply) vs shortage (<14 days), suggests transfers.
 - **Dosing**: `Engine` interface with `StubEngine` that returns `configured=false`. 3 dosing RPCs cleanly signal "not configured" without gRPC errors.
 
-## pkg/openanchor — Anchor Cryptography Library
+## pkg/merge/openanchor — Anchor Cryptography Library
 
 Interfaces + local implementations for Merkle trees, DID:key, and Verifiable Credentials. No external dependencies beyond Go stdlib. Designed to be replaced by the real `open-anchor` library later.
 
@@ -582,7 +582,7 @@ services/anchor/
 ```
 
 **Key design decisions:**
-- **Crypto in `pkg/openanchor/`**: Clean swap to real open-anchor later; service codes to interfaces.
+- **Crypto in `pkg/merge/openanchor/`**: Clean swap to real open-anchor later; service codes to interfaces.
 - **did:key only** (no ledger DIDs in V1): Fully offline, deterministic from Ed25519.
 - **SQLite for queue, Git for records/credentials/DIDs**: Queue is transient; records are source of truth (syncs via Git).
 - **StubBackend**: Returns `ErrBackendNotConfigured`. Queue fills, never drains. Same pattern as formulary dosing stub.

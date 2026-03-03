@@ -11,7 +11,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/FibrinLab/open-nucleus/pkg/gitstore"
-	"github.com/FibrinLab/open-nucleus/pkg/openanchor"
+	"github.com/FibrinLab/open-nucleus/pkg/merge/openanchor"
 	"github.com/FibrinLab/open-nucleus/services/anchor/internal/store"
 )
 

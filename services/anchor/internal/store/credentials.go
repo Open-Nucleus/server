@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/FibrinLab/open-nucleus/pkg/gitstore"
-	"github.com/FibrinLab/open-nucleus/pkg/openanchor"
+	"github.com/FibrinLab/open-nucleus/pkg/merge/openanchor"
 )
 
 // CredentialStore manages Git-backed Verifiable Credentials.

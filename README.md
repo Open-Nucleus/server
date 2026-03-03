@@ -83,7 +83,7 @@ pkg/
 ├── sqliteindex/                 SQLite query index via modernc.org/sqlite (pure Go, no CGO)
 ├── auth/                        Ed25519 crypto, EdDSA JWT, nonce store, RBAC, brute-force guard
 ├── merge/                       FHIR-aware merge driver (3-tier conflict classification)
-└── openanchor/                  Merkle tree, did:key, Verifiable Credentials, base58btc
+└── merge/openanchor/            Merkle tree, did:key, Verifiable Credentials, base58btc
 services/
 ├── patient/                     Patient Service (FHIR R4 write pipeline)
 ├── auth/                        Auth Service (Ed25519 challenge-response)
@@ -127,7 +127,7 @@ make test-patient    # Patient service + pkg/fhir + pkg/gitstore + pkg/sqliteind
 make test-auth       # Auth service + pkg/auth
 make test-sync       # Sync service + pkg/merge
 make test-formulary  # Formulary service
-make test-anchor     # Anchor service + pkg/openanchor
+make test-anchor     # Anchor service + pkg/merge/openanchor
 make test-sentinel   # Sentinel agent (Python, 68 tests)
 make test-e2e        # End-to-end tests
 make smoke           # Interactive smoke test (27 steps, colored output)

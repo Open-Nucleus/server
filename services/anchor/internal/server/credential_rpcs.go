@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	anchorv1 "github.com/FibrinLab/open-nucleus/gen/proto/anchor/v1"
-	"github.com/FibrinLab/open-nucleus/pkg/openanchor"
+	"github.com/FibrinLab/open-nucleus/pkg/merge/openanchor"
 )
 
 func (s *Server) IssueDataIntegrityCredential(_ context.Context, req *anchorv1.IssueCredentialRequest) (*anchorv1.IssueCredentialResponse, error) {
