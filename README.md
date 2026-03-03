@@ -54,7 +54,7 @@ Flutter App (HTTP REST/JSON)
 | Service | Port | RPCs | Status |
 |---------|------|------|--------|
 | **Auth** | :50053 | 15 | Ed25519 challenge-response, EdDSA JWT, RBAC (5 roles), device registry |
-| **Patient** | :50051 | 49 | FHIR R4 CRUD, 12 resource types, clinical sub-resources, generic top-level CRUD, FTS5 search, patient matching |
+| **Patient** | :50051 | 49 | FHIR R4 CRUD, 13 indexed resource types, clinical sub-resources, generic top-level CRUD, FTS5 search, patient matching |
 | **Sync** | :50052 | ~25 | Transport-agnostic sync, FHIR-aware merge driver, conflict resolution, event bus |
 | **Formulary** | :50054 | 16 | WHO essential medicines, drug interactions, allergy cross-reactivity, stock management |
 | **Anchor** | :50055 | 14 | Merkle tree, did:key, Verifiable Credentials, queue management |
@@ -71,15 +71,15 @@ cmd/
 internal/
 ├── config/                      Koanf YAML config loader
 ├── server/                      HTTP server with graceful shutdown
-├── router/                      chi route tree — ~70 REST endpoints + middleware scoping
-├── middleware/                   8-stage pipeline (ratelimit, requestid, jwt, rbac, validator, cors, audit)
+├── router/                      chi route tree — ~95 REST endpoints + ~85 FHIR endpoints + middleware scoping
+├── middleware/                   7-stage pipeline (ratelimit, requestid, jwt, rbac, validator, cors, audit)
 ├── handler/                     HTTP handlers (auth, patient, clinical, resource, sync, conflict, sentinel, formulary, anchor, supply)
 │   └── fhir/                   FHIR R4 REST API handlers (read, search, write, $everything, content negotiation)
 ├── service/                     8 interfaces + gRPC adapters (decouples handlers from transport)
 ├── grpcclient/                  Connection pool for 6 backend services
 └── model/                       Response envelope, error codes, pagination, JWT claims, RBAC
 pkg/
-├── fhir/                        FHIR R4 utilities (validation, extraction, meta, paths, soft delete, registry, bundle, outcome, capability, provenance)
+├── fhir/                        FHIR R4 utilities (validation, extraction, meta, paths, soft delete, registry, bundle, outcome, capability, provenance, extensions, profiles, StructureDefinition)
 ├── gitstore/                    Git operations via go-git/v5 (pure Go)
 ├── sqliteindex/                 SQLite query index via modernc.org/sqlite (pure Go, no CGO)
 ├── auth/                        Ed25519 crypto, EdDSA JWT, nonce store, RBAC, brute-force guard
@@ -144,7 +144,7 @@ All settings in [`config.yaml`](./config.yaml) — server port, gRPC service add
 - **Pure Go** — No CGO. Runs on Raspberry Pi 4 and Android tablets.
 - **Git as source of truth** — All clinical data in a Git repository. SQLite is a rebuildable index.
 - **Offline-first** — Every feature works without network. Sync is opportunistic.
-- **FHIR R4** — Interoperable with global health systems. CapabilityStatement at `/fhir/metadata`.
+- **FHIR R4** — Interoperable with global health systems. CapabilityStatement at `/fhir/metadata`. 5 custom profiles for African deployment (national IDs, WHO vaccines, growth monitoring, AI provenance, DHIS2).
 - **Provenance by default** — Every clinical write auto-generates a FHIR Provenance resource (HL7 v3-DataOperation coding, author/custodian agents).
 - **No new module deps for anchor crypto** — Merkle trees, did:key, and VCs use only Go stdlib (crypto/ed25519, crypto/sha256).
 
