@@ -7,6 +7,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/FibrinLab/open-nucleus/internal/handler"
+	fhirhandler "github.com/FibrinLab/open-nucleus/internal/handler/fhir"
 	"github.com/FibrinLab/open-nucleus/internal/middleware"
 	"github.com/FibrinLab/open-nucleus/internal/model"
 )
@@ -22,6 +23,7 @@ type Config struct {
 	FormularyHandler *handler.FormularyHandler
 	AnchorHandler    *handler.AnchorHandler
 	SupplyHandler    *handler.SupplyHandler
+	FHIRHandler      *fhirhandler.FHIRHandler
 	SchemaValidator  *middleware.SchemaValidator
 	JWTAuth          *middleware.JWTAuth
 	RateLimiter      *middleware.RateLimiter
@@ -45,6 +47,11 @@ func New(cfg Config) http.Handler {
 
 	// FHIR metadata endpoint (no auth — public discovery)
 	r.Get("/fhir/metadata", handler.CapabilityStatementHandler())
+
+	// FHIR R4 REST API (/fhir/{Type}) — authenticated, raw FHIR JSON
+	if cfg.FHIRHandler != nil {
+		cfg.FHIRHandler.RegisterRoutes(r, cfg.JWTAuth, cfg.RateLimiter)
+	}
 
 	r.Route("/api/v1", func(r chi.Router) {
 		// Auth routes — rate limiter + request ID only (NO JWT/RBAC)

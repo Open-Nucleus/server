@@ -555,6 +555,41 @@ func ExtractLocationFields(fhirJSON []byte, siteID, gitBlobHash string) (*Locati
 	return row, nil
 }
 
+// ExtractPatientReference extracts the patient ID from a FHIR resource's
+// subject.reference or patient.reference field. Returns ("", nil) if no
+// patient reference is found.
+func ExtractPatientReference(fhirJSON []byte) (string, error) {
+	var r map[string]any
+	if err := json.Unmarshal(fhirJSON, &r); err != nil {
+		return "", fmt.Errorf("invalid JSON: %w", err)
+	}
+
+	// Try subject.reference (Encounter, Observation, Condition, etc.)
+	if subj, ok := r["subject"].(map[string]any); ok {
+		if ref := getStr(subj, "reference"); ref != "" {
+			return stripPatientPrefix(ref), nil
+		}
+	}
+
+	// Try patient.reference (AllergyIntolerance, Flag, etc.)
+	if pat, ok := r["patient"].(map[string]any); ok {
+		if ref := getStr(pat, "reference"); ref != "" {
+			return stripPatientPrefix(ref), nil
+		}
+	}
+
+	return "", nil
+}
+
+// stripPatientPrefix removes "Patient/" prefix from a reference string.
+func stripPatientPrefix(ref string) string {
+	const prefix = "Patient/"
+	if len(ref) > len(prefix) && ref[:len(prefix)] == prefix {
+		return ref[len(prefix):]
+	}
+	return ref
+}
+
 func extractCodeFromCodeableConcept(r map[string]any, field string) string {
 	cc, ok := r[field].(map[string]any)
 	if !ok {

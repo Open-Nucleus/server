@@ -1,7 +1,7 @@
 # Open Nucleus — Architectural Memory
 
 > Living document. Updated after every major feature or structural change.
-> Last updated: FHIR Phase 1 — Core FHIR Foundation (2026-03-03)
+> Last updated: FHIR Phase 2 — REST API Layer (2026-03-03)
 
 ---
 
@@ -641,6 +641,42 @@ services/sentinel/
 
 ---
 
+## FHIR Phase 2 — REST API Layer
+
+**Goal:** Standards-compliant FHIR R4 REST API at `/fhir/{Type}` running parallel to the existing `/api/v1/` endpoints.
+
+**Key differences from `/api/v1/`:**
+- Raw FHIR JSON responses (no envelope wrapper)
+- FHIR Bundle for search results (not arrays)
+- OperationOutcome for errors (not custom error codes)
+- `Content-Type: application/fhir+json` on all responses
+- ETag / If-None-Match for conditional reads (304 Not Modified)
+- XML requests rejected with 406
+
+**Architecture:**
+
+```
+internal/handler/fhir/
+├── fhir.go          ← FHIRHandler struct + dynamic route registration
+├── response.go      ← FHIR response writers (resource, bundle, error, 304)
+├── middleware.go     ← Content negotiation middleware (JSON only)
+├── params.go        ← FHIR search parameter parser (_count, _offset, patient)
+├── dispatch.go      ← Resource type → service call dispatch table
+├── read.go          ← GET /fhir/{Type}/{id}
+├── search.go        ← GET /fhir/{Type} → Bundle
+├── write.go         ← POST/PUT/DELETE handlers
+├── everything.go    ← GET /fhir/Patient/{id}/$everything
+└── fhir_test.go     ← 22 tests
+```
+
+**Dispatch pattern:** `map[string]*ResourceDispatch` built at init, each entry closes over `PatientService` methods. Reads go through expanded `GetResource` RPC (all 15 types). Searches call type-specific list methods. Writes extract patient reference from body for patient-scoped types.
+
+**ID-only lookups:** 8 new `GetXByID(id)` methods on SQLite Index (drop `AND patient_id = ?`) enabling FHIR-standard `GET /fhir/Encounter/{id}` without patient ID in URL.
+
+**Route count:** ~50 new FHIR endpoints auto-generated from 15 resource type definitions.
+
+---
+
 ## Phase Roadmap
 
 | Phase | Scope | Status |
@@ -652,4 +688,5 @@ services/sentinel/
 | 4.5 — E2E Smoke Tests | Full-stack E2E tests (11 cases), JWT claims fix, patient gRPC adapter wiring, test helper packages | COMPLETE |
 | 5 — Formulary + Anchor + Sentinel | Formulary COMPLETE (16 RPCs, 26 tests). Anchor COMPLETE (14 RPCs, 19 tests). Sentinel Agent COMPLETE (10 RPCs, 13 HTTP endpoints, 68 tests). Go gateway adapters wired for all 3. | COMPLETE |
 | FHIR Phase 1 — Core Foundation | 5 new resource types (Immunization, Procedure, Practitioner, Organization, Location) + Provenance auto-generation. Resource registry (15 types), CapabilityStatement, Bundle/OperationOutcome builders. 49 Patient Service RPCs, ~70 gateway endpoints. 36 pkg/fhir tests. | COMPLETE |
+| FHIR Phase 2 — REST API Layer | Standards-compliant `/fhir/{Type}` REST API. Raw FHIR JSON (no envelope), Bundle for search, OperationOutcome for errors, ETag/conditional reads. ~50 new endpoints auto-generated from resource registry. Dispatch table, content negotiation, $everything. 22 handler tests. | COMPLETE |
 | 6 — WebSocket + Hardening | Real-time events, production config, TLS, metrics | Not started |

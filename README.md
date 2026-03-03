@@ -74,6 +74,7 @@ internal/
 ├── router/                      chi route tree — ~70 REST endpoints + middleware scoping
 ├── middleware/                   8-stage pipeline (ratelimit, requestid, jwt, rbac, validator, cors, audit)
 ├── handler/                     HTTP handlers (auth, patient, clinical, resource, sync, conflict, sentinel, formulary, anchor, supply)
+│   └── fhir/                   FHIR R4 REST API handlers (read, search, write, $everything, content negotiation)
 ├── service/                     8 interfaces + gRPC adapters (decouples handlers from transport)
 ├── grpcclient/                  Connection pool for 6 backend services
 └── model/                       Response envelope, error codes, pagination, JWT claims, RBAC
@@ -129,6 +130,7 @@ make test-sync       # Sync service + pkg/merge
 make test-formulary  # Formulary service
 make test-anchor     # Anchor service + pkg/merge/openanchor
 make test-sentinel   # Sentinel agent (Python, 68 tests)
+make test-fhir       # FHIR REST API handler tests
 make test-e2e        # End-to-end tests
 make smoke           # Interactive smoke test (27 steps, colored output)
 ```

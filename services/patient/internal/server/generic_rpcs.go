@@ -34,7 +34,7 @@ func (s *Server) CreateResource(ctx context.Context, req *patientv1.CreateResour
 }
 
 func (s *Server) GetResource(ctx context.Context, req *patientv1.GetResourceRequest) (*patientv1.GetResourceResponse, error) {
-	if !validGenericTypes[req.ResourceType] {
+	if !fhir.IsKnownResource(req.ResourceType) {
 		return nil, status.Errorf(codes.InvalidArgument, "unsupported resource type: %s", req.ResourceType)
 	}
 
@@ -42,6 +42,96 @@ func (s *Server) GetResource(ctx context.Context, req *patientv1.GetResourceRequ
 	var resourceID string
 
 	switch req.ResourceType {
+	case fhir.ResourcePatient:
+		row, err := s.idx.GetPatient(req.ResourceId)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "query failed: %v", err)
+		}
+		if row == nil {
+			return nil, status.Errorf(codes.NotFound, "%s %s not found", req.ResourceType, req.ResourceId)
+		}
+		fhirJSON = row.FHIRJson
+		resourceID = row.ID
+	case fhir.ResourceEncounter:
+		row, err := s.idx.GetEncounterByID(req.ResourceId)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "query failed: %v", err)
+		}
+		if row == nil {
+			return nil, status.Errorf(codes.NotFound, "%s %s not found", req.ResourceType, req.ResourceId)
+		}
+		fhirJSON = row.FHIRJson
+		resourceID = row.ID
+	case fhir.ResourceObservation:
+		row, err := s.idx.GetObservationByID(req.ResourceId)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "query failed: %v", err)
+		}
+		if row == nil {
+			return nil, status.Errorf(codes.NotFound, "%s %s not found", req.ResourceType, req.ResourceId)
+		}
+		fhirJSON = row.FHIRJson
+		resourceID = row.ID
+	case fhir.ResourceCondition:
+		row, err := s.idx.GetConditionByID(req.ResourceId)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "query failed: %v", err)
+		}
+		if row == nil {
+			return nil, status.Errorf(codes.NotFound, "%s %s not found", req.ResourceType, req.ResourceId)
+		}
+		fhirJSON = row.FHIRJson
+		resourceID = row.ID
+	case fhir.ResourceMedicationRequest:
+		row, err := s.idx.GetMedicationRequestByID(req.ResourceId)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "query failed: %v", err)
+		}
+		if row == nil {
+			return nil, status.Errorf(codes.NotFound, "%s %s not found", req.ResourceType, req.ResourceId)
+		}
+		fhirJSON = row.FHIRJson
+		resourceID = row.ID
+	case fhir.ResourceAllergyIntolerance:
+		row, err := s.idx.GetAllergyIntoleranceByID(req.ResourceId)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "query failed: %v", err)
+		}
+		if row == nil {
+			return nil, status.Errorf(codes.NotFound, "%s %s not found", req.ResourceType, req.ResourceId)
+		}
+		fhirJSON = row.FHIRJson
+		resourceID = row.ID
+	case fhir.ResourceImmunization:
+		row, err := s.idx.GetImmunizationByID(req.ResourceId)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "query failed: %v", err)
+		}
+		if row == nil {
+			return nil, status.Errorf(codes.NotFound, "%s %s not found", req.ResourceType, req.ResourceId)
+		}
+		fhirJSON = row.FHIRJson
+		resourceID = row.ID
+	case fhir.ResourceProcedure:
+		row, err := s.idx.GetProcedureByID(req.ResourceId)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "query failed: %v", err)
+		}
+		if row == nil {
+			return nil, status.Errorf(codes.NotFound, "%s %s not found", req.ResourceType, req.ResourceId)
+		}
+		fhirJSON = row.FHIRJson
+		resourceID = row.ID
+	case fhir.ResourceFlag:
+		row, err := s.idx.GetFlagByID(req.ResourceId)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "query failed: %v", err)
+		}
+		if row == nil {
+			return nil, status.Errorf(codes.NotFound, "%s %s not found", req.ResourceType, req.ResourceId)
+		}
+		fhirJSON = row.FHIRJson
+		resourceID = row.ID
 	case fhir.ResourcePractitioner:
 		row, err := s.idx.GetPractitioner(req.ResourceId)
 		if err != nil {

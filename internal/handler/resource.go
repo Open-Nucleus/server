@@ -90,7 +90,7 @@ func CapabilityStatementHandler() http.HandlerFunc {
 		cs, err := fhir.GenerateCapabilityStatement(fhir.CapabilityConfig{
 			ServerName: "Open Nucleus",
 			ServerURL:  "http://localhost:8080",
-			Version:    "0.6.0",
+			Version:    "0.7.0",
 		})
 		if err != nil {
 			model.WriteError(w, model.ErrInternal, "Failed to generate CapabilityStatement", nil)

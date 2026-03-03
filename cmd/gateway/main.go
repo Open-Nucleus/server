@@ -10,6 +10,7 @@ import (
 	"github.com/FibrinLab/open-nucleus/internal/config"
 	"github.com/FibrinLab/open-nucleus/internal/grpcclient"
 	"github.com/FibrinLab/open-nucleus/internal/handler"
+	fhirhandler "github.com/FibrinLab/open-nucleus/internal/handler/fhir"
 	"github.com/FibrinLab/open-nucleus/internal/middleware"
 	"github.com/FibrinLab/open-nucleus/internal/router"
 	"github.com/FibrinLab/open-nucleus/internal/server"
@@ -68,6 +69,7 @@ func main() {
 	anchorHandler := handler.NewAnchorHandler(anchorSvc)
 	supplyHandler := handler.NewSupplyHandler(supplySvc)
 	resourceHandler := handler.NewResourceHandler(patientSvc)
+	fhirHandler := fhirhandler.NewFHIRHandler(patientSvc)
 
 	// Schema validator
 	sv := middleware.NewSchemaValidator()
@@ -112,6 +114,7 @@ func main() {
 		FormularyHandler: formularyHandler,
 		AnchorHandler:    anchorHandler,
 		SupplyHandler:    supplyHandler,
+		FHIRHandler:      fhirHandler,
 		SchemaValidator:  sv,
 		JWTAuth:          jwtAuth,
 		RateLimiter:      rateLimiter,

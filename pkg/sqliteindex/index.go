@@ -48,6 +48,16 @@ type Index interface {
 	GetLocation(id string) (*fhir.LocationRow, error)
 	ListLocations(opts fhir.PaginationOpts) ([]*fhir.LocationRow, *fhir.Pagination, error)
 
+	// ID-only lookups (for FHIR REST API — no patient ID needed)
+	GetEncounterByID(id string) (*fhir.EncounterRow, error)
+	GetObservationByID(id string) (*fhir.ObservationRow, error)
+	GetConditionByID(id string) (*fhir.ConditionRow, error)
+	GetMedicationRequestByID(id string) (*fhir.MedicationRequestRow, error)
+	GetAllergyIntoleranceByID(id string) (*fhir.AllergyIntoleranceRow, error)
+	GetImmunizationByID(id string) (*fhir.ImmunizationRow, error)
+	GetProcedureByID(id string) (*fhir.ProcedureRow, error)
+	GetFlagByID(id string) (*fhir.FlagRow, error)
+
 	GetPatientBundle(patientID string) (*BundleResult, error)
 	SearchPatients(query string, opts fhir.PaginationOpts) ([]*fhir.PatientRow, *fhir.Pagination, error)
 	GetTimeline(patientID string, opts fhir.PaginationOpts) ([]fhir.TimelineEvent, *fhir.Pagination, error)
@@ -377,6 +387,112 @@ func (idx *sqliteIndex) GetLocation(id string) (*fhir.LocationRow, error) {
 		return nil, err
 	}
 	return l, nil
+}
+
+// --- ID-only Get methods (for FHIR REST API) ---
+
+func (idx *sqliteIndex) GetEncounterByID(id string) (*fhir.EncounterRow, error) {
+	row := idx.db.QueryRow(`SELECT id, patient_id, status, class_code, type_code, period_start, period_end, site_id, reason_code, last_updated, git_blob_hash, fhir_json FROM encounters WHERE id = ?`, id)
+	e := &fhir.EncounterRow{}
+	err := row.Scan(&e.ID, &e.PatientID, &e.Status, &e.ClassCode, &e.TypeCode, &e.PeriodStart, &e.PeriodEnd, &e.SiteID, &e.ReasonCode, &e.LastUpdated, &e.GitBlobHash, &e.FHIRJson)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return e, nil
+}
+
+func (idx *sqliteIndex) GetObservationByID(id string) (*fhir.ObservationRow, error) {
+	row := idx.db.QueryRow(`SELECT id, patient_id, encounter_id, status, category, code, code_display, effective_datetime, value_quantity_value, value_quantity_unit, value_string, value_codeable_concept, site_id, last_updated, git_blob_hash, fhir_json FROM observations WHERE id = ?`, id)
+	o := &fhir.ObservationRow{}
+	err := row.Scan(&o.ID, &o.PatientID, &o.EncounterID, &o.Status, &o.Category, &o.Code, &o.CodeDisplay, &o.EffectiveDatetime, &o.ValueQuantityValue, &o.ValueQuantityUnit, &o.ValueString, &o.ValueCodeableConcept, &o.SiteID, &o.LastUpdated, &o.GitBlobHash, &o.FHIRJson)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return o, nil
+}
+
+func (idx *sqliteIndex) GetConditionByID(id string) (*fhir.ConditionRow, error) {
+	row := idx.db.QueryRow(`SELECT id, patient_id, clinical_status, verification_status, code, code_display, onset_datetime, site_id, last_updated, git_blob_hash, fhir_json FROM conditions WHERE id = ?`, id)
+	c := &fhir.ConditionRow{}
+	err := row.Scan(&c.ID, &c.PatientID, &c.ClinicalStatus, &c.VerificationStatus, &c.Code, &c.CodeDisplay, &c.OnsetDatetime, &c.SiteID, &c.LastUpdated, &c.GitBlobHash, &c.FHIRJson)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return c, nil
+}
+
+func (idx *sqliteIndex) GetMedicationRequestByID(id string) (*fhir.MedicationRequestRow, error) {
+	row := idx.db.QueryRow(`SELECT id, patient_id, status, intent, medication_code, medication_display, authored_on, site_id, last_updated, git_blob_hash, fhir_json FROM medication_requests WHERE id = ?`, id)
+	m := &fhir.MedicationRequestRow{}
+	err := row.Scan(&m.ID, &m.PatientID, &m.Status, &m.Intent, &m.MedicationCode, &m.MedicationDisplay, &m.AuthoredOn, &m.SiteID, &m.LastUpdated, &m.GitBlobHash, &m.FHIRJson)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (idx *sqliteIndex) GetAllergyIntoleranceByID(id string) (*fhir.AllergyIntoleranceRow, error) {
+	row := idx.db.QueryRow(`SELECT id, patient_id, clinical_status, verification_status, type, substance_code, substance_display, criticality, site_id, last_updated, git_blob_hash, fhir_json FROM allergy_intolerances WHERE id = ?`, id)
+	a := &fhir.AllergyIntoleranceRow{}
+	err := row.Scan(&a.ID, &a.PatientID, &a.ClinicalStatus, &a.VerificationStatus, &a.Type, &a.SubstanceCode, &a.SubstanceDisplay, &a.Criticality, &a.SiteID, &a.LastUpdated, &a.GitBlobHash, &a.FHIRJson)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return a, nil
+}
+
+func (idx *sqliteIndex) GetImmunizationByID(id string) (*fhir.ImmunizationRow, error) {
+	row := idx.db.QueryRow(`SELECT id, patient_id, status, vaccine_code, vaccine_display, occurrence_datetime, site_id, last_updated, git_blob_hash, fhir_json FROM immunizations WHERE id = ?`, id)
+	i := &fhir.ImmunizationRow{}
+	err := row.Scan(&i.ID, &i.PatientID, &i.Status, &i.VaccineCode, &i.VaccineDisplay, &i.OccurrenceDatetime, &i.SiteID, &i.LastUpdated, &i.GitBlobHash, &i.FHIRJson)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return i, nil
+}
+
+func (idx *sqliteIndex) GetProcedureByID(id string) (*fhir.ProcedureRow, error) {
+	row := idx.db.QueryRow(`SELECT id, patient_id, status, code, code_display, performed_datetime, site_id, last_updated, git_blob_hash, fhir_json FROM procedures WHERE id = ?`, id)
+	p := &fhir.ProcedureRow{}
+	err := row.Scan(&p.ID, &p.PatientID, &p.Status, &p.Code, &p.CodeDisplay, &p.PerformedDatetime, &p.SiteID, &p.LastUpdated, &p.GitBlobHash, &p.FHIRJson)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return p, nil
+}
+
+func (idx *sqliteIndex) GetFlagByID(id string) (*fhir.FlagRow, error) {
+	row := idx.db.QueryRow(`SELECT id, patient_id, status, category, code, period_start, period_end, generated_by, site_id, last_updated, git_blob_hash, fhir_json FROM flags WHERE id = ?`, id)
+	f := &fhir.FlagRow{}
+	err := row.Scan(&f.ID, &f.PatientID, &f.Status, &f.Category, &f.Code, &f.PeriodStart, &f.PeriodEnd, &f.GeneratedBy, &f.SiteID, &f.LastUpdated, &f.GitBlobHash, &f.FHIRJson)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return f, nil
 }
 
 // --- List methods ---
