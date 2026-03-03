@@ -43,7 +43,7 @@ Flutter App (HTTP REST/JSON)
   +------------------------------------------------------+
 ```
 
-**Dual-layer data model:** FHIR R4 resources stored as JSON files in a Git repository (source of truth) with SQLite as a rebuildable query index. Every clinical write commits to Git first, then upserts SQLite. If SQLite is lost, it rebuilds from Git.
+**Dual-layer data model:** FHIR R4 resources stored as JSON files in a Git repository (source of truth) with SQLite as a rebuildable query index. Every clinical write commits to Git first, then upserts SQLite. If SQLite is lost, it rebuilds from Git. Supports 12 indexed resource types (Patient, Encounter, Observation, Condition, MedicationRequest, AllergyIntolerance, Flag, DetectedIssue, Immunization, Procedure, Practitioner, Organization, Location) with automatic FHIR Provenance generation on every write.
 
 **Git-based sync:** Nodes discover each other via Wi-Fi Direct, Bluetooth, or local network and sync using Git fetch/merge/push. A FHIR-aware merge driver classifies conflicts into auto-merge (safe), review (flag for clinician), or block (clinical safety risk).
 
@@ -54,7 +54,7 @@ Flutter App (HTTP REST/JSON)
 | Service | Port | RPCs | Status |
 |---------|------|------|--------|
 | **Auth** | :50053 | 15 | Ed25519 challenge-response, EdDSA JWT, RBAC (5 roles), device registry |
-| **Patient** | :50051 | 38 | FHIR R4 CRUD, clinical sub-resources, FTS5 search, patient matching |
+| **Patient** | :50051 | 49 | FHIR R4 CRUD, 12 resource types, clinical sub-resources, generic top-level CRUD, FTS5 search, patient matching |
 | **Sync** | :50052 | ~25 | Transport-agnostic sync, FHIR-aware merge driver, conflict resolution, event bus |
 | **Formulary** | :50054 | 16 | WHO essential medicines, drug interactions, allergy cross-reactivity, stock management |
 | **Anchor** | :50055 | 14 | Merkle tree, did:key, Verifiable Credentials, queue management |
@@ -71,14 +71,14 @@ cmd/
 internal/
 ├── config/                      Koanf YAML config loader
 ├── server/                      HTTP server with graceful shutdown
-├── router/                      chi route tree — 67 REST endpoints + middleware scoping
+├── router/                      chi route tree — ~70 REST endpoints + middleware scoping
 ├── middleware/                   8-stage pipeline (ratelimit, requestid, jwt, rbac, validator, cors, audit)
-├── handler/                     HTTP handlers (auth, patient, clinical, sync, conflict, sentinel, formulary, anchor, supply)
+├── handler/                     HTTP handlers (auth, patient, clinical, resource, sync, conflict, sentinel, formulary, anchor, supply)
 ├── service/                     8 interfaces + gRPC adapters (decouples handlers from transport)
 ├── grpcclient/                  Connection pool for 6 backend services
 └── model/                       Response envelope, error codes, pagination, JWT claims, RBAC
 pkg/
-├── fhir/                        FHIR R4 utilities (validation, extraction, meta, paths, soft delete)
+├── fhir/                        FHIR R4 utilities (validation, extraction, meta, paths, soft delete, registry, bundle, outcome, capability, provenance)
 ├── gitstore/                    Git operations via go-git/v5 (pure Go)
 ├── sqliteindex/                 SQLite query index via modernc.org/sqlite (pure Go, no CGO)
 ├── auth/                        Ed25519 crypto, EdDSA JWT, nonce store, RBAC, brute-force guard
@@ -92,7 +92,7 @@ services/
 ├── anchor/                      Anchor Service (Merkle anchoring, DID, VCs)
 └── sentinel/                    Sentinel Agent (Python — alerts, supply, Ollama sidecar)
 proto/                           Protobuf definitions (common, auth, patient, sync, formulary, anchor, sentinel)
-schemas/                         6 JSON schemas for FHIR resource validation
+schemas/                         8 JSON schemas for FHIR resource validation
 ```
 
 ## Middleware Pipeline
@@ -142,7 +142,8 @@ All settings in [`config.yaml`](./config.yaml) — server port, gRPC service add
 - **Pure Go** — No CGO. Runs on Raspberry Pi 4 and Android tablets.
 - **Git as source of truth** — All clinical data in a Git repository. SQLite is a rebuildable index.
 - **Offline-first** — Every feature works without network. Sync is opportunistic.
-- **FHIR R4** — Interoperable with global health systems.
+- **FHIR R4** — Interoperable with global health systems. CapabilityStatement at `/fhir/metadata`.
+- **Provenance by default** — Every clinical write auto-generates a FHIR Provenance resource (HL7 v3-DataOperation coding, author/custodian agents).
 - **No new module deps for anchor crypto** — Merkle trees, did:key, and VCs use only Go stdlib (crypto/ed25519, crypto/sha256).
 
 ## Development
