@@ -48,6 +48,17 @@ const (
 	PatientService_GetAllergyIntolerance_FullMethodName    = "/patient.v1.PatientService/GetAllergyIntolerance"
 	PatientService_CreateAllergyIntolerance_FullMethodName = "/patient.v1.PatientService/CreateAllergyIntolerance"
 	PatientService_UpdateAllergyIntolerance_FullMethodName = "/patient.v1.PatientService/UpdateAllergyIntolerance"
+	PatientService_ListImmunizations_FullMethodName        = "/patient.v1.PatientService/ListImmunizations"
+	PatientService_GetImmunization_FullMethodName          = "/patient.v1.PatientService/GetImmunization"
+	PatientService_CreateImmunization_FullMethodName       = "/patient.v1.PatientService/CreateImmunization"
+	PatientService_ListProcedures_FullMethodName           = "/patient.v1.PatientService/ListProcedures"
+	PatientService_GetProcedure_FullMethodName             = "/patient.v1.PatientService/GetProcedure"
+	PatientService_CreateProcedure_FullMethodName          = "/patient.v1.PatientService/CreateProcedure"
+	PatientService_CreateResource_FullMethodName           = "/patient.v1.PatientService/CreateResource"
+	PatientService_GetResource_FullMethodName              = "/patient.v1.PatientService/GetResource"
+	PatientService_ListResources_FullMethodName            = "/patient.v1.PatientService/ListResources"
+	PatientService_UpdateResource_FullMethodName           = "/patient.v1.PatientService/UpdateResource"
+	PatientService_DeleteResource_FullMethodName           = "/patient.v1.PatientService/DeleteResource"
 	PatientService_CreateFlag_FullMethodName               = "/patient.v1.PatientService/CreateFlag"
 	PatientService_UpdateFlag_FullMethodName               = "/patient.v1.PatientService/UpdateFlag"
 	PatientService_CreateBatch_FullMethodName              = "/patient.v1.PatientService/CreateBatch"
@@ -98,6 +109,20 @@ type PatientServiceClient interface {
 	GetAllergyIntolerance(ctx context.Context, in *GetAllergyIntoleranceRequest, opts ...grpc.CallOption) (*GetAllergyIntoleranceResponse, error)
 	CreateAllergyIntolerance(ctx context.Context, in *CreateAllergyIntoleranceRequest, opts ...grpc.CallOption) (*CreateAllergyIntoleranceResponse, error)
 	UpdateAllergyIntolerance(ctx context.Context, in *UpdateAllergyIntoleranceRequest, opts ...grpc.CallOption) (*UpdateAllergyIntoleranceResponse, error)
+	// Immunization CRUD
+	ListImmunizations(ctx context.Context, in *ListImmunizationsRequest, opts ...grpc.CallOption) (*ListImmunizationsResponse, error)
+	GetImmunization(ctx context.Context, in *GetImmunizationRequest, opts ...grpc.CallOption) (*GetImmunizationResponse, error)
+	CreateImmunization(ctx context.Context, in *CreateImmunizationRequest, opts ...grpc.CallOption) (*CreateImmunizationResponse, error)
+	// Procedure CRUD
+	ListProcedures(ctx context.Context, in *ListProceduresRequest, opts ...grpc.CallOption) (*ListProceduresResponse, error)
+	GetProcedure(ctx context.Context, in *GetProcedureRequest, opts ...grpc.CallOption) (*GetProcedureResponse, error)
+	CreateProcedure(ctx context.Context, in *CreateProcedureRequest, opts ...grpc.CallOption) (*CreateProcedureResponse, error)
+	// Generic CRUD for top-level resources (Practitioner, Organization, Location)
+	CreateResource(ctx context.Context, in *CreateResourceRequest, opts ...grpc.CallOption) (*CreateResourceResponse, error)
+	GetResource(ctx context.Context, in *GetResourceRequest, opts ...grpc.CallOption) (*GetResourceResponse, error)
+	ListResources(ctx context.Context, in *ListResourcesRequest, opts ...grpc.CallOption) (*ListResourcesResponse, error)
+	UpdateResource(ctx context.Context, in *UpdateResourceRequest, opts ...grpc.CallOption) (*UpdateResourceResponse, error)
+	DeleteResource(ctx context.Context, in *DeleteResourceRequest, opts ...grpc.CallOption) (*DeleteResourceResponse, error)
 	// Flag CRUD (used by Sentinel Agent write-back)
 	CreateFlag(ctx context.Context, in *CreateFlagRequest, opts ...grpc.CallOption) (*CreateFlagResponse, error)
 	UpdateFlag(ctx context.Context, in *UpdateFlagRequest, opts ...grpc.CallOption) (*UpdateFlagResponse, error)
@@ -409,6 +434,116 @@ func (c *patientServiceClient) UpdateAllergyIntolerance(ctx context.Context, in 
 	return out, nil
 }
 
+func (c *patientServiceClient) ListImmunizations(ctx context.Context, in *ListImmunizationsRequest, opts ...grpc.CallOption) (*ListImmunizationsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListImmunizationsResponse)
+	err := c.cc.Invoke(ctx, PatientService_ListImmunizations_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *patientServiceClient) GetImmunization(ctx context.Context, in *GetImmunizationRequest, opts ...grpc.CallOption) (*GetImmunizationResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetImmunizationResponse)
+	err := c.cc.Invoke(ctx, PatientService_GetImmunization_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *patientServiceClient) CreateImmunization(ctx context.Context, in *CreateImmunizationRequest, opts ...grpc.CallOption) (*CreateImmunizationResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateImmunizationResponse)
+	err := c.cc.Invoke(ctx, PatientService_CreateImmunization_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *patientServiceClient) ListProcedures(ctx context.Context, in *ListProceduresRequest, opts ...grpc.CallOption) (*ListProceduresResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListProceduresResponse)
+	err := c.cc.Invoke(ctx, PatientService_ListProcedures_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *patientServiceClient) GetProcedure(ctx context.Context, in *GetProcedureRequest, opts ...grpc.CallOption) (*GetProcedureResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetProcedureResponse)
+	err := c.cc.Invoke(ctx, PatientService_GetProcedure_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *patientServiceClient) CreateProcedure(ctx context.Context, in *CreateProcedureRequest, opts ...grpc.CallOption) (*CreateProcedureResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateProcedureResponse)
+	err := c.cc.Invoke(ctx, PatientService_CreateProcedure_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *patientServiceClient) CreateResource(ctx context.Context, in *CreateResourceRequest, opts ...grpc.CallOption) (*CreateResourceResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateResourceResponse)
+	err := c.cc.Invoke(ctx, PatientService_CreateResource_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *patientServiceClient) GetResource(ctx context.Context, in *GetResourceRequest, opts ...grpc.CallOption) (*GetResourceResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetResourceResponse)
+	err := c.cc.Invoke(ctx, PatientService_GetResource_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *patientServiceClient) ListResources(ctx context.Context, in *ListResourcesRequest, opts ...grpc.CallOption) (*ListResourcesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListResourcesResponse)
+	err := c.cc.Invoke(ctx, PatientService_ListResources_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *patientServiceClient) UpdateResource(ctx context.Context, in *UpdateResourceRequest, opts ...grpc.CallOption) (*UpdateResourceResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateResourceResponse)
+	err := c.cc.Invoke(ctx, PatientService_UpdateResource_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *patientServiceClient) DeleteResource(ctx context.Context, in *DeleteResourceRequest, opts ...grpc.CallOption) (*DeleteResourceResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteResourceResponse)
+	err := c.cc.Invoke(ctx, PatientService_DeleteResource_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *patientServiceClient) CreateFlag(ctx context.Context, in *CreateFlagRequest, opts ...grpc.CallOption) (*CreateFlagResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CreateFlagResponse)
@@ -520,6 +655,20 @@ type PatientServiceServer interface {
 	GetAllergyIntolerance(context.Context, *GetAllergyIntoleranceRequest) (*GetAllergyIntoleranceResponse, error)
 	CreateAllergyIntolerance(context.Context, *CreateAllergyIntoleranceRequest) (*CreateAllergyIntoleranceResponse, error)
 	UpdateAllergyIntolerance(context.Context, *UpdateAllergyIntoleranceRequest) (*UpdateAllergyIntoleranceResponse, error)
+	// Immunization CRUD
+	ListImmunizations(context.Context, *ListImmunizationsRequest) (*ListImmunizationsResponse, error)
+	GetImmunization(context.Context, *GetImmunizationRequest) (*GetImmunizationResponse, error)
+	CreateImmunization(context.Context, *CreateImmunizationRequest) (*CreateImmunizationResponse, error)
+	// Procedure CRUD
+	ListProcedures(context.Context, *ListProceduresRequest) (*ListProceduresResponse, error)
+	GetProcedure(context.Context, *GetProcedureRequest) (*GetProcedureResponse, error)
+	CreateProcedure(context.Context, *CreateProcedureRequest) (*CreateProcedureResponse, error)
+	// Generic CRUD for top-level resources (Practitioner, Organization, Location)
+	CreateResource(context.Context, *CreateResourceRequest) (*CreateResourceResponse, error)
+	GetResource(context.Context, *GetResourceRequest) (*GetResourceResponse, error)
+	ListResources(context.Context, *ListResourcesRequest) (*ListResourcesResponse, error)
+	UpdateResource(context.Context, *UpdateResourceRequest) (*UpdateResourceResponse, error)
+	DeleteResource(context.Context, *DeleteResourceRequest) (*DeleteResourceResponse, error)
 	// Flag CRUD (used by Sentinel Agent write-back)
 	CreateFlag(context.Context, *CreateFlagRequest) (*CreateFlagResponse, error)
 	UpdateFlag(context.Context, *UpdateFlagRequest) (*UpdateFlagResponse, error)
@@ -627,6 +776,39 @@ func (UnimplementedPatientServiceServer) CreateAllergyIntolerance(context.Contex
 }
 func (UnimplementedPatientServiceServer) UpdateAllergyIntolerance(context.Context, *UpdateAllergyIntoleranceRequest) (*UpdateAllergyIntoleranceResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateAllergyIntolerance not implemented")
+}
+func (UnimplementedPatientServiceServer) ListImmunizations(context.Context, *ListImmunizationsRequest) (*ListImmunizationsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListImmunizations not implemented")
+}
+func (UnimplementedPatientServiceServer) GetImmunization(context.Context, *GetImmunizationRequest) (*GetImmunizationResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetImmunization not implemented")
+}
+func (UnimplementedPatientServiceServer) CreateImmunization(context.Context, *CreateImmunizationRequest) (*CreateImmunizationResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateImmunization not implemented")
+}
+func (UnimplementedPatientServiceServer) ListProcedures(context.Context, *ListProceduresRequest) (*ListProceduresResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListProcedures not implemented")
+}
+func (UnimplementedPatientServiceServer) GetProcedure(context.Context, *GetProcedureRequest) (*GetProcedureResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetProcedure not implemented")
+}
+func (UnimplementedPatientServiceServer) CreateProcedure(context.Context, *CreateProcedureRequest) (*CreateProcedureResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateProcedure not implemented")
+}
+func (UnimplementedPatientServiceServer) CreateResource(context.Context, *CreateResourceRequest) (*CreateResourceResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateResource not implemented")
+}
+func (UnimplementedPatientServiceServer) GetResource(context.Context, *GetResourceRequest) (*GetResourceResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetResource not implemented")
+}
+func (UnimplementedPatientServiceServer) ListResources(context.Context, *ListResourcesRequest) (*ListResourcesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListResources not implemented")
+}
+func (UnimplementedPatientServiceServer) UpdateResource(context.Context, *UpdateResourceRequest) (*UpdateResourceResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateResource not implemented")
+}
+func (UnimplementedPatientServiceServer) DeleteResource(context.Context, *DeleteResourceRequest) (*DeleteResourceResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteResource not implemented")
 }
 func (UnimplementedPatientServiceServer) CreateFlag(context.Context, *CreateFlagRequest) (*CreateFlagResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreateFlag not implemented")
@@ -1192,6 +1374,204 @@ func _PatientService_UpdateAllergyIntolerance_Handler(srv interface{}, ctx conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _PatientService_ListImmunizations_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListImmunizationsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PatientServiceServer).ListImmunizations(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PatientService_ListImmunizations_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PatientServiceServer).ListImmunizations(ctx, req.(*ListImmunizationsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PatientService_GetImmunization_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetImmunizationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PatientServiceServer).GetImmunization(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PatientService_GetImmunization_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PatientServiceServer).GetImmunization(ctx, req.(*GetImmunizationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PatientService_CreateImmunization_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateImmunizationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PatientServiceServer).CreateImmunization(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PatientService_CreateImmunization_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PatientServiceServer).CreateImmunization(ctx, req.(*CreateImmunizationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PatientService_ListProcedures_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListProceduresRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PatientServiceServer).ListProcedures(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PatientService_ListProcedures_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PatientServiceServer).ListProcedures(ctx, req.(*ListProceduresRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PatientService_GetProcedure_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetProcedureRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PatientServiceServer).GetProcedure(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PatientService_GetProcedure_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PatientServiceServer).GetProcedure(ctx, req.(*GetProcedureRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PatientService_CreateProcedure_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateProcedureRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PatientServiceServer).CreateProcedure(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PatientService_CreateProcedure_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PatientServiceServer).CreateProcedure(ctx, req.(*CreateProcedureRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PatientService_CreateResource_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateResourceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PatientServiceServer).CreateResource(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PatientService_CreateResource_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PatientServiceServer).CreateResource(ctx, req.(*CreateResourceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PatientService_GetResource_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetResourceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PatientServiceServer).GetResource(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PatientService_GetResource_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PatientServiceServer).GetResource(ctx, req.(*GetResourceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PatientService_ListResources_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListResourcesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PatientServiceServer).ListResources(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PatientService_ListResources_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PatientServiceServer).ListResources(ctx, req.(*ListResourcesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PatientService_UpdateResource_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateResourceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PatientServiceServer).UpdateResource(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PatientService_UpdateResource_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PatientServiceServer).UpdateResource(ctx, req.(*UpdateResourceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PatientService_DeleteResource_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteResourceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PatientServiceServer).DeleteResource(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PatientService_DeleteResource_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PatientServiceServer).DeleteResource(ctx, req.(*DeleteResourceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _PatientService_CreateFlag_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateFlagRequest)
 	if err := dec(in); err != nil {
@@ -1440,6 +1820,50 @@ var PatientService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateAllergyIntolerance",
 			Handler:    _PatientService_UpdateAllergyIntolerance_Handler,
+		},
+		{
+			MethodName: "ListImmunizations",
+			Handler:    _PatientService_ListImmunizations_Handler,
+		},
+		{
+			MethodName: "GetImmunization",
+			Handler:    _PatientService_GetImmunization_Handler,
+		},
+		{
+			MethodName: "CreateImmunization",
+			Handler:    _PatientService_CreateImmunization_Handler,
+		},
+		{
+			MethodName: "ListProcedures",
+			Handler:    _PatientService_ListProcedures_Handler,
+		},
+		{
+			MethodName: "GetProcedure",
+			Handler:    _PatientService_GetProcedure_Handler,
+		},
+		{
+			MethodName: "CreateProcedure",
+			Handler:    _PatientService_CreateProcedure_Handler,
+		},
+		{
+			MethodName: "CreateResource",
+			Handler:    _PatientService_CreateResource_Handler,
+		},
+		{
+			MethodName: "GetResource",
+			Handler:    _PatientService_GetResource_Handler,
+		},
+		{
+			MethodName: "ListResources",
+			Handler:    _PatientService_ListResources_Handler,
+		},
+		{
+			MethodName: "UpdateResource",
+			Handler:    _PatientService_UpdateResource_Handler,
+		},
+		{
+			MethodName: "DeleteResource",
+			Handler:    _PatientService_DeleteResource_Handler,
 		},
 		{
 			MethodName: "CreateFlag",

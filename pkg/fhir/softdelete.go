@@ -32,6 +32,21 @@ func ApplySoftDelete(resourceType string, fhirJSON []byte) ([]byte, error) {
 	case ResourceFlag:
 		r["status"] = "entered-in-error"
 
+	case ResourceImmunization:
+		r["status"] = "entered-in-error"
+
+	case ResourceProcedure:
+		r["status"] = "entered-in-error"
+
+	case ResourcePractitioner:
+		r["active"] = false
+
+	case ResourceOrganization:
+		r["active"] = false
+
+	case ResourceLocation:
+		r["status"] = "inactive"
+
 	default:
 		return nil, fmt.Errorf("unsupported resource type for soft delete: %s", resourceType)
 	}

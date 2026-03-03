@@ -54,6 +54,23 @@ service PatientService {
   rpc CreateAllergyIntolerance(CreateAllergyIntoleranceRequest) returns (CreateAllergyIntoleranceResponse);
   rpc UpdateAllergyIntolerance(UpdateAllergyIntoleranceRequest) returns (UpdateAllergyIntoleranceResponse);
 
+  // Immunization CRUD
+  rpc ListImmunizations(ListImmunizationsRequest) returns (ListImmunizationsResponse);
+  rpc GetImmunization(GetImmunizationRequest) returns (GetImmunizationResponse);
+  rpc CreateImmunization(CreateImmunizationRequest) returns (CreateImmunizationResponse);
+
+  // Procedure CRUD
+  rpc ListProcedures(ListProceduresRequest) returns (ListProceduresResponse);
+  rpc GetProcedure(GetProcedureRequest) returns (GetProcedureResponse);
+  rpc CreateProcedure(CreateProcedureRequest) returns (CreateProcedureResponse);
+
+  // Generic CRUD for top-level resources (Practitioner, Organization, Location)
+  rpc CreateResource(CreateResourceRequest) returns (CreateResourceResponse);
+  rpc GetResource(GetResourceRequest) returns (GetResourceResponse);
+  rpc ListResources(ListResourcesRequest) returns (ListResourcesResponse);
+  rpc UpdateResource(UpdateResourceRequest) returns (UpdateResourceResponse);
+  rpc DeleteResource(DeleteResourceRequest) returns (DeleteResourceResponse);
+
   // Flag CRUD (used by Sentinel Agent write-back)
   rpc CreateFlag(CreateFlagRequest) returns (CreateFlagResponse);
   rpc UpdateFlag(UpdateFlagRequest) returns (UpdateFlagResponse);
@@ -434,6 +451,121 @@ message UpdateAllergyIntoleranceRequest {
 message UpdateAllergyIntoleranceResponse {
   common.v1.FHIRResource allergy_intolerance = 1;
   GitCommitInfo git = 2;
+}
+
+// Immunizations
+message ListImmunizationsRequest {
+  string patient_id = 1;
+  common.v1.PaginationRequest pagination = 2;
+}
+
+message ListImmunizationsResponse {
+  repeated common.v1.FHIRResource immunizations = 1;
+  common.v1.PaginationResponse pagination = 2;
+}
+
+message GetImmunizationRequest {
+  string patient_id = 1;
+  string immunization_id = 2;
+}
+
+message GetImmunizationResponse {
+  common.v1.FHIRResource immunization = 1;
+}
+
+message CreateImmunizationRequest {
+  string patient_id = 1;
+  bytes fhir_json = 2;
+  MutationContext context = 3;
+}
+
+message CreateImmunizationResponse {
+  common.v1.FHIRResource immunization = 1;
+  GitCommitInfo git = 2;
+}
+
+// Procedures
+message ListProceduresRequest {
+  string patient_id = 1;
+  common.v1.PaginationRequest pagination = 2;
+}
+
+message ListProceduresResponse {
+  repeated common.v1.FHIRResource procedures = 1;
+  common.v1.PaginationResponse pagination = 2;
+}
+
+message GetProcedureRequest {
+  string patient_id = 1;
+  string procedure_id = 2;
+}
+
+message GetProcedureResponse {
+  common.v1.FHIRResource procedure = 1;
+}
+
+message CreateProcedureRequest {
+  string patient_id = 1;
+  bytes fhir_json = 2;
+  MutationContext context = 3;
+}
+
+message CreateProcedureResponse {
+  common.v1.FHIRResource procedure = 1;
+  GitCommitInfo git = 2;
+}
+
+// Generic Resource CRUD (Practitioner, Organization, Location)
+message CreateResourceRequest {
+  string resource_type = 1;
+  bytes fhir_json = 2;
+  MutationContext context = 3;
+}
+
+message CreateResourceResponse {
+  common.v1.FHIRResource resource = 1;
+  GitCommitInfo git = 2;
+}
+
+message GetResourceRequest {
+  string resource_type = 1;
+  string resource_id = 2;
+}
+
+message GetResourceResponse {
+  common.v1.FHIRResource resource = 1;
+}
+
+message ListResourcesRequest {
+  string resource_type = 1;
+  common.v1.PaginationRequest pagination = 2;
+}
+
+message ListResourcesResponse {
+  repeated common.v1.FHIRResource resources = 1;
+  common.v1.PaginationResponse pagination = 2;
+}
+
+message UpdateResourceRequest {
+  string resource_type = 1;
+  string resource_id = 2;
+  bytes fhir_json = 3;
+  MutationContext context = 4;
+}
+
+message UpdateResourceResponse {
+  common.v1.FHIRResource resource = 1;
+  GitCommitInfo git = 2;
+}
+
+message DeleteResourceRequest {
+  string resource_type = 1;
+  string resource_id = 2;
+  MutationContext context = 3;
+}
+
+message DeleteResourceResponse {
+  GitCommitInfo git = 1;
 }
 
 // Flags (Sentinel Agent write-back)

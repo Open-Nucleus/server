@@ -53,6 +53,22 @@ type PatientService interface {
 	ListAllergyIntolerances(ctx context.Context, patientID string, page, perPage int) (*ClinicalListResponse, error)
 	CreateAllergyIntolerance(ctx context.Context, patientID string, body json.RawMessage) (*WriteResponse, error)
 	UpdateAllergyIntolerance(ctx context.Context, patientID, allergyIntoleranceID string, body json.RawMessage) (*WriteResponse, error)
+
+	// Immunizations
+	ListImmunizations(ctx context.Context, patientID string, page, perPage int) (*ClinicalListResponse, error)
+	GetImmunization(ctx context.Context, patientID, immunizationID string) (any, error)
+	CreateImmunization(ctx context.Context, patientID string, body json.RawMessage) (*WriteResponse, error)
+
+	// Procedures
+	ListProcedures(ctx context.Context, patientID string, page, perPage int) (*ClinicalListResponse, error)
+	GetProcedure(ctx context.Context, patientID, procedureID string) (any, error)
+	CreateProcedure(ctx context.Context, patientID string, body json.RawMessage) (*WriteResponse, error)
+
+	// Generic top-level resources (Practitioner, Organization, Location)
+	ListResources(ctx context.Context, resourceType string, page, perPage int) (*ClinicalListResponse, error)
+	GetResource(ctx context.Context, resourceType, resourceID string) (any, error)
+	CreateResource(ctx context.Context, resourceType string, body json.RawMessage) (*WriteResponse, error)
+	UpdateResource(ctx context.Context, resourceType, resourceID string, body json.RawMessage) (*WriteResponse, error)
 }
 
 // SyncService defines the interface for sync operations.

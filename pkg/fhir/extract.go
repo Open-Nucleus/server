@@ -372,6 +372,189 @@ func ExtractFlagFields(fhirJSON []byte, patientID, siteID, gitBlobHash string) (
 	return row, nil
 }
 
+// ExtractImmunizationFields extracts SQLite indexed columns from an Immunization.
+func ExtractImmunizationFields(fhirJSON []byte, patientID, siteID, gitBlobHash string) (*ImmunizationRow, error) {
+	var r map[string]any
+	if err := json.Unmarshal(fhirJSON, &r); err != nil {
+		return nil, fmt.Errorf("invalid JSON: %w", err)
+	}
+
+	row := &ImmunizationRow{
+		ID:                 getStr(r, "id"),
+		PatientID:          patientID,
+		Status:             getStr(r, "status"),
+		OccurrenceDatetime: getStr(r, "occurrenceDateTime"),
+		SiteID:             siteID,
+		GitBlobHash:        gitBlobHash,
+		FHIRJson:           string(fhirJSON),
+	}
+
+	if vc, ok := r["vaccineCode"].(map[string]any); ok {
+		if codings, ok := getArray(vc, "coding"); ok && len(codings) > 0 {
+			if c0, ok := codings[0].(map[string]any); ok {
+				row.VaccineCode = getStr(c0, "code")
+				disp := getStr(c0, "display")
+				if disp != "" {
+					row.VaccineDisplay = &disp
+				}
+			}
+		}
+	}
+
+	if meta, ok := r["meta"].(map[string]any); ok {
+		row.LastUpdated = getStr(meta, "lastUpdated")
+	}
+
+	return row, nil
+}
+
+// ExtractProcedureFields extracts SQLite indexed columns from a Procedure.
+func ExtractProcedureFields(fhirJSON []byte, patientID, siteID, gitBlobHash string) (*ProcedureRow, error) {
+	var r map[string]any
+	if err := json.Unmarshal(fhirJSON, &r); err != nil {
+		return nil, fmt.Errorf("invalid JSON: %w", err)
+	}
+
+	row := &ProcedureRow{
+		ID:          getStr(r, "id"),
+		PatientID:   patientID,
+		Status:      getStr(r, "status"),
+		SiteID:      siteID,
+		GitBlobHash: gitBlobHash,
+		FHIRJson:    string(fhirJSON),
+	}
+
+	if code, ok := r["code"].(map[string]any); ok {
+		if codings, ok := getArray(code, "coding"); ok && len(codings) > 0 {
+			if c0, ok := codings[0].(map[string]any); ok {
+				row.Code = getStr(c0, "code")
+				disp := getStr(c0, "display")
+				if disp != "" {
+					row.CodeDisplay = &disp
+				}
+			}
+		}
+	}
+
+	if pd := getStr(r, "performedDateTime"); pd != "" {
+		row.PerformedDatetime = &pd
+	}
+
+	if meta, ok := r["meta"].(map[string]any); ok {
+		row.LastUpdated = getStr(meta, "lastUpdated")
+	}
+
+	return row, nil
+}
+
+// ExtractPractitionerFields extracts SQLite indexed columns from a Practitioner.
+func ExtractPractitionerFields(fhirJSON []byte, siteID, gitBlobHash string) (*PractitionerRow, error) {
+	var r map[string]any
+	if err := json.Unmarshal(fhirJSON, &r); err != nil {
+		return nil, fmt.Errorf("invalid JSON: %w", err)
+	}
+
+	row := &PractitionerRow{
+		ID:          getStr(r, "id"),
+		Active:      true,
+		SiteID:      siteID,
+		GitBlobHash: gitBlobHash,
+		FHIRJson:    string(fhirJSON),
+	}
+
+	if active, ok := r["active"].(bool); ok {
+		row.Active = active
+	}
+
+	if names, ok := getArray(r, "name"); ok && len(names) > 0 {
+		if name0, ok := names[0].(map[string]any); ok {
+			row.FamilyName = getStr(name0, "family")
+			if given, ok := getArray(name0, "given"); ok {
+				givenBytes, _ := json.Marshal(given)
+				row.GivenNames = string(givenBytes)
+			}
+		}
+	}
+
+	if meta, ok := r["meta"].(map[string]any); ok {
+		row.LastUpdated = getStr(meta, "lastUpdated")
+	}
+
+	return row, nil
+}
+
+// ExtractOrganizationFields extracts SQLite indexed columns from an Organization.
+func ExtractOrganizationFields(fhirJSON []byte, siteID, gitBlobHash string) (*OrganizationRow, error) {
+	var r map[string]any
+	if err := json.Unmarshal(fhirJSON, &r); err != nil {
+		return nil, fmt.Errorf("invalid JSON: %w", err)
+	}
+
+	row := &OrganizationRow{
+		ID:          getStr(r, "id"),
+		Name:        getStr(r, "name"),
+		Active:      true,
+		SiteID:      siteID,
+		GitBlobHash: gitBlobHash,
+		FHIRJson:    string(fhirJSON),
+	}
+
+	if active, ok := r["active"].(bool); ok {
+		row.Active = active
+	}
+
+	if types, ok := getArray(r, "type"); ok && len(types) > 0 {
+		if t0, ok := types[0].(map[string]any); ok {
+			if codings, ok := getArray(t0, "coding"); ok && len(codings) > 0 {
+				if c0, ok := codings[0].(map[string]any); ok {
+					tc := getStr(c0, "code")
+					row.Type = &tc
+				}
+			}
+		}
+	}
+
+	if meta, ok := r["meta"].(map[string]any); ok {
+		row.LastUpdated = getStr(meta, "lastUpdated")
+	}
+
+	return row, nil
+}
+
+// ExtractLocationFields extracts SQLite indexed columns from a Location.
+func ExtractLocationFields(fhirJSON []byte, siteID, gitBlobHash string) (*LocationRow, error) {
+	var r map[string]any
+	if err := json.Unmarshal(fhirJSON, &r); err != nil {
+		return nil, fmt.Errorf("invalid JSON: %w", err)
+	}
+
+	row := &LocationRow{
+		ID:          getStr(r, "id"),
+		Name:        getStr(r, "name"),
+		Status:      getStr(r, "status"),
+		SiteID:      siteID,
+		GitBlobHash: gitBlobHash,
+		FHIRJson:    string(fhirJSON),
+	}
+
+	if types, ok := getArray(r, "type"); ok && len(types) > 0 {
+		if t0, ok := types[0].(map[string]any); ok {
+			if codings, ok := getArray(t0, "coding"); ok && len(codings) > 0 {
+				if c0, ok := codings[0].(map[string]any); ok {
+					tc := getStr(c0, "code")
+					row.Type = &tc
+				}
+			}
+		}
+	}
+
+	if meta, ok := r["meta"].(map[string]any); ok {
+		row.LastUpdated = getStr(meta, "lastUpdated")
+	}
+
+	return row, nil
+}
+
 func extractCodeFromCodeableConcept(r map[string]any, field string) string {
 	cc, ok := r[field].(map[string]any)
 	if !ok {

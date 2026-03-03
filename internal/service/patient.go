@@ -750,6 +750,236 @@ func (p *patientAdapter) UpdateAllergyIntolerance(ctx context.Context, patientID
 	return wr, nil
 }
 
+// --- Immunizations ---
+
+func (p *patientAdapter) ListImmunizations(ctx context.Context, patientID string, page, perPage int) (*ClinicalListResponse, error) {
+	c, err := p.client()
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.ListImmunizations(ctx, &patientv1.ListImmunizationsRequest{
+		PatientId:  patientID,
+		Pagination: &commonv1.PaginationRequest{Page: int32(page), PerPage: int32(perPage)},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("patient: %w", err)
+	}
+
+	resources := fhirResourcesToSlice(resp.Immunizations)
+	pg := resp.Pagination
+	totalPages := 1
+	if pg != nil && pg.PerPage > 0 {
+		totalPages = (int(pg.Total) + int(pg.PerPage) - 1) / int(pg.PerPage)
+	}
+	return &ClinicalListResponse{
+		Resources:  resources,
+		Page:       int(pg.GetPage()),
+		PerPage:    int(pg.GetPerPage()),
+		Total:      int(pg.GetTotal()),
+		TotalPages: totalPages,
+	}, nil
+}
+
+func (p *patientAdapter) GetImmunization(ctx context.Context, patientID, immunizationID string) (any, error) {
+	c, err := p.client()
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.GetImmunization(ctx, &patientv1.GetImmunizationRequest{
+		PatientId:      patientID,
+		ImmunizationId: immunizationID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("patient: %w", err)
+	}
+	return fhirResourceToMap(resp.Immunization), nil
+}
+
+func (p *patientAdapter) CreateImmunization(ctx context.Context, patientID string, body json.RawMessage) (*WriteResponse, error) {
+	c, err := p.client()
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.CreateImmunization(ctx, &patientv1.CreateImmunizationRequest{
+		PatientId: patientID,
+		FhirJson:  body,
+		Context:   mutCtxFromHTTP(ctx),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("patient: %w", err)
+	}
+
+	wr := &WriteResponse{Resource: fhirResourceToMap(resp.Immunization)}
+	if resp.Git != nil {
+		wr.Git = &GitMeta{Commit: resp.Git.CommitHash, Message: resp.Git.Message}
+	}
+	return wr, nil
+}
+
+// --- Procedures ---
+
+func (p *patientAdapter) ListProcedures(ctx context.Context, patientID string, page, perPage int) (*ClinicalListResponse, error) {
+	c, err := p.client()
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.ListProcedures(ctx, &patientv1.ListProceduresRequest{
+		PatientId:  patientID,
+		Pagination: &commonv1.PaginationRequest{Page: int32(page), PerPage: int32(perPage)},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("patient: %w", err)
+	}
+
+	resources := fhirResourcesToSlice(resp.Procedures)
+	pg := resp.Pagination
+	totalPages := 1
+	if pg != nil && pg.PerPage > 0 {
+		totalPages = (int(pg.Total) + int(pg.PerPage) - 1) / int(pg.PerPage)
+	}
+	return &ClinicalListResponse{
+		Resources:  resources,
+		Page:       int(pg.GetPage()),
+		PerPage:    int(pg.GetPerPage()),
+		Total:      int(pg.GetTotal()),
+		TotalPages: totalPages,
+	}, nil
+}
+
+func (p *patientAdapter) GetProcedure(ctx context.Context, patientID, procedureID string) (any, error) {
+	c, err := p.client()
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.GetProcedure(ctx, &patientv1.GetProcedureRequest{
+		PatientId:   patientID,
+		ProcedureId: procedureID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("patient: %w", err)
+	}
+	return fhirResourceToMap(resp.Procedure), nil
+}
+
+func (p *patientAdapter) CreateProcedure(ctx context.Context, patientID string, body json.RawMessage) (*WriteResponse, error) {
+	c, err := p.client()
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.CreateProcedure(ctx, &patientv1.CreateProcedureRequest{
+		PatientId: patientID,
+		FhirJson:  body,
+		Context:   mutCtxFromHTTP(ctx),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("patient: %w", err)
+	}
+
+	wr := &WriteResponse{Resource: fhirResourceToMap(resp.Procedure)}
+	if resp.Git != nil {
+		wr.Git = &GitMeta{Commit: resp.Git.CommitHash, Message: resp.Git.Message}
+	}
+	return wr, nil
+}
+
+// --- Generic top-level resources ---
+
+func (p *patientAdapter) ListResources(ctx context.Context, resourceType string, page, perPage int) (*ClinicalListResponse, error) {
+	c, err := p.client()
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.ListResources(ctx, &patientv1.ListResourcesRequest{
+		ResourceType: resourceType,
+		Pagination:   &commonv1.PaginationRequest{Page: int32(page), PerPage: int32(perPage)},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("patient: %w", err)
+	}
+
+	resources := fhirResourcesToSlice(resp.Resources)
+	pg := resp.Pagination
+	totalPages := 1
+	if pg != nil && pg.PerPage > 0 {
+		totalPages = (int(pg.Total) + int(pg.PerPage) - 1) / int(pg.PerPage)
+	}
+	return &ClinicalListResponse{
+		Resources:  resources,
+		Page:       int(pg.GetPage()),
+		PerPage:    int(pg.GetPerPage()),
+		Total:      int(pg.GetTotal()),
+		TotalPages: totalPages,
+	}, nil
+}
+
+func (p *patientAdapter) GetResource(ctx context.Context, resourceType, resourceID string) (any, error) {
+	c, err := p.client()
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.GetResource(ctx, &patientv1.GetResourceRequest{
+		ResourceType: resourceType,
+		ResourceId:   resourceID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("patient: %w", err)
+	}
+	return fhirResourceToMap(resp.Resource), nil
+}
+
+func (p *patientAdapter) CreateResource(ctx context.Context, resourceType string, body json.RawMessage) (*WriteResponse, error) {
+	c, err := p.client()
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.CreateResource(ctx, &patientv1.CreateResourceRequest{
+		ResourceType: resourceType,
+		FhirJson:     body,
+		Context:      mutCtxFromHTTP(ctx),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("patient: %w", err)
+	}
+
+	wr := &WriteResponse{Resource: fhirResourceToMap(resp.Resource)}
+	if resp.Git != nil {
+		wr.Git = &GitMeta{Commit: resp.Git.CommitHash, Message: resp.Git.Message}
+	}
+	return wr, nil
+}
+
+func (p *patientAdapter) UpdateResource(ctx context.Context, resourceType, resourceID string, body json.RawMessage) (*WriteResponse, error) {
+	c, err := p.client()
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.UpdateResource(ctx, &patientv1.UpdateResourceRequest{
+		ResourceType: resourceType,
+		ResourceId:   resourceID,
+		FhirJson:     body,
+		Context:      mutCtxFromHTTP(ctx),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("patient: %w", err)
+	}
+
+	wr := &WriteResponse{Resource: fhirResourceToMap(resp.Resource)}
+	if resp.Git != nil {
+		wr.Git = &GitMeta{Commit: resp.Git.CommitHash, Message: resp.Git.Message}
+	}
+	return wr, nil
+}
+
 // --- Helpers ---
 
 // fhirResourceToMap converts a proto FHIRResource to a map for JSON serialization.

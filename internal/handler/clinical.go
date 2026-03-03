@@ -304,3 +304,101 @@ func (h *PatientHandler) UpdateAllergyIntolerance(w http.ResponseWriter, r *http
 
 	writeResponseWithGit(w, http.StatusOK, resp)
 }
+
+// --- Immunizations ---
+
+// ListImmunizations handles GET /api/v1/patients/{id}/immunizations
+func (h *PatientHandler) ListImmunizations(w http.ResponseWriter, r *http.Request) {
+	patientID := chi.URLParam(r, "id")
+	page, perPage := model.PaginationFromRequest(r)
+
+	resp, err := h.svc.ListImmunizations(r.Context(), patientID, page, perPage)
+	if err != nil {
+		model.WriteError(w, model.ErrServiceUnavailable, err.Error(), nil)
+		return
+	}
+
+	pg := model.NewPagination(resp.Page, resp.PerPage, resp.Total)
+	model.SuccessWithPagination(w, resp.Resources, pg)
+}
+
+// GetImmunization handles GET /api/v1/patients/{id}/immunizations/{iid}
+func (h *PatientHandler) GetImmunization(w http.ResponseWriter, r *http.Request) {
+	patientID := chi.URLParam(r, "id")
+	immunizationID := chi.URLParam(r, "iid")
+
+	resp, err := h.svc.GetImmunization(r.Context(), patientID, immunizationID)
+	if err != nil {
+		model.WriteError(w, model.ErrServiceUnavailable, err.Error(), nil)
+		return
+	}
+
+	model.Success(w, http.StatusOK, resp)
+}
+
+// CreateImmunization handles POST /api/v1/patients/{id}/immunizations
+func (h *PatientHandler) CreateImmunization(w http.ResponseWriter, r *http.Request) {
+	patientID := chi.URLParam(r, "id")
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		model.WriteError(w, model.ErrValidation, "Failed to read request body", nil)
+		return
+	}
+
+	resp, err := h.svc.CreateImmunization(r.Context(), patientID, body)
+	if err != nil {
+		model.WriteError(w, model.ErrServiceUnavailable, err.Error(), nil)
+		return
+	}
+
+	writeResponseWithGit(w, http.StatusCreated, resp)
+}
+
+// --- Procedures ---
+
+// ListProcedures handles GET /api/v1/patients/{id}/procedures
+func (h *PatientHandler) ListProcedures(w http.ResponseWriter, r *http.Request) {
+	patientID := chi.URLParam(r, "id")
+	page, perPage := model.PaginationFromRequest(r)
+
+	resp, err := h.svc.ListProcedures(r.Context(), patientID, page, perPage)
+	if err != nil {
+		model.WriteError(w, model.ErrServiceUnavailable, err.Error(), nil)
+		return
+	}
+
+	pg := model.NewPagination(resp.Page, resp.PerPage, resp.Total)
+	model.SuccessWithPagination(w, resp.Resources, pg)
+}
+
+// GetProcedure handles GET /api/v1/patients/{id}/procedures/{pid}
+func (h *PatientHandler) GetProcedure(w http.ResponseWriter, r *http.Request) {
+	patientID := chi.URLParam(r, "id")
+	procedureID := chi.URLParam(r, "pid")
+
+	resp, err := h.svc.GetProcedure(r.Context(), patientID, procedureID)
+	if err != nil {
+		model.WriteError(w, model.ErrServiceUnavailable, err.Error(), nil)
+		return
+	}
+
+	model.Success(w, http.StatusOK, resp)
+}
+
+// CreateProcedure handles POST /api/v1/patients/{id}/procedures
+func (h *PatientHandler) CreateProcedure(w http.ResponseWriter, r *http.Request) {
+	patientID := chi.URLParam(r, "id")
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		model.WriteError(w, model.ErrValidation, "Failed to read request body", nil)
+		return
+	}
+
+	resp, err := h.svc.CreateProcedure(r.Context(), patientID, body)
+	if err != nil {
+		model.WriteError(w, model.ErrServiceUnavailable, err.Error(), nil)
+		return
+	}
+
+	writeResponseWithGit(w, http.StatusCreated, resp)
+}

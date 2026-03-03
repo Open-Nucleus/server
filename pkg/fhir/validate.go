@@ -36,6 +36,16 @@ func Validate(resourceType string, fhirJSON []byte) []FieldError {
 		return validateAllergyIntolerance(resource)
 	case ResourceFlag:
 		return validateFlag(resource)
+	case ResourceImmunization:
+		return validateImmunization(resource)
+	case ResourceProcedure:
+		return validateProcedure(resource)
+	case ResourcePractitioner:
+		return validatePractitioner(resource)
+	case ResourceOrganization:
+		return validateOrganization(resource)
+	case ResourceLocation:
+		return validateLocation(resource)
 	default:
 		return nil
 	}
@@ -284,6 +294,119 @@ func isValidObservationStatus(s string) bool {
 func isValidFlagStatus(s string) bool {
 	switch s {
 	case "active", "inactive", "entered-in-error":
+		return true
+	}
+	return false
+}
+
+func validateImmunization(r map[string]any) []FieldError {
+	var errs []FieldError
+
+	status := getStr(r, "status")
+	if status == "" {
+		errs = append(errs, FieldError{Path: "status", Rule: "required", Message: "Immunization.status is required"})
+	} else if !isValidImmunizationStatus(status) {
+		errs = append(errs, FieldError{Path: "status", Rule: "value_set", Message: "Must be one of: completed, entered-in-error, not-done"})
+	}
+
+	if !hasCodeableConcept(r, "vaccineCode") {
+		errs = append(errs, FieldError{Path: "vaccineCode", Rule: "required", Message: "Immunization.vaccineCode is required"})
+	}
+
+	if !hasReference(r, "patient") {
+		errs = append(errs, FieldError{Path: "patient", Rule: "required", Message: "Immunization.patient reference is required"})
+	}
+
+	if getStr(r, "occurrenceDateTime") == "" {
+		errs = append(errs, FieldError{Path: "occurrenceDateTime", Rule: "required", Message: "Immunization.occurrenceDateTime is required"})
+	}
+
+	return errs
+}
+
+func validateProcedure(r map[string]any) []FieldError {
+	var errs []FieldError
+
+	status := getStr(r, "status")
+	if status == "" {
+		errs = append(errs, FieldError{Path: "status", Rule: "required", Message: "Procedure.status is required"})
+	} else if !isValidProcedureStatus(status) {
+		errs = append(errs, FieldError{Path: "status", Rule: "value_set", Message: "Must be one of: preparation, in-progress, not-done, on-hold, stopped, completed, entered-in-error, unknown"})
+	}
+
+	if !hasCodeableConcept(r, "code") {
+		errs = append(errs, FieldError{Path: "code", Rule: "required", Message: "Procedure.code is required"})
+	}
+
+	if !hasReference(r, "subject") {
+		errs = append(errs, FieldError{Path: "subject", Rule: "required", Message: "Procedure.subject reference is required"})
+	}
+
+	return errs
+}
+
+func validatePractitioner(r map[string]any) []FieldError {
+	var errs []FieldError
+
+	names, ok := getArray(r, "name")
+	if !ok || len(names) == 0 {
+		errs = append(errs, FieldError{Path: "name", Rule: "required", Message: "Practitioner.name is required (at least one name)"})
+	} else {
+		name0, ok := names[0].(map[string]any)
+		if !ok {
+			errs = append(errs, FieldError{Path: "name[0]", Rule: "type", Message: "name entry must be an object"})
+		} else if getStr(name0, "family") == "" {
+			errs = append(errs, FieldError{Path: "name[0].family", Rule: "required", Message: "Practitioner.name[0].family is required"})
+		}
+	}
+
+	return errs
+}
+
+func validateOrganization(r map[string]any) []FieldError {
+	var errs []FieldError
+
+	if getStr(r, "name") == "" {
+		errs = append(errs, FieldError{Path: "name", Rule: "required", Message: "Organization.name is required"})
+	}
+
+	return errs
+}
+
+func validateLocation(r map[string]any) []FieldError {
+	var errs []FieldError
+
+	if getStr(r, "name") == "" {
+		errs = append(errs, FieldError{Path: "name", Rule: "required", Message: "Location.name is required"})
+	}
+
+	status := getStr(r, "status")
+	if status != "" && !isValidLocationStatus(status) {
+		errs = append(errs, FieldError{Path: "status", Rule: "value_set", Message: "Must be one of: active, suspended, inactive"})
+	}
+
+	return errs
+}
+
+func isValidImmunizationStatus(s string) bool {
+	switch s {
+	case "completed", "entered-in-error", "not-done":
+		return true
+	}
+	return false
+}
+
+func isValidProcedureStatus(s string) bool {
+	switch s {
+	case "preparation", "in-progress", "not-done", "on-hold", "stopped", "completed", "entered-in-error", "unknown":
+		return true
+	}
+	return false
+}
+
+func isValidLocationStatus(s string) bool {
+	switch s {
+	case "active", "suspended", "inactive":
 		return true
 	}
 	return false

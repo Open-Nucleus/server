@@ -22,12 +22,17 @@ DROP TABLE IF EXISTS medication_requests;
 DROP TABLE IF EXISTS conditions;
 DROP TABLE IF EXISTS observations;
 DROP TABLE IF EXISTS encounters;
+DROP TABLE IF EXISTS immunizations;
+DROP TABLE IF EXISTS procedures;
 DROP TRIGGER IF EXISTS patients_ai;
 DROP TRIGGER IF EXISTS patients_ad;
 DROP TRIGGER IF EXISTS patients_au;
 DROP TABLE IF EXISTS patients_fts;
 DROP TABLE IF EXISTS patients;
 DROP TABLE IF EXISTS detected_issues;
+DROP TABLE IF EXISTS practitioners;
+DROP TABLE IF EXISTS organizations;
+DROP TABLE IF EXISTS locations;
 `
 
 const schemaDDL = `
@@ -190,6 +195,84 @@ CREATE TABLE IF NOT EXISTS flags (
 CREATE INDEX IF NOT EXISTS idx_flag_patient ON flags(patient_id);
 CREATE INDEX IF NOT EXISTS idx_flag_status ON flags(status);
 CREATE INDEX IF NOT EXISTS idx_flag_category ON flags(category);
+
+CREATE TABLE IF NOT EXISTS immunizations (
+    id TEXT PRIMARY KEY,
+    patient_id TEXT NOT NULL REFERENCES patients(id),
+    status TEXT NOT NULL,
+    vaccine_code TEXT NOT NULL,
+    vaccine_display TEXT,
+    occurrence_datetime TEXT NOT NULL,
+    site_id TEXT NOT NULL,
+    last_updated TEXT NOT NULL,
+    git_blob_hash TEXT NOT NULL,
+    fhir_json TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_imm_patient ON immunizations(patient_id);
+CREATE INDEX IF NOT EXISTS idx_imm_status ON immunizations(status);
+CREATE INDEX IF NOT EXISTS idx_imm_vaccine ON immunizations(vaccine_code);
+CREATE INDEX IF NOT EXISTS idx_imm_date ON immunizations(occurrence_datetime);
+
+CREATE TABLE IF NOT EXISTS procedures (
+    id TEXT PRIMARY KEY,
+    patient_id TEXT NOT NULL REFERENCES patients(id),
+    status TEXT NOT NULL,
+    code TEXT NOT NULL,
+    code_display TEXT,
+    performed_datetime TEXT,
+    site_id TEXT NOT NULL,
+    last_updated TEXT NOT NULL,
+    git_blob_hash TEXT NOT NULL,
+    fhir_json TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_proc_patient ON procedures(patient_id);
+CREATE INDEX IF NOT EXISTS idx_proc_status ON procedures(status);
+CREATE INDEX IF NOT EXISTS idx_proc_code ON procedures(code);
+CREATE INDEX IF NOT EXISTS idx_proc_date ON procedures(performed_datetime);
+
+CREATE TABLE IF NOT EXISTS practitioners (
+    id TEXT PRIMARY KEY,
+    family_name TEXT NOT NULL,
+    given_names TEXT NOT NULL,
+    active INTEGER DEFAULT 1,
+    site_id TEXT NOT NULL,
+    last_updated TEXT NOT NULL,
+    git_blob_hash TEXT NOT NULL,
+    fhir_json TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_pract_name ON practitioners(family_name);
+CREATE INDEX IF NOT EXISTS idx_pract_active ON practitioners(active);
+
+CREATE TABLE IF NOT EXISTS organizations (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    type TEXT,
+    active INTEGER DEFAULT 1,
+    site_id TEXT NOT NULL,
+    last_updated TEXT NOT NULL,
+    git_blob_hash TEXT NOT NULL,
+    fhir_json TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_org_name ON organizations(name);
+CREATE INDEX IF NOT EXISTS idx_org_active ON organizations(active);
+
+CREATE TABLE IF NOT EXISTS locations (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    type TEXT,
+    status TEXT NOT NULL,
+    site_id TEXT NOT NULL,
+    last_updated TEXT NOT NULL,
+    git_blob_hash TEXT NOT NULL,
+    fhir_json TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_loc_name ON locations(name);
+CREATE INDEX IF NOT EXISTS idx_loc_status ON locations(status);
 
 CREATE TABLE IF NOT EXISTS detected_issues (
     id TEXT PRIMARY KEY,

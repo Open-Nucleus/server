@@ -11,6 +11,12 @@ const (
 	ResourceFlag                 = "Flag"
 	ResourceDetectedIssue        = "DetectedIssue"
 	ResourceSupplyDelivery       = "SupplyDelivery"
+	ResourceImmunization         = "Immunization"
+	ResourceProcedure            = "Procedure"
+	ResourcePractitioner         = "Practitioner"
+	ResourceOrganization         = "Organization"
+	ResourceLocation             = "Location"
+	ResourceProvenance           = "Provenance"
 )
 
 // Operation constants for commit messages.
@@ -160,4 +166,68 @@ type PaginationOpts struct {
 	Page    int
 	PerPage int
 	Sort    string
+}
+
+// ImmunizationRow holds indexed fields extracted from an Immunization FHIR resource.
+type ImmunizationRow struct {
+	ID                  string  `json:"id"`
+	PatientID           string  `json:"patient_id"`
+	Status              string  `json:"status"`
+	VaccineCode         string  `json:"vaccine_code"`
+	VaccineDisplay      *string `json:"vaccine_display"`
+	OccurrenceDatetime  string  `json:"occurrence_datetime"`
+	SiteID              string  `json:"site_id"`
+	LastUpdated         string  `json:"last_updated"`
+	GitBlobHash         string  `json:"git_blob_hash"`
+	FHIRJson            string  `json:"fhir_json"`
+}
+
+// ProcedureRow holds indexed fields extracted from a Procedure FHIR resource.
+type ProcedureRow struct {
+	ID                string  `json:"id"`
+	PatientID         string  `json:"patient_id"`
+	Status            string  `json:"status"`
+	Code              string  `json:"code"`
+	CodeDisplay       *string `json:"code_display"`
+	PerformedDatetime *string `json:"performed_datetime"`
+	SiteID            string  `json:"site_id"`
+	LastUpdated       string  `json:"last_updated"`
+	GitBlobHash       string  `json:"git_blob_hash"`
+	FHIRJson          string  `json:"fhir_json"`
+}
+
+// PractitionerRow holds indexed fields extracted from a Practitioner FHIR resource.
+type PractitionerRow struct {
+	ID          string `json:"id"`
+	FamilyName  string `json:"family_name"`
+	GivenNames  string `json:"given_names"` // JSON array as string
+	Active      bool   `json:"active"`
+	SiteID      string `json:"site_id"`
+	LastUpdated string `json:"last_updated"`
+	GitBlobHash string `json:"git_blob_hash"`
+	FHIRJson    string `json:"fhir_json"`
+}
+
+// OrganizationRow holds indexed fields extracted from an Organization FHIR resource.
+type OrganizationRow struct {
+	ID          string  `json:"id"`
+	Name        string  `json:"name"`
+	Type        *string `json:"type"`
+	Active      bool    `json:"active"`
+	SiteID      string  `json:"site_id"`
+	LastUpdated string  `json:"last_updated"`
+	GitBlobHash string  `json:"git_blob_hash"`
+	FHIRJson    string  `json:"fhir_json"`
+}
+
+// LocationRow holds indexed fields extracted from a Location FHIR resource.
+type LocationRow struct {
+	ID          string  `json:"id"`
+	Name        string  `json:"name"`
+	Type        *string `json:"type"`
+	Status      string  `json:"status"`
+	SiteID      string  `json:"site_id"`
+	LastUpdated string  `json:"last_updated"`
+	GitBlobHash string  `json:"git_blob_hash"`
+	FHIRJson    string  `json:"fhir_json"`
 }

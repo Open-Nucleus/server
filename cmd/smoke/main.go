@@ -126,6 +126,7 @@ func wireGateway(aEnv *authtest.StandaloneEnv, pEnv *patienttest.Env, sEnv *sync
 	mux := router.New(router.Config{
 		AuthHandler:      authH,
 		PatientHandler:   patientH,
+		ResourceHandler:  handler.NewResourceHandler(patientAdapt),
 		SyncHandler:      syncH,
 		ConflictHandler:  conflictH,
 		SentinelHandler:  sentinelH,

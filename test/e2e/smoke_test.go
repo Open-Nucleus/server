@@ -107,6 +107,7 @@ func setupSmokeEnv(t *testing.T) *smokeEnv {
 	mux := router.New(router.Config{
 		AuthHandler:      authHandler,
 		PatientHandler:   patientHandler,
+		ResourceHandler:  handler.NewResourceHandler(patientAdapterSvc),
 		SyncHandler:      syncHandler,
 		ConflictHandler:  conflictHandler,
 		SentinelHandler:  sentinelHandler,

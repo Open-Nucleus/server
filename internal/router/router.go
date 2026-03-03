@@ -15,6 +15,7 @@ import (
 type Config struct {
 	AuthHandler      *handler.AuthHandler
 	PatientHandler   *handler.PatientHandler
+	ResourceHandler  *handler.ResourceHandler
 	SyncHandler      *handler.SyncHandler
 	ConflictHandler  *handler.ConflictHandler
 	SentinelHandler  *handler.SentinelHandler
@@ -41,6 +42,9 @@ func New(cfg Config) http.Handler {
 	r.Get("/health", func(w http.ResponseWriter, _ *http.Request) {
 		model.Success(w, http.StatusOK, map[string]string{"status": "healthy"})
 	})
+
+	// FHIR metadata endpoint (no auth — public discovery)
+	r.Get("/fhir/metadata", handler.CapabilityStatementHandler())
 
 	r.Route("/api/v1", func(r chi.Router) {
 		// Auth routes — rate limiter + request ID only (NO JWT/RBAC)
@@ -211,7 +215,106 @@ func New(cfg Config) http.Handler {
 							validatorMiddleware(cfg.SchemaValidator, "allergy_intolerance"),
 						).Put("/{aid}", cfg.PatientHandler.UpdateAllergyIntolerance)
 					})
+
+					// Immunizations
+					r.Route("/immunizations", func(r chi.Router) {
+						r.With(
+							cfg.RateLimiter.Middleware(middleware.CategoryRead),
+							middleware.RequirePermission(model.PermEncounterRead),
+						).Get("/", cfg.PatientHandler.ListImmunizations)
+
+						r.With(
+							cfg.RateLimiter.Middleware(middleware.CategoryWrite),
+							middleware.RequirePermission(model.PermEncounterWrite),
+							validatorMiddleware(cfg.SchemaValidator, "immunization"),
+						).Post("/", cfg.PatientHandler.CreateImmunization)
+
+						r.With(
+							cfg.RateLimiter.Middleware(middleware.CategoryRead),
+							middleware.RequirePermission(model.PermEncounterRead),
+						).Get("/{iid}", cfg.PatientHandler.GetImmunization)
+					})
+
+					// Procedures
+					r.Route("/procedures", func(r chi.Router) {
+						r.With(
+							cfg.RateLimiter.Middleware(middleware.CategoryRead),
+							middleware.RequirePermission(model.PermEncounterRead),
+						).Get("/", cfg.PatientHandler.ListProcedures)
+
+						r.With(
+							cfg.RateLimiter.Middleware(middleware.CategoryWrite),
+							middleware.RequirePermission(model.PermEncounterWrite),
+							validatorMiddleware(cfg.SchemaValidator, "procedure"),
+						).Post("/", cfg.PatientHandler.CreateProcedure)
+
+						r.With(
+							cfg.RateLimiter.Middleware(middleware.CategoryRead),
+							middleware.RequirePermission(model.PermEncounterRead),
+						).Get("/{pid}", cfg.PatientHandler.GetProcedure)
+					})
 				})
+			})
+
+			// Practitioner endpoints (top-level)
+			r.Route("/practitioners", func(r chi.Router) {
+				r.With(
+					cfg.RateLimiter.Middleware(middleware.CategoryRead),
+					middleware.RequirePermission(model.PermPatientRead),
+				).Get("/", cfg.ResourceHandler.ListFactory("Practitioner"))
+
+				r.With(
+					cfg.RateLimiter.Middleware(middleware.CategoryWrite),
+					middleware.RequirePermission(model.PermPatientWrite),
+				).Post("/", cfg.ResourceHandler.CreateFactory("Practitioner"))
+
+				r.Route("/{rid}", func(r chi.Router) {
+					r.With(
+						cfg.RateLimiter.Middleware(middleware.CategoryRead),
+						middleware.RequirePermission(model.PermPatientRead),
+					).Get("/", cfg.ResourceHandler.GetFactory("Practitioner"))
+
+					r.With(
+						cfg.RateLimiter.Middleware(middleware.CategoryWrite),
+						middleware.RequirePermission(model.PermPatientWrite),
+					).Put("/", cfg.ResourceHandler.UpdateFactory("Practitioner"))
+				})
+			})
+
+			// Organization endpoints (top-level)
+			r.Route("/organizations", func(r chi.Router) {
+				r.With(
+					cfg.RateLimiter.Middleware(middleware.CategoryRead),
+					middleware.RequirePermission(model.PermPatientRead),
+				).Get("/", cfg.ResourceHandler.ListFactory("Organization"))
+
+				r.With(
+					cfg.RateLimiter.Middleware(middleware.CategoryWrite),
+					middleware.RequirePermission(model.PermPatientWrite),
+				).Post("/", cfg.ResourceHandler.CreateFactory("Organization"))
+
+				r.With(
+					cfg.RateLimiter.Middleware(middleware.CategoryRead),
+					middleware.RequirePermission(model.PermPatientRead),
+				).Get("/{rid}", cfg.ResourceHandler.GetFactory("Organization"))
+			})
+
+			// Location endpoints (top-level)
+			r.Route("/locations", func(r chi.Router) {
+				r.With(
+					cfg.RateLimiter.Middleware(middleware.CategoryRead),
+					middleware.RequirePermission(model.PermPatientRead),
+				).Get("/", cfg.ResourceHandler.ListFactory("Location"))
+
+				r.With(
+					cfg.RateLimiter.Middleware(middleware.CategoryWrite),
+					middleware.RequirePermission(model.PermPatientWrite),
+				).Post("/", cfg.ResourceHandler.CreateFactory("Location"))
+
+				r.With(
+					cfg.RateLimiter.Middleware(middleware.CategoryRead),
+					middleware.RequirePermission(model.PermPatientRead),
+				).Get("/{rid}", cfg.ResourceHandler.GetFactory("Location"))
 			})
 
 			// Sync endpoints

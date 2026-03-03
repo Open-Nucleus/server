@@ -17,6 +17,11 @@ type Index interface {
 	UpsertMedicationRequest(row *fhir.MedicationRequestRow) error
 	UpsertAllergyIntolerance(row *fhir.AllergyIntoleranceRow) error
 	UpsertFlag(row *fhir.FlagRow) error
+	UpsertImmunization(row *fhir.ImmunizationRow) error
+	UpsertProcedure(row *fhir.ProcedureRow) error
+	UpsertPractitioner(row *fhir.PractitionerRow) error
+	UpsertOrganization(row *fhir.OrganizationRow) error
+	UpsertLocation(row *fhir.LocationRow) error
 
 	GetPatient(id string) (*fhir.PatientRow, error)
 	ListPatients(opts PatientListOpts) ([]*fhir.PatientRow, *fhir.Pagination, error)
@@ -31,6 +36,17 @@ type Index interface {
 	GetAllergyIntolerance(patientID, id string) (*fhir.AllergyIntoleranceRow, error)
 	ListAllergyIntolerances(patientID string, opts fhir.PaginationOpts) ([]*fhir.AllergyIntoleranceRow, *fhir.Pagination, error)
 	ListFlags(patientID string, opts fhir.PaginationOpts) ([]*fhir.FlagRow, *fhir.Pagination, error)
+
+	GetImmunization(patientID, id string) (*fhir.ImmunizationRow, error)
+	ListImmunizations(patientID string, opts fhir.PaginationOpts) ([]*fhir.ImmunizationRow, *fhir.Pagination, error)
+	GetProcedure(patientID, id string) (*fhir.ProcedureRow, error)
+	ListProcedures(patientID string, opts fhir.PaginationOpts) ([]*fhir.ProcedureRow, *fhir.Pagination, error)
+	GetPractitioner(id string) (*fhir.PractitionerRow, error)
+	ListPractitioners(opts fhir.PaginationOpts) ([]*fhir.PractitionerRow, *fhir.Pagination, error)
+	GetOrganization(id string) (*fhir.OrganizationRow, error)
+	ListOrganizations(opts fhir.PaginationOpts) ([]*fhir.OrganizationRow, *fhir.Pagination, error)
+	GetLocation(id string) (*fhir.LocationRow, error)
+	ListLocations(opts fhir.PaginationOpts) ([]*fhir.LocationRow, *fhir.Pagination, error)
 
 	GetPatientBundle(patientID string) (*BundleResult, error)
 	SearchPatients(query string, opts fhir.PaginationOpts) ([]*fhir.PatientRow, *fhir.Pagination, error)
@@ -169,6 +185,49 @@ func (idx *sqliteIndex) UpsertFlag(row *fhir.FlagRow) error {
 	return err
 }
 
+func (idx *sqliteIndex) UpsertImmunization(row *fhir.ImmunizationRow) error {
+	_, err := idx.db.Exec(`INSERT OR REPLACE INTO immunizations (id, patient_id, status, vaccine_code, vaccine_display, occurrence_datetime, site_id, last_updated, git_blob_hash, fhir_json)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		row.ID, row.PatientID, row.Status, row.VaccineCode, row.VaccineDisplay, row.OccurrenceDatetime, row.SiteID, row.LastUpdated, row.GitBlobHash, row.FHIRJson)
+	return err
+}
+
+func (idx *sqliteIndex) UpsertProcedure(row *fhir.ProcedureRow) error {
+	_, err := idx.db.Exec(`INSERT OR REPLACE INTO procedures (id, patient_id, status, code, code_display, performed_datetime, site_id, last_updated, git_blob_hash, fhir_json)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		row.ID, row.PatientID, row.Status, row.Code, row.CodeDisplay, row.PerformedDatetime, row.SiteID, row.LastUpdated, row.GitBlobHash, row.FHIRJson)
+	return err
+}
+
+func (idx *sqliteIndex) UpsertPractitioner(row *fhir.PractitionerRow) error {
+	active := 1
+	if !row.Active {
+		active = 0
+	}
+	_, err := idx.db.Exec(`INSERT OR REPLACE INTO practitioners (id, family_name, given_names, active, site_id, last_updated, git_blob_hash, fhir_json)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		row.ID, row.FamilyName, row.GivenNames, active, row.SiteID, row.LastUpdated, row.GitBlobHash, row.FHIRJson)
+	return err
+}
+
+func (idx *sqliteIndex) UpsertOrganization(row *fhir.OrganizationRow) error {
+	active := 1
+	if !row.Active {
+		active = 0
+	}
+	_, err := idx.db.Exec(`INSERT OR REPLACE INTO organizations (id, name, type, active, site_id, last_updated, git_blob_hash, fhir_json)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		row.ID, row.Name, row.Type, active, row.SiteID, row.LastUpdated, row.GitBlobHash, row.FHIRJson)
+	return err
+}
+
+func (idx *sqliteIndex) UpsertLocation(row *fhir.LocationRow) error {
+	_, err := idx.db.Exec(`INSERT OR REPLACE INTO locations (id, name, type, status, site_id, last_updated, git_blob_hash, fhir_json)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		row.ID, row.Name, row.Type, row.Status, row.SiteID, row.LastUpdated, row.GitBlobHash, row.FHIRJson)
+	return err
+}
+
 // --- Get methods ---
 
 func (idx *sqliteIndex) GetPatient(id string) (*fhir.PatientRow, error) {
@@ -249,6 +308,75 @@ func (idx *sqliteIndex) GetAllergyIntolerance(patientID, id string) (*fhir.Aller
 		return nil, err
 	}
 	return a, nil
+}
+
+func (idx *sqliteIndex) GetImmunization(patientID, id string) (*fhir.ImmunizationRow, error) {
+	row := idx.db.QueryRow(`SELECT id, patient_id, status, vaccine_code, vaccine_display, occurrence_datetime, site_id, last_updated, git_blob_hash, fhir_json FROM immunizations WHERE id = ? AND patient_id = ?`, id, patientID)
+	i := &fhir.ImmunizationRow{}
+	err := row.Scan(&i.ID, &i.PatientID, &i.Status, &i.VaccineCode, &i.VaccineDisplay, &i.OccurrenceDatetime, &i.SiteID, &i.LastUpdated, &i.GitBlobHash, &i.FHIRJson)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return i, nil
+}
+
+func (idx *sqliteIndex) GetProcedure(patientID, id string) (*fhir.ProcedureRow, error) {
+	row := idx.db.QueryRow(`SELECT id, patient_id, status, code, code_display, performed_datetime, site_id, last_updated, git_blob_hash, fhir_json FROM procedures WHERE id = ? AND patient_id = ?`, id, patientID)
+	p := &fhir.ProcedureRow{}
+	err := row.Scan(&p.ID, &p.PatientID, &p.Status, &p.Code, &p.CodeDisplay, &p.PerformedDatetime, &p.SiteID, &p.LastUpdated, &p.GitBlobHash, &p.FHIRJson)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return p, nil
+}
+
+func (idx *sqliteIndex) GetPractitioner(id string) (*fhir.PractitionerRow, error) {
+	row := idx.db.QueryRow(`SELECT id, family_name, given_names, active, site_id, last_updated, git_blob_hash, fhir_json FROM practitioners WHERE id = ?`, id)
+	p := &fhir.PractitionerRow{}
+	var active int
+	err := row.Scan(&p.ID, &p.FamilyName, &p.GivenNames, &active, &p.SiteID, &p.LastUpdated, &p.GitBlobHash, &p.FHIRJson)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	p.Active = active == 1
+	return p, nil
+}
+
+func (idx *sqliteIndex) GetOrganization(id string) (*fhir.OrganizationRow, error) {
+	row := idx.db.QueryRow(`SELECT id, name, type, active, site_id, last_updated, git_blob_hash, fhir_json FROM organizations WHERE id = ?`, id)
+	o := &fhir.OrganizationRow{}
+	var active int
+	err := row.Scan(&o.ID, &o.Name, &o.Type, &active, &o.SiteID, &o.LastUpdated, &o.GitBlobHash, &o.FHIRJson)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	o.Active = active == 1
+	return o, nil
+}
+
+func (idx *sqliteIndex) GetLocation(id string) (*fhir.LocationRow, error) {
+	row := idx.db.QueryRow(`SELECT id, name, type, status, site_id, last_updated, git_blob_hash, fhir_json FROM locations WHERE id = ?`, id)
+	l := &fhir.LocationRow{}
+	err := row.Scan(&l.ID, &l.Name, &l.Type, &l.Status, &l.SiteID, &l.LastUpdated, &l.GitBlobHash, &l.FHIRJson)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return l, nil
 }
 
 // --- List methods ---
@@ -514,6 +642,135 @@ func (idx *sqliteIndex) ListFlags(patientID string, opts fhir.PaginationOpts) ([
 	return results, pg, rows.Err()
 }
 
+func (idx *sqliteIndex) ListImmunizations(patientID string, opts fhir.PaginationOpts) ([]*fhir.ImmunizationRow, *fhir.Pagination, error) {
+	var total int
+	if err := idx.db.QueryRow("SELECT COUNT(*) FROM immunizations WHERE patient_id = ?", patientID).Scan(&total); err != nil {
+		return nil, nil, err
+	}
+	pg := paginate(opts, total)
+
+	rows, err := idx.db.Query("SELECT id, patient_id, status, vaccine_code, vaccine_display, occurrence_datetime, site_id, last_updated, git_blob_hash, fhir_json FROM immunizations WHERE patient_id = ? ORDER BY occurrence_datetime DESC LIMIT ? OFFSET ?",
+		patientID, pg.PerPage, (pg.Page-1)*pg.PerPage)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer rows.Close()
+
+	var results []*fhir.ImmunizationRow
+	for rows.Next() {
+		i := &fhir.ImmunizationRow{}
+		if err := rows.Scan(&i.ID, &i.PatientID, &i.Status, &i.VaccineCode, &i.VaccineDisplay, &i.OccurrenceDatetime, &i.SiteID, &i.LastUpdated, &i.GitBlobHash, &i.FHIRJson); err != nil {
+			return nil, nil, err
+		}
+		results = append(results, i)
+	}
+	return results, pg, rows.Err()
+}
+
+func (idx *sqliteIndex) ListProcedures(patientID string, opts fhir.PaginationOpts) ([]*fhir.ProcedureRow, *fhir.Pagination, error) {
+	var total int
+	if err := idx.db.QueryRow("SELECT COUNT(*) FROM procedures WHERE patient_id = ?", patientID).Scan(&total); err != nil {
+		return nil, nil, err
+	}
+	pg := paginate(opts, total)
+
+	rows, err := idx.db.Query("SELECT id, patient_id, status, code, code_display, performed_datetime, site_id, last_updated, git_blob_hash, fhir_json FROM procedures WHERE patient_id = ? ORDER BY last_updated DESC LIMIT ? OFFSET ?",
+		patientID, pg.PerPage, (pg.Page-1)*pg.PerPage)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer rows.Close()
+
+	var results []*fhir.ProcedureRow
+	for rows.Next() {
+		p := &fhir.ProcedureRow{}
+		if err := rows.Scan(&p.ID, &p.PatientID, &p.Status, &p.Code, &p.CodeDisplay, &p.PerformedDatetime, &p.SiteID, &p.LastUpdated, &p.GitBlobHash, &p.FHIRJson); err != nil {
+			return nil, nil, err
+		}
+		results = append(results, p)
+	}
+	return results, pg, rows.Err()
+}
+
+func (idx *sqliteIndex) ListPractitioners(opts fhir.PaginationOpts) ([]*fhir.PractitionerRow, *fhir.Pagination, error) {
+	var total int
+	if err := idx.db.QueryRow("SELECT COUNT(*) FROM practitioners").Scan(&total); err != nil {
+		return nil, nil, err
+	}
+	pg := paginate(opts, total)
+
+	rows, err := idx.db.Query("SELECT id, family_name, given_names, active, site_id, last_updated, git_blob_hash, fhir_json FROM practitioners ORDER BY last_updated DESC LIMIT ? OFFSET ?",
+		pg.PerPage, (pg.Page-1)*pg.PerPage)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer rows.Close()
+
+	var results []*fhir.PractitionerRow
+	for rows.Next() {
+		p := &fhir.PractitionerRow{}
+		var active int
+		if err := rows.Scan(&p.ID, &p.FamilyName, &p.GivenNames, &active, &p.SiteID, &p.LastUpdated, &p.GitBlobHash, &p.FHIRJson); err != nil {
+			return nil, nil, err
+		}
+		p.Active = active == 1
+		results = append(results, p)
+	}
+	return results, pg, rows.Err()
+}
+
+func (idx *sqliteIndex) ListOrganizations(opts fhir.PaginationOpts) ([]*fhir.OrganizationRow, *fhir.Pagination, error) {
+	var total int
+	if err := idx.db.QueryRow("SELECT COUNT(*) FROM organizations").Scan(&total); err != nil {
+		return nil, nil, err
+	}
+	pg := paginate(opts, total)
+
+	rows, err := idx.db.Query("SELECT id, name, type, active, site_id, last_updated, git_blob_hash, fhir_json FROM organizations ORDER BY last_updated DESC LIMIT ? OFFSET ?",
+		pg.PerPage, (pg.Page-1)*pg.PerPage)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer rows.Close()
+
+	var results []*fhir.OrganizationRow
+	for rows.Next() {
+		o := &fhir.OrganizationRow{}
+		var active int
+		if err := rows.Scan(&o.ID, &o.Name, &o.Type, &active, &o.SiteID, &o.LastUpdated, &o.GitBlobHash, &o.FHIRJson); err != nil {
+			return nil, nil, err
+		}
+		o.Active = active == 1
+		results = append(results, o)
+	}
+	return results, pg, rows.Err()
+}
+
+func (idx *sqliteIndex) ListLocations(opts fhir.PaginationOpts) ([]*fhir.LocationRow, *fhir.Pagination, error) {
+	var total int
+	if err := idx.db.QueryRow("SELECT COUNT(*) FROM locations").Scan(&total); err != nil {
+		return nil, nil, err
+	}
+	pg := paginate(opts, total)
+
+	rows, err := idx.db.Query("SELECT id, name, type, status, site_id, last_updated, git_blob_hash, fhir_json FROM locations ORDER BY last_updated DESC LIMIT ? OFFSET ?",
+		pg.PerPage, (pg.Page-1)*pg.PerPage)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer rows.Close()
+
+	var results []*fhir.LocationRow
+	for rows.Next() {
+		l := &fhir.LocationRow{}
+		if err := rows.Scan(&l.ID, &l.Name, &l.Type, &l.Status, &l.SiteID, &l.LastUpdated, &l.GitBlobHash, &l.FHIRJson); err != nil {
+			return nil, nil, err
+		}
+		results = append(results, l)
+	}
+	return results, pg, rows.Err()
+}
+
 // --- Meta ---
 
 func (idx *sqliteIndex) GetMeta(key string) (string, error) {
@@ -532,7 +789,7 @@ func (idx *sqliteIndex) SetMeta(key, value string) error {
 
 func (idx *sqliteIndex) ResourceCount() (int, error) {
 	var total int
-	for _, table := range []string{"patients", "encounters", "observations", "conditions", "medication_requests", "allergy_intolerances", "flags"} {
+	for _, table := range []string{"patients", "encounters", "observations", "conditions", "medication_requests", "allergy_intolerances", "flags", "immunizations", "procedures", "practitioners", "organizations", "locations"} {
 		var count int
 		if err := idx.db.QueryRow("SELECT COUNT(*) FROM " + table).Scan(&count); err != nil {
 			return 0, err

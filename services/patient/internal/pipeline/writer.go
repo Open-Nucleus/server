@@ -150,6 +150,36 @@ func (w *Writer) Write(ctx context.Context, op, resourceType, patientID string, 
 		fmt.Printf("WARNING: SQLite upsert failed after git commit %s: %v\n", commitHash, sqErr)
 	}
 
+	// 7b. Auto-generate Provenance (skip for Provenance itself to prevent recursion)
+	if resourceType != fhir.ResourceProvenance {
+		provJSON, provID, provErr := fhir.GenerateProvenance(fhir.ProvenanceContext{
+			TargetResourceType: resourceType,
+			TargetResourceID:   resourceID,
+			Activity:           op,
+			PractitionerID:     mutCtx.PractitionerID,
+			DeviceID:           mutCtx.NodeID,
+			SiteID:             mutCtx.SiteID,
+			Recorded:           now,
+		})
+		if provErr != nil {
+			fmt.Printf("WARNING: provenance generation failed: %v\n", provErr)
+		} else {
+			provPath := fhir.GitPath(fhir.ResourceProvenance, patientID, provID)
+			provMsg := gitstore.CommitMessage{
+				ResourceType: fhir.ResourceProvenance,
+				Operation:    fhir.OpCreate,
+				ResourceID:   provID,
+				NodeID:       mutCtx.NodeID,
+				Author:       mutCtx.PractitionerID,
+				SiteID:       mutCtx.SiteID,
+				Timestamp:    now,
+			}
+			if _, provWriteErr := w.git.WriteAndCommit(provPath, provJSON, provMsg); provWriteErr != nil {
+				fmt.Printf("WARNING: provenance write failed: %v\n", provWriteErr)
+			}
+		}
+	}
+
 	// 8. Update patient_summaries
 	if patientID != "" {
 		if err := w.idx.UpdateSummary(patientID); err != nil {
@@ -405,6 +435,36 @@ func (w *Writer) upsertIndex(resourceType, patientID, siteID, commitHash string,
 			return err
 		}
 		return w.idx.UpsertFlag(row)
+	case fhir.ResourceImmunization:
+		row, err := fhir.ExtractImmunizationFields(fhirJSON, patientID, siteID, commitHash)
+		if err != nil {
+			return err
+		}
+		return w.idx.UpsertImmunization(row)
+	case fhir.ResourceProcedure:
+		row, err := fhir.ExtractProcedureFields(fhirJSON, patientID, siteID, commitHash)
+		if err != nil {
+			return err
+		}
+		return w.idx.UpsertProcedure(row)
+	case fhir.ResourcePractitioner:
+		row, err := fhir.ExtractPractitionerFields(fhirJSON, siteID, commitHash)
+		if err != nil {
+			return err
+		}
+		return w.idx.UpsertPractitioner(row)
+	case fhir.ResourceOrganization:
+		row, err := fhir.ExtractOrganizationFields(fhirJSON, siteID, commitHash)
+		if err != nil {
+			return err
+		}
+		return w.idx.UpsertOrganization(row)
+	case fhir.ResourceLocation:
+		row, err := fhir.ExtractLocationFields(fhirJSON, siteID, commitHash)
+		if err != nil {
+			return err
+		}
+		return w.idx.UpsertLocation(row)
 	default:
 		return nil
 	}

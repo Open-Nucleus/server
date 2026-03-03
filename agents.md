@@ -1,7 +1,7 @@
 # Open Nucleus — Architectural Memory
 
 > Living document. Updated after every major feature or structural change.
-> Last updated: Phase 5 — Sentinel Agent Service (2026-03-02)
+> Last updated: FHIR Phase 1 — Core FHIR Foundation (2026-03-03)
 
 ---
 
@@ -166,7 +166,7 @@ CORS → RequestID → AuditLog → JWTAuth → [per-route: RateLimiter → Requ
 ### internal/service
 - **interfaces.go** — 8 service interfaces (`AuthService`, `PatientService`, `SyncService`, `ConflictService`, `SentinelService`, `FormularyService`, `AnchorService`, `SupplyService`) + all DTOs. Handlers depend only on these interfaces, enabling mock-based testing.
 - **auth.go** — `authAdapter` implements `AuthService` via `pool.Conn("auth")`.
-- **patient.go** — `patientAdapter` implements `PatientService` (24 methods: list/get/search/create/update/delete + match/history/timeline + 15 clinical sub-resource methods) via `pool.Conn("patient")`.
+- **patient.go** — `patientAdapter` implements `PatientService` (34+ methods: list/get/search/create/update/delete + match/history/timeline + 15 clinical sub-resource methods + immunization/procedure CRUD + generic top-level resource CRUD) via `pool.Conn("patient")`.
 - **sync.go** — `syncAdapter` implements `SyncService` (6 methods) via `pool.Conn("sync")`.
 - **conflict.go** — `conflictAdapter` implements `ConflictService` (4 methods) via `pool.Conn("sync")` (conflicts are a sync sub-domain).
 - **sentinel.go** — `sentinelAdapter` implements `SentinelService` (5 methods) via `pool.Conn("sentinel")` with full proto→DTO conversion (real gRPC calls to Python Sentinel Agent :50056).
@@ -179,7 +179,8 @@ CORS → RequestID → AuditLog → JWTAuth → [per-route: RateLimiter → Requ
 ### internal/handler
 - **auth.go** — `AuthHandler` holds `service.AuthService`. Methods: `Login`, `Refresh`, `Logout`, `Whoami`. Whoami short-circuits from JWT claims in context if available.
 - **patient.go** — `PatientHandler` holds `service.PatientService`. Methods: `List`, `GetByID`, `Search`, `Create`, `Update`, `Delete`, `History`, `Timeline`, `Match`. Write methods use `writeResponseWithGit()` to include git metadata in the response envelope.
-- **clinical.go** — Additional methods on `PatientHandler` for all 16 clinical sub-resource endpoints: `ListEncounters`, `GetEncounter`, `CreateEncounter`, `UpdateEncounter`, `ListObservations`, `GetObservation`, `CreateObservation`, `ListConditions`, `CreateCondition`, `UpdateCondition`, `ListMedicationRequests`, `CreateMedicationRequest`, `UpdateMedicationRequest`, `ListAllergyIntolerances`, `CreateAllergyIntolerance`, `UpdateAllergyIntolerance`.
+- **clinical.go** — Additional methods on `PatientHandler` for all 22 clinical sub-resource endpoints: `ListEncounters`, `GetEncounter`, `CreateEncounter`, `UpdateEncounter`, `ListObservations`, `GetObservation`, `CreateObservation`, `ListConditions`, `CreateCondition`, `UpdateCondition`, `ListMedicationRequests`, `CreateMedicationRequest`, `UpdateMedicationRequest`, `ListAllergyIntolerances`, `CreateAllergyIntolerance`, `UpdateAllergyIntolerance`, `ListImmunizations`, `GetImmunization`, `CreateImmunization`, `ListProcedures`, `GetProcedure`, `CreateProcedure`.
+- **resource.go** — `ResourceHandler` with factory methods (`ListFactory`, `GetFactory`, `CreateFactory`, `UpdateFactory`) for top-level CRUD (Practitioner, Organization, Location). `CapabilityStatementHandler()` serves FHIR R4 CapabilityStatement at `/fhir/metadata`.
 - **sync.go** — `SyncHandler` holds `service.SyncService`. Methods: `Status`, `Peers`, `Trigger`, `History`, `ExportBundle`, `ImportBundle`.
 - **conflict.go** — `ConflictHandler` holds `service.ConflictService`. Methods: `List`, `GetByID`, `Resolve`, `Defer`.
 - **sentinel.go** — `SentinelHandler` holds `service.SentinelService`. Methods: `ListAlerts`, `Summary`, `GetAlert`, `Acknowledge`, `Dismiss`.
@@ -193,13 +194,16 @@ CORS → RequestID → AuditLog → JWTAuth → [per-route: RateLimiter → Requ
   - `/health` — no middleware beyond global
   - `/api/v1/auth/*` — global + RateLimiter(CategoryAuth), NO JWT/RBAC
   - `/api/v1/*` (everything else) — global + JWTAuth, then per-route RateLimiter + RequirePermission + optional SchemaValidator
-- All 58 REST endpoints wired to real handlers. Only `/ws` remains stubbed (Phase 5).
+  - `/fhir/metadata` — no auth, serves FHIR CapabilityStatement
+  - `/api/v1/patients/{id}/immunizations`, `/api/v1/patients/{id}/procedures` — patient-scoped clinical
+  - `/api/v1/practitioners`, `/api/v1/organizations`, `/api/v1/locations` — top-level FHIR resources
+- ~70 REST endpoints wired to real handlers. Only `/ws` remains stubbed.
 
 ### internal/server
 - **server.go** — `Server` wraps `http.Server` with config-driven timeouts. `Run()` starts listener and blocks until SIGINT/SIGTERM, then calls `Shutdown()` with 10s grace period.
 
 ### schemas/
-All 6 schemas use inline `$defs` for reusable `Reference` (`{ reference: string minLength:1 }`) and `CodeableConcept` (`anyOf: [ has coding[], has text ]`) patterns. They mirror the validation rules in `pkg/fhir/validate.go` so malformed payloads are rejected at the gateway before the gRPC round-trip.
+All 8 schemas use inline `$defs` for reusable `Reference` (`{ reference: string minLength:1 }`) and `CodeableConcept` (`anyOf: [ has coding[], has text ]`) patterns. They mirror the validation rules in `pkg/fhir/validate.go` so malformed payloads are rejected at the gateway before the gRPC round-trip.
 
 - **patient.json** — Requires `resourceType: "Patient"`, `name` array (items: `{ family: string, given: string[] }`), `gender` enum, `birthDate` string.
 - **encounter.json** — Requires `resourceType: "Encounter"`, `status` enum (8 FHIR values), `class` object with `code`, `subject` Reference, `period` with `start`.
@@ -207,6 +211,8 @@ All 6 schemas use inline `$defs` for reusable `Reference` (`{ reference: string 
 - **condition.json** — Requires `resourceType: "Condition"`, `clinicalStatus` CodeableConcept, `verificationStatus` CodeableConcept, `code` CodeableConcept, `subject` Reference.
 - **medication_request.json** — Requires `resourceType: "MedicationRequest"`, `status`, `intent`, `medicationCodeableConcept` CodeableConcept, `subject` Reference, `dosageInstruction` array (minItems:1).
 - **allergy_intolerance.json** — Requires `resourceType: "AllergyIntolerance"`, `clinicalStatus` CodeableConcept, `verificationStatus` CodeableConcept, `code` CodeableConcept, `patient` Reference.
+- **immunization.json** — Requires `resourceType: "Immunization"`, `status` enum (3 values), `vaccineCode` CodeableConcept, `patient` Reference, `occurrenceDateTime`.
+- **procedure.json** — Requires `resourceType: "Procedure"`, `status` enum (8 values), `code` CodeableConcept, `subject` Reference.
 
 ---
 
@@ -220,7 +226,7 @@ proto/
 ├── auth/v1/
 │   └── auth.proto       ← AuthService: 15 RPCs (register, challenge, authenticate, refresh, logout, identity, devices, roles, validate, health)
 ├── patient/v1/
-│   └── patient.proto    ← PatientService: 38 RPCs (CRUD + clinical + batch + index + health)
+│   └── patient.proto    ← PatientService: 49 RPCs (CRUD + clinical + immunization + procedure + generic CRUD + batch + index + health)
 ├── sync/v1/
 │   └── sync.proto       ← SyncService (14 RPCs) + ConflictService (4 RPCs) + NodeSyncService (3 RPCs)
 ├── formulary/v1/
@@ -241,12 +247,17 @@ Generated Go code lives in `gen/proto/` (protoc with go + go-grpc plugins).
 
 ### pkg/fhir — FHIR R4 Utilities
 Pure functions for working with FHIR resources. No I/O.
-- **types.go** — Resource type constants (`ResourcePatient`, etc.), operation constants (`OpCreate`, etc.), row structs for all 7 resource types (`PatientRow`, `EncounterRow`, etc.), `FieldError`, `Pagination`, `PaginationOpts`, `TimelineEvent`.
-- **path.go** — `GitPath(resourceType, patientID, resourceID)` returns Git file path per spec §3.3. `PatientDirPath(patientID)` for history queries.
+- **types.go** — Resource type constants for 13 types (`ResourcePatient`, `ResourceImmunization`, `ResourceProcedure`, `ResourcePractitioner`, `ResourceOrganization`, `ResourceLocation`, `ResourceProvenance`, etc.), operation constants (`OpCreate`, etc.), row structs for 12 indexed types (`PatientRow`, `EncounterRow`, `ImmunizationRow`, `ProcedureRow`, `PractitionerRow`, `OrganizationRow`, `LocationRow`, etc.), `FieldError`, `Pagination`, `PaginationOpts`, `TimelineEvent`.
+- **path.go** — `GitPath(resourceType, patientID, resourceID)` returns Git file path. Patient-scoped: `patients/{pid}/immunizations/{id}.json`, etc. Top-level: `practitioners/{id}.json`, `organizations/{id}.json`, `locations/{id}.json`. Provenance: patient-scoped if patientID set, else `provenance/{id}.json`.
 - **meta.go** — `SetMeta()` writes `meta.lastUpdated/versionId/source`. `AssignID()` assigns UUID if absent. `GetResourceType()`, `GetID()`.
-- **validate.go** — `Validate(resourceType, json)` performs Layer 1 structural validation. Per-type validators enforce required fields from spec §4.3.
-- **extract.go** — `ExtractPatientFields()`, `ExtractEncounterFields()`, etc. Extract SQLite indexed columns from FHIR JSON.
-- **softdelete.go** — `ApplySoftDelete()` mutates resource fields per spec §3.4 (Patient→active:false, Encounter→status:entered-in-error, etc.).
+- **validate.go** — `Validate(resourceType, json)` performs Layer 1 structural validation for 12 resource types. New validators: Immunization (status, vaccineCode, patient, occurrenceDateTime), Procedure (status 8-enum, code, subject), Practitioner (name with family), Organization (name), Location (name, optional status 3-enum).
+- **extract.go** — Extract functions for all 12 indexed types. New: `ExtractImmunizationFields()`, `ExtractProcedureFields()`, `ExtractPractitionerFields()`, `ExtractOrganizationFields()`, `ExtractLocationFields()`. Top-level resources omit patientID parameter.
+- **softdelete.go** — `ApplySoftDelete()` for all types. New: Immunization/Procedure→`status:"entered-in-error"`, Practitioner/Organization→`active:false`, Location→`status:"inactive"`. Provenance is never deleted.
+- **registry.go** — Central resource registry: `ResourceDef` with type, scope (PatientScoped/TopLevel/AutoGenerated/SystemScoped), interactions, search params. `GetResourceDef()`, `AllResourceDefs()`, `IsKnownResource()`, `ResourcesByScope()`. Pre-populated for 15 types.
+- **outcome.go** — FHIR R4 OperationOutcome builder: `NewOperationOutcome()`, `FromFieldErrors()`, `FromError()`. Maps validation rules to FHIR issue-type codes.
+- **bundle.go** — FHIR R4 Bundle builder: `NewSearchBundle()` (searchset), `PaginationToLinks()` (self/next/previous).
+- **capability.go** — `GenerateCapabilityStatement()` auto-generates FHIR R4 CapabilityStatement from registry (fhirVersion 4.0.1, interactions, searchParams, sorted alphabetically).
+- **provenance.go** — `GenerateProvenance()` creates FHIR R4 Provenance with target ref, HL7 v3-DataOperation activity coding, author/custodian agents.
 
 ### pkg/gitstore — Git Operations
 Wraps `go-git/v5` for clinical data Git repository management.
@@ -255,8 +266,8 @@ Wraps `go-git/v5` for clinical data Git repository management.
 
 ### pkg/sqliteindex — SQLite Query Index
 Uses `modernc.org/sqlite` (pure Go, no CGO) for Raspberry Pi 4 deployment.
-- **schema.go** — `InitSchema()` creates 9 tables (patients, encounters, observations, conditions, medication_requests, allergy_intolerances, flags, detected_issues, patient_summaries) + index_meta + FTS5 + triggers. `DropAll()` for rebuild.
-- **index.go** — `Index` interface: Upsert/Get/List methods for all 7 resource types + bundle + search + timeline + match + meta + summary. `NewIndex(dbPath)` opens DB with WAL mode.
+- **schema.go** — `InitSchema()` creates 14 tables (patients, encounters, observations, conditions, medication_requests, allergy_intolerances, flags, detected_issues, immunizations, procedures, practitioners, organizations, locations, patient_summaries) + index_meta + FTS5 + triggers. `DropAll()` for rebuild.
+- **index.go** — `Index` interface: Upsert/Get/List methods for all 12 resource types + bundle + search + timeline + match + meta + summary. New: 15 methods for Immunization, Procedure (patient-scoped with patientID), Practitioner, Organization, Location (top-level without patientID). `NewIndex(dbPath)` opens DB with WAL mode.
 - **search.go** — FTS5 patient search via `patients_fts` virtual table.
 - **timeline.go** — `GetTimeline()` UNION ALL query across encounters, observations, conditions, flags.
 - **match.go** — `GetMatchCandidates()` broad SQL query for patient identity matching.
@@ -281,6 +292,9 @@ services/patient/
 │       ├── condition_rpcs.go            ← List/Get/Create/Update
 │       ├── medrq_rpcs.go               ← List/Get/Create/Update (MedicationRequest)
 │       ├── allergy_rpcs.go              ← List/Get/Create/Update (AllergyIntolerance)
+│       ├── immunization_rpcs.go         ← List/Get/Create (Immunization — patient-scoped)
+│       ├── procedure_rpcs.go           ← List/Get/Create (Procedure — patient-scoped)
+│       ├── generic_rpcs.go             ← Create/Get/List/Update/Delete (Practitioner/Organization/Location — top-level)
 │       ├── flag_rpcs.go                 ← Create/Update (Sentinel write-back)
 │       ├── batch_rpcs.go               ← CreateBatch (atomic multi-resource commit)
 │       ├── index_rpcs.go               ← RebuildIndex, CheckIndexHealth, ReindexResources
@@ -296,7 +310,8 @@ services/patient/
 5. Write JSON to Git + commit (pkg/gitstore)
 6. Extract fields + upsert SQLite (pkg/fhir + pkg/sqliteindex)
 7. Update patient_summaries
-8. Release mutex, return resource + git metadata
+8. **Auto-generate FHIR Provenance** (target ref, activity coding, agents) → write to Git (skip if resourceType == "Provenance")
+9. Release mutex, return resource + git metadata
 
 **Error handling (spec §11):** Validation→INVALID_ARGUMENT, NotFound→NOT_FOUND, LockTimeout→ABORTED, GitFail→INTERNAL+rollback, SQLiteFail→log warning (data safe in Git).
 
@@ -350,13 +365,22 @@ Standalone Go program that boots all 5 services (Auth, Patient, Sync, Formulary,
 | Conditions (list/create/update) | Handler complete, gRPC adapter wired to patient service :50051 | clinical.go | patient.go |
 | Medication Requests (list/create/update) | Handler complete, gRPC adapter wired to patient service :50051 | clinical.go | patient.go |
 | Allergy Intolerances (list/create/update) | Handler complete, gRPC adapter wired to patient service :50051 | clinical.go | patient.go |
+| Immunizations (list/get/create) | Handler complete, gRPC adapter wired to patient service :50051 | clinical.go | patient.go |
+| Procedures (list/get/create) | Handler complete, gRPC adapter wired to patient service :50051 | clinical.go | patient.go |
+| Practitioners (list/get/create/update) | Handler complete (ResourceHandler factory), gRPC adapter wired to patient service :50051 | resource.go | patient.go |
+| Organizations (list/get/create/update) | Handler complete (ResourceHandler factory), gRPC adapter wired to patient service :50051 | resource.go | patient.go |
+| Locations (list/get/create/update) | Handler complete (ResourceHandler factory), gRPC adapter wired to patient service :50051 | resource.go | patient.go |
+| FHIR CapabilityStatement (/fhir/metadata) | Auto-generated from resource registry, no auth | resource.go | — |
+| FHIR Bundle/OperationOutcome builders | Library-only (pkg/fhir), ready for Phase 2 /fhir/ routes | — | — |
+| Provenance auto-generation | Auto-generated after every write in pipeline, committed to Git | — | writer.go |
+| Resource Registry | Central registry of 15 FHIR types with scope, interactions, search params | — | registry.go |
 | Sync (status/peers/trigger/cancel/history/bundle/transports/events) | Handler complete, gRPC adapter wired to sync service :50052 | sync.go | sync.go |
 | Conflicts (list/get/resolve/defer) | Handler complete, gRPC adapter wired to sync service :50052 | conflict.go | conflict.go |
 | Alerts (list/get/acknowledge/dismiss/summary) | Handler complete, gRPC adapter wired to sentinel service :50056 | sentinel.go | sentinel.go |
 | Formulary (16 RPCs: drug lookup, interactions, allergy, dosing, stock, redistribution, info) | Handler complete, gRPC adapter wired to formulary service :50054 | formulary.go | formulary.go |
 | Anchor (14 RPCs: anchoring, DID, credentials, backend, queue, health) | Handler complete, gRPC adapter wired to anchor service :50055 | anchor.go | anchor.go |
 | Supply chain (inventory/deliveries/predictions/redistribution) | Handler complete, gRPC adapter wired to sentinel service :50056 | supply.go | supply.go |
-| JSON Schema Validation | 6 hardened schemas (Reference, CodeableConcept, status enums, required fields mirror validate.go) | — | validator.go |
+| JSON Schema Validation | 8 hardened schemas (Reference, CodeableConcept, status enums, required fields mirror validate.go) | — | validator.go |
 | WebSocket (/ws) | 501 stub | stubs.go | — |
 
 ---
@@ -627,4 +651,5 @@ services/sentinel/
 | 4 — Auth + Sync Services | Auth Service (15 RPCs, Ed25519 + JWT + RBAC) + Sync Service (~25 RPCs + NodeSyncService, FHIR merge driver, event bus) + `pkg/auth` + `pkg/merge`. 62 tests passing | COMPLETE |
 | 4.5 — E2E Smoke Tests | Full-stack E2E tests (11 cases), JWT claims fix, patient gRPC adapter wiring, test helper packages | COMPLETE |
 | 5 — Formulary + Anchor + Sentinel | Formulary COMPLETE (16 RPCs, 26 tests). Anchor COMPLETE (14 RPCs, 19 tests). Sentinel Agent COMPLETE (10 RPCs, 13 HTTP endpoints, 68 tests). Go gateway adapters wired for all 3. | COMPLETE |
+| FHIR Phase 1 — Core Foundation | 5 new resource types (Immunization, Procedure, Practitioner, Organization, Location) + Provenance auto-generation. Resource registry (15 types), CapabilityStatement, Bundle/OperationOutcome builders. 49 Patient Service RPCs, ~70 gateway endpoints. 36 pkg/fhir tests. | COMPLETE |
 | 6 — WebSocket + Hardening | Real-time events, production config, TLS, metrics | Not started |

@@ -67,6 +67,7 @@ func main() {
 	formularyHandler := handler.NewFormularyHandler(formularySvc)
 	anchorHandler := handler.NewAnchorHandler(anchorSvc)
 	supplyHandler := handler.NewSupplyHandler(supplySvc)
+	resourceHandler := handler.NewResourceHandler(patientSvc)
 
 	// Schema validator
 	sv := middleware.NewSchemaValidator()
@@ -77,6 +78,8 @@ func main() {
 		"condition":           "schemas/condition.json",
 		"medication_request":  "schemas/medication_request.json",
 		"allergy_intolerance": "schemas/allergy_intolerance.json",
+		"immunization":        "schemas/immunization.json",
+		"procedure":           "schemas/procedure.json",
 	}
 	for pattern, path := range schemas {
 		data, err := os.ReadFile(path)
@@ -102,6 +105,7 @@ func main() {
 	mux := router.New(router.Config{
 		AuthHandler:      authHandler,
 		PatientHandler:   patientHandler,
+		ResourceHandler:  resourceHandler,
 		SyncHandler:      syncHandler,
 		ConflictHandler:  conflictHandler,
 		SentinelHandler:  sentinelHandler,

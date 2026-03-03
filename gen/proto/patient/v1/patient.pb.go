@@ -3651,6 +3651,1169 @@ func (x *UpdateAllergyIntoleranceResponse) GetGit() *GitCommitInfo {
 	return nil
 }
 
+// Immunizations
+type ListImmunizationsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	PatientId     string                 `protobuf:"bytes,1,opt,name=patient_id,json=patientId,proto3" json:"patient_id,omitempty"`
+	Pagination    *v1.PaginationRequest  `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListImmunizationsRequest) Reset() {
+	*x = ListImmunizationsRequest{}
+	mi := &file_patient_v1_patient_proto_msgTypes[63]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListImmunizationsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListImmunizationsRequest) ProtoMessage() {}
+
+func (x *ListImmunizationsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_patient_v1_patient_proto_msgTypes[63]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListImmunizationsRequest.ProtoReflect.Descriptor instead.
+func (*ListImmunizationsRequest) Descriptor() ([]byte, []int) {
+	return file_patient_v1_patient_proto_rawDescGZIP(), []int{63}
+}
+
+func (x *ListImmunizationsRequest) GetPatientId() string {
+	if x != nil {
+		return x.PatientId
+	}
+	return ""
+}
+
+func (x *ListImmunizationsRequest) GetPagination() *v1.PaginationRequest {
+	if x != nil {
+		return x.Pagination
+	}
+	return nil
+}
+
+type ListImmunizationsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Immunizations []*v1.FHIRResource     `protobuf:"bytes,1,rep,name=immunizations,proto3" json:"immunizations,omitempty"`
+	Pagination    *v1.PaginationResponse `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListImmunizationsResponse) Reset() {
+	*x = ListImmunizationsResponse{}
+	mi := &file_patient_v1_patient_proto_msgTypes[64]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListImmunizationsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListImmunizationsResponse) ProtoMessage() {}
+
+func (x *ListImmunizationsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_patient_v1_patient_proto_msgTypes[64]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListImmunizationsResponse.ProtoReflect.Descriptor instead.
+func (*ListImmunizationsResponse) Descriptor() ([]byte, []int) {
+	return file_patient_v1_patient_proto_rawDescGZIP(), []int{64}
+}
+
+func (x *ListImmunizationsResponse) GetImmunizations() []*v1.FHIRResource {
+	if x != nil {
+		return x.Immunizations
+	}
+	return nil
+}
+
+func (x *ListImmunizationsResponse) GetPagination() *v1.PaginationResponse {
+	if x != nil {
+		return x.Pagination
+	}
+	return nil
+}
+
+type GetImmunizationRequest struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	PatientId      string                 `protobuf:"bytes,1,opt,name=patient_id,json=patientId,proto3" json:"patient_id,omitempty"`
+	ImmunizationId string                 `protobuf:"bytes,2,opt,name=immunization_id,json=immunizationId,proto3" json:"immunization_id,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *GetImmunizationRequest) Reset() {
+	*x = GetImmunizationRequest{}
+	mi := &file_patient_v1_patient_proto_msgTypes[65]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetImmunizationRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetImmunizationRequest) ProtoMessage() {}
+
+func (x *GetImmunizationRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_patient_v1_patient_proto_msgTypes[65]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetImmunizationRequest.ProtoReflect.Descriptor instead.
+func (*GetImmunizationRequest) Descriptor() ([]byte, []int) {
+	return file_patient_v1_patient_proto_rawDescGZIP(), []int{65}
+}
+
+func (x *GetImmunizationRequest) GetPatientId() string {
+	if x != nil {
+		return x.PatientId
+	}
+	return ""
+}
+
+func (x *GetImmunizationRequest) GetImmunizationId() string {
+	if x != nil {
+		return x.ImmunizationId
+	}
+	return ""
+}
+
+type GetImmunizationResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Immunization  *v1.FHIRResource       `protobuf:"bytes,1,opt,name=immunization,proto3" json:"immunization,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetImmunizationResponse) Reset() {
+	*x = GetImmunizationResponse{}
+	mi := &file_patient_v1_patient_proto_msgTypes[66]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetImmunizationResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetImmunizationResponse) ProtoMessage() {}
+
+func (x *GetImmunizationResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_patient_v1_patient_proto_msgTypes[66]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetImmunizationResponse.ProtoReflect.Descriptor instead.
+func (*GetImmunizationResponse) Descriptor() ([]byte, []int) {
+	return file_patient_v1_patient_proto_rawDescGZIP(), []int{66}
+}
+
+func (x *GetImmunizationResponse) GetImmunization() *v1.FHIRResource {
+	if x != nil {
+		return x.Immunization
+	}
+	return nil
+}
+
+type CreateImmunizationRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	PatientId     string                 `protobuf:"bytes,1,opt,name=patient_id,json=patientId,proto3" json:"patient_id,omitempty"`
+	FhirJson      []byte                 `protobuf:"bytes,2,opt,name=fhir_json,json=fhirJson,proto3" json:"fhir_json,omitempty"`
+	Context       *MutationContext       `protobuf:"bytes,3,opt,name=context,proto3" json:"context,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateImmunizationRequest) Reset() {
+	*x = CreateImmunizationRequest{}
+	mi := &file_patient_v1_patient_proto_msgTypes[67]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateImmunizationRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateImmunizationRequest) ProtoMessage() {}
+
+func (x *CreateImmunizationRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_patient_v1_patient_proto_msgTypes[67]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateImmunizationRequest.ProtoReflect.Descriptor instead.
+func (*CreateImmunizationRequest) Descriptor() ([]byte, []int) {
+	return file_patient_v1_patient_proto_rawDescGZIP(), []int{67}
+}
+
+func (x *CreateImmunizationRequest) GetPatientId() string {
+	if x != nil {
+		return x.PatientId
+	}
+	return ""
+}
+
+func (x *CreateImmunizationRequest) GetFhirJson() []byte {
+	if x != nil {
+		return x.FhirJson
+	}
+	return nil
+}
+
+func (x *CreateImmunizationRequest) GetContext() *MutationContext {
+	if x != nil {
+		return x.Context
+	}
+	return nil
+}
+
+type CreateImmunizationResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Immunization  *v1.FHIRResource       `protobuf:"bytes,1,opt,name=immunization,proto3" json:"immunization,omitempty"`
+	Git           *GitCommitInfo         `protobuf:"bytes,2,opt,name=git,proto3" json:"git,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateImmunizationResponse) Reset() {
+	*x = CreateImmunizationResponse{}
+	mi := &file_patient_v1_patient_proto_msgTypes[68]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateImmunizationResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateImmunizationResponse) ProtoMessage() {}
+
+func (x *CreateImmunizationResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_patient_v1_patient_proto_msgTypes[68]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateImmunizationResponse.ProtoReflect.Descriptor instead.
+func (*CreateImmunizationResponse) Descriptor() ([]byte, []int) {
+	return file_patient_v1_patient_proto_rawDescGZIP(), []int{68}
+}
+
+func (x *CreateImmunizationResponse) GetImmunization() *v1.FHIRResource {
+	if x != nil {
+		return x.Immunization
+	}
+	return nil
+}
+
+func (x *CreateImmunizationResponse) GetGit() *GitCommitInfo {
+	if x != nil {
+		return x.Git
+	}
+	return nil
+}
+
+// Procedures
+type ListProceduresRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	PatientId     string                 `protobuf:"bytes,1,opt,name=patient_id,json=patientId,proto3" json:"patient_id,omitempty"`
+	Pagination    *v1.PaginationRequest  `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListProceduresRequest) Reset() {
+	*x = ListProceduresRequest{}
+	mi := &file_patient_v1_patient_proto_msgTypes[69]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListProceduresRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListProceduresRequest) ProtoMessage() {}
+
+func (x *ListProceduresRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_patient_v1_patient_proto_msgTypes[69]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListProceduresRequest.ProtoReflect.Descriptor instead.
+func (*ListProceduresRequest) Descriptor() ([]byte, []int) {
+	return file_patient_v1_patient_proto_rawDescGZIP(), []int{69}
+}
+
+func (x *ListProceduresRequest) GetPatientId() string {
+	if x != nil {
+		return x.PatientId
+	}
+	return ""
+}
+
+func (x *ListProceduresRequest) GetPagination() *v1.PaginationRequest {
+	if x != nil {
+		return x.Pagination
+	}
+	return nil
+}
+
+type ListProceduresResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Procedures    []*v1.FHIRResource     `protobuf:"bytes,1,rep,name=procedures,proto3" json:"procedures,omitempty"`
+	Pagination    *v1.PaginationResponse `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListProceduresResponse) Reset() {
+	*x = ListProceduresResponse{}
+	mi := &file_patient_v1_patient_proto_msgTypes[70]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListProceduresResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListProceduresResponse) ProtoMessage() {}
+
+func (x *ListProceduresResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_patient_v1_patient_proto_msgTypes[70]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListProceduresResponse.ProtoReflect.Descriptor instead.
+func (*ListProceduresResponse) Descriptor() ([]byte, []int) {
+	return file_patient_v1_patient_proto_rawDescGZIP(), []int{70}
+}
+
+func (x *ListProceduresResponse) GetProcedures() []*v1.FHIRResource {
+	if x != nil {
+		return x.Procedures
+	}
+	return nil
+}
+
+func (x *ListProceduresResponse) GetPagination() *v1.PaginationResponse {
+	if x != nil {
+		return x.Pagination
+	}
+	return nil
+}
+
+type GetProcedureRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	PatientId     string                 `protobuf:"bytes,1,opt,name=patient_id,json=patientId,proto3" json:"patient_id,omitempty"`
+	ProcedureId   string                 `protobuf:"bytes,2,opt,name=procedure_id,json=procedureId,proto3" json:"procedure_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetProcedureRequest) Reset() {
+	*x = GetProcedureRequest{}
+	mi := &file_patient_v1_patient_proto_msgTypes[71]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetProcedureRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetProcedureRequest) ProtoMessage() {}
+
+func (x *GetProcedureRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_patient_v1_patient_proto_msgTypes[71]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetProcedureRequest.ProtoReflect.Descriptor instead.
+func (*GetProcedureRequest) Descriptor() ([]byte, []int) {
+	return file_patient_v1_patient_proto_rawDescGZIP(), []int{71}
+}
+
+func (x *GetProcedureRequest) GetPatientId() string {
+	if x != nil {
+		return x.PatientId
+	}
+	return ""
+}
+
+func (x *GetProcedureRequest) GetProcedureId() string {
+	if x != nil {
+		return x.ProcedureId
+	}
+	return ""
+}
+
+type GetProcedureResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Procedure     *v1.FHIRResource       `protobuf:"bytes,1,opt,name=procedure,proto3" json:"procedure,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetProcedureResponse) Reset() {
+	*x = GetProcedureResponse{}
+	mi := &file_patient_v1_patient_proto_msgTypes[72]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetProcedureResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetProcedureResponse) ProtoMessage() {}
+
+func (x *GetProcedureResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_patient_v1_patient_proto_msgTypes[72]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetProcedureResponse.ProtoReflect.Descriptor instead.
+func (*GetProcedureResponse) Descriptor() ([]byte, []int) {
+	return file_patient_v1_patient_proto_rawDescGZIP(), []int{72}
+}
+
+func (x *GetProcedureResponse) GetProcedure() *v1.FHIRResource {
+	if x != nil {
+		return x.Procedure
+	}
+	return nil
+}
+
+type CreateProcedureRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	PatientId     string                 `protobuf:"bytes,1,opt,name=patient_id,json=patientId,proto3" json:"patient_id,omitempty"`
+	FhirJson      []byte                 `protobuf:"bytes,2,opt,name=fhir_json,json=fhirJson,proto3" json:"fhir_json,omitempty"`
+	Context       *MutationContext       `protobuf:"bytes,3,opt,name=context,proto3" json:"context,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateProcedureRequest) Reset() {
+	*x = CreateProcedureRequest{}
+	mi := &file_patient_v1_patient_proto_msgTypes[73]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateProcedureRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateProcedureRequest) ProtoMessage() {}
+
+func (x *CreateProcedureRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_patient_v1_patient_proto_msgTypes[73]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateProcedureRequest.ProtoReflect.Descriptor instead.
+func (*CreateProcedureRequest) Descriptor() ([]byte, []int) {
+	return file_patient_v1_patient_proto_rawDescGZIP(), []int{73}
+}
+
+func (x *CreateProcedureRequest) GetPatientId() string {
+	if x != nil {
+		return x.PatientId
+	}
+	return ""
+}
+
+func (x *CreateProcedureRequest) GetFhirJson() []byte {
+	if x != nil {
+		return x.FhirJson
+	}
+	return nil
+}
+
+func (x *CreateProcedureRequest) GetContext() *MutationContext {
+	if x != nil {
+		return x.Context
+	}
+	return nil
+}
+
+type CreateProcedureResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Procedure     *v1.FHIRResource       `protobuf:"bytes,1,opt,name=procedure,proto3" json:"procedure,omitempty"`
+	Git           *GitCommitInfo         `protobuf:"bytes,2,opt,name=git,proto3" json:"git,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateProcedureResponse) Reset() {
+	*x = CreateProcedureResponse{}
+	mi := &file_patient_v1_patient_proto_msgTypes[74]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateProcedureResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateProcedureResponse) ProtoMessage() {}
+
+func (x *CreateProcedureResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_patient_v1_patient_proto_msgTypes[74]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateProcedureResponse.ProtoReflect.Descriptor instead.
+func (*CreateProcedureResponse) Descriptor() ([]byte, []int) {
+	return file_patient_v1_patient_proto_rawDescGZIP(), []int{74}
+}
+
+func (x *CreateProcedureResponse) GetProcedure() *v1.FHIRResource {
+	if x != nil {
+		return x.Procedure
+	}
+	return nil
+}
+
+func (x *CreateProcedureResponse) GetGit() *GitCommitInfo {
+	if x != nil {
+		return x.Git
+	}
+	return nil
+}
+
+// Generic Resource CRUD (Practitioner, Organization, Location)
+type CreateResourceRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ResourceType  string                 `protobuf:"bytes,1,opt,name=resource_type,json=resourceType,proto3" json:"resource_type,omitempty"`
+	FhirJson      []byte                 `protobuf:"bytes,2,opt,name=fhir_json,json=fhirJson,proto3" json:"fhir_json,omitempty"`
+	Context       *MutationContext       `protobuf:"bytes,3,opt,name=context,proto3" json:"context,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateResourceRequest) Reset() {
+	*x = CreateResourceRequest{}
+	mi := &file_patient_v1_patient_proto_msgTypes[75]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateResourceRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateResourceRequest) ProtoMessage() {}
+
+func (x *CreateResourceRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_patient_v1_patient_proto_msgTypes[75]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateResourceRequest.ProtoReflect.Descriptor instead.
+func (*CreateResourceRequest) Descriptor() ([]byte, []int) {
+	return file_patient_v1_patient_proto_rawDescGZIP(), []int{75}
+}
+
+func (x *CreateResourceRequest) GetResourceType() string {
+	if x != nil {
+		return x.ResourceType
+	}
+	return ""
+}
+
+func (x *CreateResourceRequest) GetFhirJson() []byte {
+	if x != nil {
+		return x.FhirJson
+	}
+	return nil
+}
+
+func (x *CreateResourceRequest) GetContext() *MutationContext {
+	if x != nil {
+		return x.Context
+	}
+	return nil
+}
+
+type CreateResourceResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Resource      *v1.FHIRResource       `protobuf:"bytes,1,opt,name=resource,proto3" json:"resource,omitempty"`
+	Git           *GitCommitInfo         `protobuf:"bytes,2,opt,name=git,proto3" json:"git,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateResourceResponse) Reset() {
+	*x = CreateResourceResponse{}
+	mi := &file_patient_v1_patient_proto_msgTypes[76]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateResourceResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateResourceResponse) ProtoMessage() {}
+
+func (x *CreateResourceResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_patient_v1_patient_proto_msgTypes[76]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateResourceResponse.ProtoReflect.Descriptor instead.
+func (*CreateResourceResponse) Descriptor() ([]byte, []int) {
+	return file_patient_v1_patient_proto_rawDescGZIP(), []int{76}
+}
+
+func (x *CreateResourceResponse) GetResource() *v1.FHIRResource {
+	if x != nil {
+		return x.Resource
+	}
+	return nil
+}
+
+func (x *CreateResourceResponse) GetGit() *GitCommitInfo {
+	if x != nil {
+		return x.Git
+	}
+	return nil
+}
+
+type GetResourceRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ResourceType  string                 `protobuf:"bytes,1,opt,name=resource_type,json=resourceType,proto3" json:"resource_type,omitempty"`
+	ResourceId    string                 `protobuf:"bytes,2,opt,name=resource_id,json=resourceId,proto3" json:"resource_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetResourceRequest) Reset() {
+	*x = GetResourceRequest{}
+	mi := &file_patient_v1_patient_proto_msgTypes[77]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetResourceRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetResourceRequest) ProtoMessage() {}
+
+func (x *GetResourceRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_patient_v1_patient_proto_msgTypes[77]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetResourceRequest.ProtoReflect.Descriptor instead.
+func (*GetResourceRequest) Descriptor() ([]byte, []int) {
+	return file_patient_v1_patient_proto_rawDescGZIP(), []int{77}
+}
+
+func (x *GetResourceRequest) GetResourceType() string {
+	if x != nil {
+		return x.ResourceType
+	}
+	return ""
+}
+
+func (x *GetResourceRequest) GetResourceId() string {
+	if x != nil {
+		return x.ResourceId
+	}
+	return ""
+}
+
+type GetResourceResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Resource      *v1.FHIRResource       `protobuf:"bytes,1,opt,name=resource,proto3" json:"resource,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetResourceResponse) Reset() {
+	*x = GetResourceResponse{}
+	mi := &file_patient_v1_patient_proto_msgTypes[78]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetResourceResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetResourceResponse) ProtoMessage() {}
+
+func (x *GetResourceResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_patient_v1_patient_proto_msgTypes[78]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetResourceResponse.ProtoReflect.Descriptor instead.
+func (*GetResourceResponse) Descriptor() ([]byte, []int) {
+	return file_patient_v1_patient_proto_rawDescGZIP(), []int{78}
+}
+
+func (x *GetResourceResponse) GetResource() *v1.FHIRResource {
+	if x != nil {
+		return x.Resource
+	}
+	return nil
+}
+
+type ListResourcesRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ResourceType  string                 `protobuf:"bytes,1,opt,name=resource_type,json=resourceType,proto3" json:"resource_type,omitempty"`
+	Pagination    *v1.PaginationRequest  `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListResourcesRequest) Reset() {
+	*x = ListResourcesRequest{}
+	mi := &file_patient_v1_patient_proto_msgTypes[79]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListResourcesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListResourcesRequest) ProtoMessage() {}
+
+func (x *ListResourcesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_patient_v1_patient_proto_msgTypes[79]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListResourcesRequest.ProtoReflect.Descriptor instead.
+func (*ListResourcesRequest) Descriptor() ([]byte, []int) {
+	return file_patient_v1_patient_proto_rawDescGZIP(), []int{79}
+}
+
+func (x *ListResourcesRequest) GetResourceType() string {
+	if x != nil {
+		return x.ResourceType
+	}
+	return ""
+}
+
+func (x *ListResourcesRequest) GetPagination() *v1.PaginationRequest {
+	if x != nil {
+		return x.Pagination
+	}
+	return nil
+}
+
+type ListResourcesResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Resources     []*v1.FHIRResource     `protobuf:"bytes,1,rep,name=resources,proto3" json:"resources,omitempty"`
+	Pagination    *v1.PaginationResponse `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListResourcesResponse) Reset() {
+	*x = ListResourcesResponse{}
+	mi := &file_patient_v1_patient_proto_msgTypes[80]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListResourcesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListResourcesResponse) ProtoMessage() {}
+
+func (x *ListResourcesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_patient_v1_patient_proto_msgTypes[80]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListResourcesResponse.ProtoReflect.Descriptor instead.
+func (*ListResourcesResponse) Descriptor() ([]byte, []int) {
+	return file_patient_v1_patient_proto_rawDescGZIP(), []int{80}
+}
+
+func (x *ListResourcesResponse) GetResources() []*v1.FHIRResource {
+	if x != nil {
+		return x.Resources
+	}
+	return nil
+}
+
+func (x *ListResourcesResponse) GetPagination() *v1.PaginationResponse {
+	if x != nil {
+		return x.Pagination
+	}
+	return nil
+}
+
+type UpdateResourceRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ResourceType  string                 `protobuf:"bytes,1,opt,name=resource_type,json=resourceType,proto3" json:"resource_type,omitempty"`
+	ResourceId    string                 `protobuf:"bytes,2,opt,name=resource_id,json=resourceId,proto3" json:"resource_id,omitempty"`
+	FhirJson      []byte                 `protobuf:"bytes,3,opt,name=fhir_json,json=fhirJson,proto3" json:"fhir_json,omitempty"`
+	Context       *MutationContext       `protobuf:"bytes,4,opt,name=context,proto3" json:"context,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateResourceRequest) Reset() {
+	*x = UpdateResourceRequest{}
+	mi := &file_patient_v1_patient_proto_msgTypes[81]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateResourceRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateResourceRequest) ProtoMessage() {}
+
+func (x *UpdateResourceRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_patient_v1_patient_proto_msgTypes[81]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateResourceRequest.ProtoReflect.Descriptor instead.
+func (*UpdateResourceRequest) Descriptor() ([]byte, []int) {
+	return file_patient_v1_patient_proto_rawDescGZIP(), []int{81}
+}
+
+func (x *UpdateResourceRequest) GetResourceType() string {
+	if x != nil {
+		return x.ResourceType
+	}
+	return ""
+}
+
+func (x *UpdateResourceRequest) GetResourceId() string {
+	if x != nil {
+		return x.ResourceId
+	}
+	return ""
+}
+
+func (x *UpdateResourceRequest) GetFhirJson() []byte {
+	if x != nil {
+		return x.FhirJson
+	}
+	return nil
+}
+
+func (x *UpdateResourceRequest) GetContext() *MutationContext {
+	if x != nil {
+		return x.Context
+	}
+	return nil
+}
+
+type UpdateResourceResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Resource      *v1.FHIRResource       `protobuf:"bytes,1,opt,name=resource,proto3" json:"resource,omitempty"`
+	Git           *GitCommitInfo         `protobuf:"bytes,2,opt,name=git,proto3" json:"git,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateResourceResponse) Reset() {
+	*x = UpdateResourceResponse{}
+	mi := &file_patient_v1_patient_proto_msgTypes[82]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateResourceResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateResourceResponse) ProtoMessage() {}
+
+func (x *UpdateResourceResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_patient_v1_patient_proto_msgTypes[82]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateResourceResponse.ProtoReflect.Descriptor instead.
+func (*UpdateResourceResponse) Descriptor() ([]byte, []int) {
+	return file_patient_v1_patient_proto_rawDescGZIP(), []int{82}
+}
+
+func (x *UpdateResourceResponse) GetResource() *v1.FHIRResource {
+	if x != nil {
+		return x.Resource
+	}
+	return nil
+}
+
+func (x *UpdateResourceResponse) GetGit() *GitCommitInfo {
+	if x != nil {
+		return x.Git
+	}
+	return nil
+}
+
+type DeleteResourceRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ResourceType  string                 `protobuf:"bytes,1,opt,name=resource_type,json=resourceType,proto3" json:"resource_type,omitempty"`
+	ResourceId    string                 `protobuf:"bytes,2,opt,name=resource_id,json=resourceId,proto3" json:"resource_id,omitempty"`
+	Context       *MutationContext       `protobuf:"bytes,3,opt,name=context,proto3" json:"context,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteResourceRequest) Reset() {
+	*x = DeleteResourceRequest{}
+	mi := &file_patient_v1_patient_proto_msgTypes[83]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteResourceRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteResourceRequest) ProtoMessage() {}
+
+func (x *DeleteResourceRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_patient_v1_patient_proto_msgTypes[83]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteResourceRequest.ProtoReflect.Descriptor instead.
+func (*DeleteResourceRequest) Descriptor() ([]byte, []int) {
+	return file_patient_v1_patient_proto_rawDescGZIP(), []int{83}
+}
+
+func (x *DeleteResourceRequest) GetResourceType() string {
+	if x != nil {
+		return x.ResourceType
+	}
+	return ""
+}
+
+func (x *DeleteResourceRequest) GetResourceId() string {
+	if x != nil {
+		return x.ResourceId
+	}
+	return ""
+}
+
+func (x *DeleteResourceRequest) GetContext() *MutationContext {
+	if x != nil {
+		return x.Context
+	}
+	return nil
+}
+
+type DeleteResourceResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Git           *GitCommitInfo         `protobuf:"bytes,1,opt,name=git,proto3" json:"git,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteResourceResponse) Reset() {
+	*x = DeleteResourceResponse{}
+	mi := &file_patient_v1_patient_proto_msgTypes[84]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteResourceResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteResourceResponse) ProtoMessage() {}
+
+func (x *DeleteResourceResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_patient_v1_patient_proto_msgTypes[84]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteResourceResponse.ProtoReflect.Descriptor instead.
+func (*DeleteResourceResponse) Descriptor() ([]byte, []int) {
+	return file_patient_v1_patient_proto_rawDescGZIP(), []int{84}
+}
+
+func (x *DeleteResourceResponse) GetGit() *GitCommitInfo {
+	if x != nil {
+		return x.Git
+	}
+	return nil
+}
+
 // Flags (Sentinel Agent write-back)
 type CreateFlagRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -3663,7 +4826,7 @@ type CreateFlagRequest struct {
 
 func (x *CreateFlagRequest) Reset() {
 	*x = CreateFlagRequest{}
-	mi := &file_patient_v1_patient_proto_msgTypes[63]
+	mi := &file_patient_v1_patient_proto_msgTypes[85]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3675,7 +4838,7 @@ func (x *CreateFlagRequest) String() string {
 func (*CreateFlagRequest) ProtoMessage() {}
 
 func (x *CreateFlagRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_patient_v1_patient_proto_msgTypes[63]
+	mi := &file_patient_v1_patient_proto_msgTypes[85]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3688,7 +4851,7 @@ func (x *CreateFlagRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateFlagRequest.ProtoReflect.Descriptor instead.
 func (*CreateFlagRequest) Descriptor() ([]byte, []int) {
-	return file_patient_v1_patient_proto_rawDescGZIP(), []int{63}
+	return file_patient_v1_patient_proto_rawDescGZIP(), []int{85}
 }
 
 func (x *CreateFlagRequest) GetPatientId() string {
@@ -3722,7 +4885,7 @@ type CreateFlagResponse struct {
 
 func (x *CreateFlagResponse) Reset() {
 	*x = CreateFlagResponse{}
-	mi := &file_patient_v1_patient_proto_msgTypes[64]
+	mi := &file_patient_v1_patient_proto_msgTypes[86]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3734,7 +4897,7 @@ func (x *CreateFlagResponse) String() string {
 func (*CreateFlagResponse) ProtoMessage() {}
 
 func (x *CreateFlagResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_patient_v1_patient_proto_msgTypes[64]
+	mi := &file_patient_v1_patient_proto_msgTypes[86]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3747,7 +4910,7 @@ func (x *CreateFlagResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateFlagResponse.ProtoReflect.Descriptor instead.
 func (*CreateFlagResponse) Descriptor() ([]byte, []int) {
-	return file_patient_v1_patient_proto_rawDescGZIP(), []int{64}
+	return file_patient_v1_patient_proto_rawDescGZIP(), []int{86}
 }
 
 func (x *CreateFlagResponse) GetFlag() *v1.FHIRResource {
@@ -3776,7 +4939,7 @@ type UpdateFlagRequest struct {
 
 func (x *UpdateFlagRequest) Reset() {
 	*x = UpdateFlagRequest{}
-	mi := &file_patient_v1_patient_proto_msgTypes[65]
+	mi := &file_patient_v1_patient_proto_msgTypes[87]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3788,7 +4951,7 @@ func (x *UpdateFlagRequest) String() string {
 func (*UpdateFlagRequest) ProtoMessage() {}
 
 func (x *UpdateFlagRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_patient_v1_patient_proto_msgTypes[65]
+	mi := &file_patient_v1_patient_proto_msgTypes[87]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3801,7 +4964,7 @@ func (x *UpdateFlagRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateFlagRequest.ProtoReflect.Descriptor instead.
 func (*UpdateFlagRequest) Descriptor() ([]byte, []int) {
-	return file_patient_v1_patient_proto_rawDescGZIP(), []int{65}
+	return file_patient_v1_patient_proto_rawDescGZIP(), []int{87}
 }
 
 func (x *UpdateFlagRequest) GetPatientId() string {
@@ -3842,7 +5005,7 @@ type UpdateFlagResponse struct {
 
 func (x *UpdateFlagResponse) Reset() {
 	*x = UpdateFlagResponse{}
-	mi := &file_patient_v1_patient_proto_msgTypes[66]
+	mi := &file_patient_v1_patient_proto_msgTypes[88]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3854,7 +5017,7 @@ func (x *UpdateFlagResponse) String() string {
 func (*UpdateFlagResponse) ProtoMessage() {}
 
 func (x *UpdateFlagResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_patient_v1_patient_proto_msgTypes[66]
+	mi := &file_patient_v1_patient_proto_msgTypes[88]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3867,7 +5030,7 @@ func (x *UpdateFlagResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateFlagResponse.ProtoReflect.Descriptor instead.
 func (*UpdateFlagResponse) Descriptor() ([]byte, []int) {
-	return file_patient_v1_patient_proto_rawDescGZIP(), []int{66}
+	return file_patient_v1_patient_proto_rawDescGZIP(), []int{88}
 }
 
 func (x *UpdateFlagResponse) GetFlag() *v1.FHIRResource {
@@ -3897,7 +5060,7 @@ type CreateBatchRequest struct {
 
 func (x *CreateBatchRequest) Reset() {
 	*x = CreateBatchRequest{}
-	mi := &file_patient_v1_patient_proto_msgTypes[67]
+	mi := &file_patient_v1_patient_proto_msgTypes[89]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3909,7 +5072,7 @@ func (x *CreateBatchRequest) String() string {
 func (*CreateBatchRequest) ProtoMessage() {}
 
 func (x *CreateBatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_patient_v1_patient_proto_msgTypes[67]
+	mi := &file_patient_v1_patient_proto_msgTypes[89]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3922,7 +5085,7 @@ func (x *CreateBatchRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateBatchRequest.ProtoReflect.Descriptor instead.
 func (*CreateBatchRequest) Descriptor() ([]byte, []int) {
-	return file_patient_v1_patient_proto_rawDescGZIP(), []int{67}
+	return file_patient_v1_patient_proto_rawDescGZIP(), []int{89}
 }
 
 func (x *CreateBatchRequest) GetPatientId() string {
@@ -3963,7 +5126,7 @@ type BatchResponse struct {
 
 func (x *BatchResponse) Reset() {
 	*x = BatchResponse{}
-	mi := &file_patient_v1_patient_proto_msgTypes[68]
+	mi := &file_patient_v1_patient_proto_msgTypes[90]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3975,7 +5138,7 @@ func (x *BatchResponse) String() string {
 func (*BatchResponse) ProtoMessage() {}
 
 func (x *BatchResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_patient_v1_patient_proto_msgTypes[68]
+	mi := &file_patient_v1_patient_proto_msgTypes[90]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3988,7 +5151,7 @@ func (x *BatchResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BatchResponse.ProtoReflect.Descriptor instead.
 func (*BatchResponse) Descriptor() ([]byte, []int) {
-	return file_patient_v1_patient_proto_rawDescGZIP(), []int{68}
+	return file_patient_v1_patient_proto_rawDescGZIP(), []int{90}
 }
 
 func (x *BatchResponse) GetResults() []*BatchItemResult {
@@ -4017,7 +5180,7 @@ type BatchItemResult struct {
 
 func (x *BatchItemResult) Reset() {
 	*x = BatchItemResult{}
-	mi := &file_patient_v1_patient_proto_msgTypes[69]
+	mi := &file_patient_v1_patient_proto_msgTypes[91]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4029,7 +5192,7 @@ func (x *BatchItemResult) String() string {
 func (*BatchItemResult) ProtoMessage() {}
 
 func (x *BatchItemResult) ProtoReflect() protoreflect.Message {
-	mi := &file_patient_v1_patient_proto_msgTypes[69]
+	mi := &file_patient_v1_patient_proto_msgTypes[91]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4042,7 +5205,7 @@ func (x *BatchItemResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BatchItemResult.ProtoReflect.Descriptor instead.
 func (*BatchItemResult) Descriptor() ([]byte, []int) {
-	return file_patient_v1_patient_proto_rawDescGZIP(), []int{69}
+	return file_patient_v1_patient_proto_rawDescGZIP(), []int{91}
 }
 
 func (x *BatchItemResult) GetResourceType() string {
@@ -4082,7 +5245,7 @@ type RebuildIndexRequest struct {
 
 func (x *RebuildIndexRequest) Reset() {
 	*x = RebuildIndexRequest{}
-	mi := &file_patient_v1_patient_proto_msgTypes[70]
+	mi := &file_patient_v1_patient_proto_msgTypes[92]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4094,7 +5257,7 @@ func (x *RebuildIndexRequest) String() string {
 func (*RebuildIndexRequest) ProtoMessage() {}
 
 func (x *RebuildIndexRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_patient_v1_patient_proto_msgTypes[70]
+	mi := &file_patient_v1_patient_proto_msgTypes[92]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4107,7 +5270,7 @@ func (x *RebuildIndexRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RebuildIndexRequest.ProtoReflect.Descriptor instead.
 func (*RebuildIndexRequest) Descriptor() ([]byte, []int) {
-	return file_patient_v1_patient_proto_rawDescGZIP(), []int{70}
+	return file_patient_v1_patient_proto_rawDescGZIP(), []int{92}
 }
 
 type RebuildIndexResponse struct {
@@ -4121,7 +5284,7 @@ type RebuildIndexResponse struct {
 
 func (x *RebuildIndexResponse) Reset() {
 	*x = RebuildIndexResponse{}
-	mi := &file_patient_v1_patient_proto_msgTypes[71]
+	mi := &file_patient_v1_patient_proto_msgTypes[93]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4133,7 +5296,7 @@ func (x *RebuildIndexResponse) String() string {
 func (*RebuildIndexResponse) ProtoMessage() {}
 
 func (x *RebuildIndexResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_patient_v1_patient_proto_msgTypes[71]
+	mi := &file_patient_v1_patient_proto_msgTypes[93]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4146,7 +5309,7 @@ func (x *RebuildIndexResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RebuildIndexResponse.ProtoReflect.Descriptor instead.
 func (*RebuildIndexResponse) Descriptor() ([]byte, []int) {
-	return file_patient_v1_patient_proto_rawDescGZIP(), []int{71}
+	return file_patient_v1_patient_proto_rawDescGZIP(), []int{93}
 }
 
 func (x *RebuildIndexResponse) GetResourcesIndexed() int32 {
@@ -4178,7 +5341,7 @@ type CheckIndexHealthRequest struct {
 
 func (x *CheckIndexHealthRequest) Reset() {
 	*x = CheckIndexHealthRequest{}
-	mi := &file_patient_v1_patient_proto_msgTypes[72]
+	mi := &file_patient_v1_patient_proto_msgTypes[94]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4190,7 +5353,7 @@ func (x *CheckIndexHealthRequest) String() string {
 func (*CheckIndexHealthRequest) ProtoMessage() {}
 
 func (x *CheckIndexHealthRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_patient_v1_patient_proto_msgTypes[72]
+	mi := &file_patient_v1_patient_proto_msgTypes[94]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4203,7 +5366,7 @@ func (x *CheckIndexHealthRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CheckIndexHealthRequest.ProtoReflect.Descriptor instead.
 func (*CheckIndexHealthRequest) Descriptor() ([]byte, []int) {
-	return file_patient_v1_patient_proto_rawDescGZIP(), []int{72}
+	return file_patient_v1_patient_proto_rawDescGZIP(), []int{94}
 }
 
 type IndexHealthResponse struct {
@@ -4220,7 +5383,7 @@ type IndexHealthResponse struct {
 
 func (x *IndexHealthResponse) Reset() {
 	*x = IndexHealthResponse{}
-	mi := &file_patient_v1_patient_proto_msgTypes[73]
+	mi := &file_patient_v1_patient_proto_msgTypes[95]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4232,7 +5395,7 @@ func (x *IndexHealthResponse) String() string {
 func (*IndexHealthResponse) ProtoMessage() {}
 
 func (x *IndexHealthResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_patient_v1_patient_proto_msgTypes[73]
+	mi := &file_patient_v1_patient_proto_msgTypes[95]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4245,7 +5408,7 @@ func (x *IndexHealthResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use IndexHealthResponse.ProtoReflect.Descriptor instead.
 func (*IndexHealthResponse) Descriptor() ([]byte, []int) {
-	return file_patient_v1_patient_proto_rawDescGZIP(), []int{73}
+	return file_patient_v1_patient_proto_rawDescGZIP(), []int{95}
 }
 
 func (x *IndexHealthResponse) GetHealthy() bool {
@@ -4299,7 +5462,7 @@ type ReindexRequest struct {
 
 func (x *ReindexRequest) Reset() {
 	*x = ReindexRequest{}
-	mi := &file_patient_v1_patient_proto_msgTypes[74]
+	mi := &file_patient_v1_patient_proto_msgTypes[96]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4311,7 +5474,7 @@ func (x *ReindexRequest) String() string {
 func (*ReindexRequest) ProtoMessage() {}
 
 func (x *ReindexRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_patient_v1_patient_proto_msgTypes[74]
+	mi := &file_patient_v1_patient_proto_msgTypes[96]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4324,7 +5487,7 @@ func (x *ReindexRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReindexRequest.ProtoReflect.Descriptor instead.
 func (*ReindexRequest) Descriptor() ([]byte, []int) {
-	return file_patient_v1_patient_proto_rawDescGZIP(), []int{74}
+	return file_patient_v1_patient_proto_rawDescGZIP(), []int{96}
 }
 
 func (x *ReindexRequest) GetResourcePaths() []string {
@@ -4345,7 +5508,7 @@ type ReindexResponse struct {
 
 func (x *ReindexResponse) Reset() {
 	*x = ReindexResponse{}
-	mi := &file_patient_v1_patient_proto_msgTypes[75]
+	mi := &file_patient_v1_patient_proto_msgTypes[97]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4357,7 +5520,7 @@ func (x *ReindexResponse) String() string {
 func (*ReindexResponse) ProtoMessage() {}
 
 func (x *ReindexResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_patient_v1_patient_proto_msgTypes[75]
+	mi := &file_patient_v1_patient_proto_msgTypes[97]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4370,7 +5533,7 @@ func (x *ReindexResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReindexResponse.ProtoReflect.Descriptor instead.
 func (*ReindexResponse) Descriptor() ([]byte, []int) {
-	return file_patient_v1_patient_proto_rawDescGZIP(), []int{75}
+	return file_patient_v1_patient_proto_rawDescGZIP(), []int{97}
 }
 
 func (x *ReindexResponse) GetIndexed() int32 {
@@ -4403,7 +5566,7 @@ type HealthRequest struct {
 
 func (x *HealthRequest) Reset() {
 	*x = HealthRequest{}
-	mi := &file_patient_v1_patient_proto_msgTypes[76]
+	mi := &file_patient_v1_patient_proto_msgTypes[98]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4415,7 +5578,7 @@ func (x *HealthRequest) String() string {
 func (*HealthRequest) ProtoMessage() {}
 
 func (x *HealthRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_patient_v1_patient_proto_msgTypes[76]
+	mi := &file_patient_v1_patient_proto_msgTypes[98]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4428,7 +5591,7 @@ func (x *HealthRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HealthRequest.ProtoReflect.Descriptor instead.
 func (*HealthRequest) Descriptor() ([]byte, []int) {
-	return file_patient_v1_patient_proto_rawDescGZIP(), []int{76}
+	return file_patient_v1_patient_proto_rawDescGZIP(), []int{98}
 }
 
 type HealthResponse struct {
@@ -4443,7 +5606,7 @@ type HealthResponse struct {
 
 func (x *HealthResponse) Reset() {
 	*x = HealthResponse{}
-	mi := &file_patient_v1_patient_proto_msgTypes[77]
+	mi := &file_patient_v1_patient_proto_msgTypes[99]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4455,7 +5618,7 @@ func (x *HealthResponse) String() string {
 func (*HealthResponse) ProtoMessage() {}
 
 func (x *HealthResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_patient_v1_patient_proto_msgTypes[77]
+	mi := &file_patient_v1_patient_proto_msgTypes[99]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4468,7 +5631,7 @@ func (x *HealthResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HealthResponse.ProtoReflect.Descriptor instead.
 func (*HealthResponse) Descriptor() ([]byte, []int) {
-	return file_patient_v1_patient_proto_rawDescGZIP(), []int{77}
+	return file_patient_v1_patient_proto_rawDescGZIP(), []int{99}
 }
 
 func (x *HealthResponse) GetStatus() string {
@@ -4816,7 +5979,98 @@ const file_patient_v1_patient_proto_rawDesc = "" +
 	"\acontext\x18\x04 \x01(\v2\x1b.patient.v1.MutationContextR\acontext\"\x99\x01\n" +
 	" UpdateAllergyIntoleranceResponse\x12H\n" +
 	"\x13allergy_intolerance\x18\x01 \x01(\v2\x17.common.v1.FHIRResourceR\x12allergyIntolerance\x12+\n" +
-	"\x03git\x18\x02 \x01(\v2\x19.patient.v1.GitCommitInfoR\x03git\"\x86\x01\n" +
+	"\x03git\x18\x02 \x01(\v2\x19.patient.v1.GitCommitInfoR\x03git\"w\n" +
+	"\x18ListImmunizationsRequest\x12\x1d\n" +
+	"\n" +
+	"patient_id\x18\x01 \x01(\tR\tpatientId\x12<\n" +
+	"\n" +
+	"pagination\x18\x02 \x01(\v2\x1c.common.v1.PaginationRequestR\n" +
+	"pagination\"\x99\x01\n" +
+	"\x19ListImmunizationsResponse\x12=\n" +
+	"\rimmunizations\x18\x01 \x03(\v2\x17.common.v1.FHIRResourceR\rimmunizations\x12=\n" +
+	"\n" +
+	"pagination\x18\x02 \x01(\v2\x1d.common.v1.PaginationResponseR\n" +
+	"pagination\"`\n" +
+	"\x16GetImmunizationRequest\x12\x1d\n" +
+	"\n" +
+	"patient_id\x18\x01 \x01(\tR\tpatientId\x12'\n" +
+	"\x0fimmunization_id\x18\x02 \x01(\tR\x0eimmunizationId\"V\n" +
+	"\x17GetImmunizationResponse\x12;\n" +
+	"\fimmunization\x18\x01 \x01(\v2\x17.common.v1.FHIRResourceR\fimmunization\"\x8e\x01\n" +
+	"\x19CreateImmunizationRequest\x12\x1d\n" +
+	"\n" +
+	"patient_id\x18\x01 \x01(\tR\tpatientId\x12\x1b\n" +
+	"\tfhir_json\x18\x02 \x01(\fR\bfhirJson\x125\n" +
+	"\acontext\x18\x03 \x01(\v2\x1b.patient.v1.MutationContextR\acontext\"\x86\x01\n" +
+	"\x1aCreateImmunizationResponse\x12;\n" +
+	"\fimmunization\x18\x01 \x01(\v2\x17.common.v1.FHIRResourceR\fimmunization\x12+\n" +
+	"\x03git\x18\x02 \x01(\v2\x19.patient.v1.GitCommitInfoR\x03git\"t\n" +
+	"\x15ListProceduresRequest\x12\x1d\n" +
+	"\n" +
+	"patient_id\x18\x01 \x01(\tR\tpatientId\x12<\n" +
+	"\n" +
+	"pagination\x18\x02 \x01(\v2\x1c.common.v1.PaginationRequestR\n" +
+	"pagination\"\x90\x01\n" +
+	"\x16ListProceduresResponse\x127\n" +
+	"\n" +
+	"procedures\x18\x01 \x03(\v2\x17.common.v1.FHIRResourceR\n" +
+	"procedures\x12=\n" +
+	"\n" +
+	"pagination\x18\x02 \x01(\v2\x1d.common.v1.PaginationResponseR\n" +
+	"pagination\"W\n" +
+	"\x13GetProcedureRequest\x12\x1d\n" +
+	"\n" +
+	"patient_id\x18\x01 \x01(\tR\tpatientId\x12!\n" +
+	"\fprocedure_id\x18\x02 \x01(\tR\vprocedureId\"M\n" +
+	"\x14GetProcedureResponse\x125\n" +
+	"\tprocedure\x18\x01 \x01(\v2\x17.common.v1.FHIRResourceR\tprocedure\"\x8b\x01\n" +
+	"\x16CreateProcedureRequest\x12\x1d\n" +
+	"\n" +
+	"patient_id\x18\x01 \x01(\tR\tpatientId\x12\x1b\n" +
+	"\tfhir_json\x18\x02 \x01(\fR\bfhirJson\x125\n" +
+	"\acontext\x18\x03 \x01(\v2\x1b.patient.v1.MutationContextR\acontext\"}\n" +
+	"\x17CreateProcedureResponse\x125\n" +
+	"\tprocedure\x18\x01 \x01(\v2\x17.common.v1.FHIRResourceR\tprocedure\x12+\n" +
+	"\x03git\x18\x02 \x01(\v2\x19.patient.v1.GitCommitInfoR\x03git\"\x90\x01\n" +
+	"\x15CreateResourceRequest\x12#\n" +
+	"\rresource_type\x18\x01 \x01(\tR\fresourceType\x12\x1b\n" +
+	"\tfhir_json\x18\x02 \x01(\fR\bfhirJson\x125\n" +
+	"\acontext\x18\x03 \x01(\v2\x1b.patient.v1.MutationContextR\acontext\"z\n" +
+	"\x16CreateResourceResponse\x123\n" +
+	"\bresource\x18\x01 \x01(\v2\x17.common.v1.FHIRResourceR\bresource\x12+\n" +
+	"\x03git\x18\x02 \x01(\v2\x19.patient.v1.GitCommitInfoR\x03git\"Z\n" +
+	"\x12GetResourceRequest\x12#\n" +
+	"\rresource_type\x18\x01 \x01(\tR\fresourceType\x12\x1f\n" +
+	"\vresource_id\x18\x02 \x01(\tR\n" +
+	"resourceId\"J\n" +
+	"\x13GetResourceResponse\x123\n" +
+	"\bresource\x18\x01 \x01(\v2\x17.common.v1.FHIRResourceR\bresource\"y\n" +
+	"\x14ListResourcesRequest\x12#\n" +
+	"\rresource_type\x18\x01 \x01(\tR\fresourceType\x12<\n" +
+	"\n" +
+	"pagination\x18\x02 \x01(\v2\x1c.common.v1.PaginationRequestR\n" +
+	"pagination\"\x8d\x01\n" +
+	"\x15ListResourcesResponse\x125\n" +
+	"\tresources\x18\x01 \x03(\v2\x17.common.v1.FHIRResourceR\tresources\x12=\n" +
+	"\n" +
+	"pagination\x18\x02 \x01(\v2\x1d.common.v1.PaginationResponseR\n" +
+	"pagination\"\xb1\x01\n" +
+	"\x15UpdateResourceRequest\x12#\n" +
+	"\rresource_type\x18\x01 \x01(\tR\fresourceType\x12\x1f\n" +
+	"\vresource_id\x18\x02 \x01(\tR\n" +
+	"resourceId\x12\x1b\n" +
+	"\tfhir_json\x18\x03 \x01(\fR\bfhirJson\x125\n" +
+	"\acontext\x18\x04 \x01(\v2\x1b.patient.v1.MutationContextR\acontext\"z\n" +
+	"\x16UpdateResourceResponse\x123\n" +
+	"\bresource\x18\x01 \x01(\v2\x17.common.v1.FHIRResourceR\bresource\x12+\n" +
+	"\x03git\x18\x02 \x01(\v2\x19.patient.v1.GitCommitInfoR\x03git\"\x94\x01\n" +
+	"\x15DeleteResourceRequest\x12#\n" +
+	"\rresource_type\x18\x01 \x01(\tR\fresourceType\x12\x1f\n" +
+	"\vresource_id\x18\x02 \x01(\tR\n" +
+	"resourceId\x125\n" +
+	"\acontext\x18\x03 \x01(\v2\x1b.patient.v1.MutationContextR\acontext\"E\n" +
+	"\x16DeleteResourceResponse\x12+\n" +
+	"\x03git\x18\x01 \x01(\v2\x19.patient.v1.GitCommitInfoR\x03git\"\x86\x01\n" +
 	"\x11CreateFlagRequest\x12\x1d\n" +
 	"\n" +
 	"patient_id\x18\x01 \x01(\tR\tpatientId\x12\x1b\n" +
@@ -4876,7 +6130,7 @@ const file_patient_v1_patient_proto_rawDesc = "" +
 	"\x06status\x18\x01 \x01(\tR\x06status\x12\x19\n" +
 	"\bgit_head\x18\x02 \x01(\tR\agitHead\x12#\n" +
 	"\rpatient_count\x18\x03 \x01(\x05R\fpatientCount\x12#\n" +
-	"\rindex_healthy\x18\x04 \x01(\bR\findexHealthy2\x9c\x1a\n" +
+	"\rindex_healthy\x18\x04 \x01(\bR\findexHealthy2\xf8!\n" +
 	"\x0ePatientService\x12Q\n" +
 	"\fListPatients\x12\x1f.patient.v1.ListPatientsRequest\x1a .patient.v1.ListPatientsResponse\x12K\n" +
 	"\n" +
@@ -4907,7 +6161,18 @@ const file_patient_v1_patient_proto_rawDesc = "" +
 	"\x17ListAllergyIntolerances\x12*.patient.v1.ListAllergyIntolerancesRequest\x1a+.patient.v1.ListAllergyIntolerancesResponse\x12l\n" +
 	"\x15GetAllergyIntolerance\x12(.patient.v1.GetAllergyIntoleranceRequest\x1a).patient.v1.GetAllergyIntoleranceResponse\x12u\n" +
 	"\x18CreateAllergyIntolerance\x12+.patient.v1.CreateAllergyIntoleranceRequest\x1a,.patient.v1.CreateAllergyIntoleranceResponse\x12u\n" +
-	"\x18UpdateAllergyIntolerance\x12+.patient.v1.UpdateAllergyIntoleranceRequest\x1a,.patient.v1.UpdateAllergyIntoleranceResponse\x12K\n" +
+	"\x18UpdateAllergyIntolerance\x12+.patient.v1.UpdateAllergyIntoleranceRequest\x1a,.patient.v1.UpdateAllergyIntoleranceResponse\x12`\n" +
+	"\x11ListImmunizations\x12$.patient.v1.ListImmunizationsRequest\x1a%.patient.v1.ListImmunizationsResponse\x12Z\n" +
+	"\x0fGetImmunization\x12\".patient.v1.GetImmunizationRequest\x1a#.patient.v1.GetImmunizationResponse\x12c\n" +
+	"\x12CreateImmunization\x12%.patient.v1.CreateImmunizationRequest\x1a&.patient.v1.CreateImmunizationResponse\x12W\n" +
+	"\x0eListProcedures\x12!.patient.v1.ListProceduresRequest\x1a\".patient.v1.ListProceduresResponse\x12Q\n" +
+	"\fGetProcedure\x12\x1f.patient.v1.GetProcedureRequest\x1a .patient.v1.GetProcedureResponse\x12Z\n" +
+	"\x0fCreateProcedure\x12\".patient.v1.CreateProcedureRequest\x1a#.patient.v1.CreateProcedureResponse\x12W\n" +
+	"\x0eCreateResource\x12!.patient.v1.CreateResourceRequest\x1a\".patient.v1.CreateResourceResponse\x12N\n" +
+	"\vGetResource\x12\x1e.patient.v1.GetResourceRequest\x1a\x1f.patient.v1.GetResourceResponse\x12T\n" +
+	"\rListResources\x12 .patient.v1.ListResourcesRequest\x1a!.patient.v1.ListResourcesResponse\x12W\n" +
+	"\x0eUpdateResource\x12!.patient.v1.UpdateResourceRequest\x1a\".patient.v1.UpdateResourceResponse\x12W\n" +
+	"\x0eDeleteResource\x12!.patient.v1.DeleteResourceRequest\x1a\".patient.v1.DeleteResourceResponse\x12K\n" +
 	"\n" +
 	"CreateFlag\x12\x1d.patient.v1.CreateFlagRequest\x1a\x1e.patient.v1.CreateFlagResponse\x12K\n" +
 	"\n" +
@@ -4930,7 +6195,7 @@ func file_patient_v1_patient_proto_rawDescGZIP() []byte {
 	return file_patient_v1_patient_proto_rawDescData
 }
 
-var file_patient_v1_patient_proto_msgTypes = make([]protoimpl.MessageInfo, 78)
+var file_patient_v1_patient_proto_msgTypes = make([]protoimpl.MessageInfo, 100)
 var file_patient_v1_patient_proto_goTypes = []any{
 	(*MutationContext)(nil),                  // 0: patient.v1.MutationContext
 	(*GitCommitInfo)(nil),                    // 1: patient.v1.GitCommitInfo
@@ -4995,196 +6260,266 @@ var file_patient_v1_patient_proto_goTypes = []any{
 	(*CreateAllergyIntoleranceResponse)(nil), // 60: patient.v1.CreateAllergyIntoleranceResponse
 	(*UpdateAllergyIntoleranceRequest)(nil),  // 61: patient.v1.UpdateAllergyIntoleranceRequest
 	(*UpdateAllergyIntoleranceResponse)(nil), // 62: patient.v1.UpdateAllergyIntoleranceResponse
-	(*CreateFlagRequest)(nil),                // 63: patient.v1.CreateFlagRequest
-	(*CreateFlagResponse)(nil),               // 64: patient.v1.CreateFlagResponse
-	(*UpdateFlagRequest)(nil),                // 65: patient.v1.UpdateFlagRequest
-	(*UpdateFlagResponse)(nil),               // 66: patient.v1.UpdateFlagResponse
-	(*CreateBatchRequest)(nil),               // 67: patient.v1.CreateBatchRequest
-	(*BatchResponse)(nil),                    // 68: patient.v1.BatchResponse
-	(*BatchItemResult)(nil),                  // 69: patient.v1.BatchItemResult
-	(*RebuildIndexRequest)(nil),              // 70: patient.v1.RebuildIndexRequest
-	(*RebuildIndexResponse)(nil),             // 71: patient.v1.RebuildIndexResponse
-	(*CheckIndexHealthRequest)(nil),          // 72: patient.v1.CheckIndexHealthRequest
-	(*IndexHealthResponse)(nil),              // 73: patient.v1.IndexHealthResponse
-	(*ReindexRequest)(nil),                   // 74: patient.v1.ReindexRequest
-	(*ReindexResponse)(nil),                  // 75: patient.v1.ReindexResponse
-	(*HealthRequest)(nil),                    // 76: patient.v1.HealthRequest
-	(*HealthResponse)(nil),                   // 77: patient.v1.HealthResponse
-	(*timestamppb.Timestamp)(nil),            // 78: google.protobuf.Timestamp
-	(*v1.PaginationRequest)(nil),             // 79: common.v1.PaginationRequest
-	(*v1.FHIRResource)(nil),                  // 80: common.v1.FHIRResource
-	(*v1.PaginationResponse)(nil),            // 81: common.v1.PaginationResponse
+	(*ListImmunizationsRequest)(nil),         // 63: patient.v1.ListImmunizationsRequest
+	(*ListImmunizationsResponse)(nil),        // 64: patient.v1.ListImmunizationsResponse
+	(*GetImmunizationRequest)(nil),           // 65: patient.v1.GetImmunizationRequest
+	(*GetImmunizationResponse)(nil),          // 66: patient.v1.GetImmunizationResponse
+	(*CreateImmunizationRequest)(nil),        // 67: patient.v1.CreateImmunizationRequest
+	(*CreateImmunizationResponse)(nil),       // 68: patient.v1.CreateImmunizationResponse
+	(*ListProceduresRequest)(nil),            // 69: patient.v1.ListProceduresRequest
+	(*ListProceduresResponse)(nil),           // 70: patient.v1.ListProceduresResponse
+	(*GetProcedureRequest)(nil),              // 71: patient.v1.GetProcedureRequest
+	(*GetProcedureResponse)(nil),             // 72: patient.v1.GetProcedureResponse
+	(*CreateProcedureRequest)(nil),           // 73: patient.v1.CreateProcedureRequest
+	(*CreateProcedureResponse)(nil),          // 74: patient.v1.CreateProcedureResponse
+	(*CreateResourceRequest)(nil),            // 75: patient.v1.CreateResourceRequest
+	(*CreateResourceResponse)(nil),           // 76: patient.v1.CreateResourceResponse
+	(*GetResourceRequest)(nil),               // 77: patient.v1.GetResourceRequest
+	(*GetResourceResponse)(nil),              // 78: patient.v1.GetResourceResponse
+	(*ListResourcesRequest)(nil),             // 79: patient.v1.ListResourcesRequest
+	(*ListResourcesResponse)(nil),            // 80: patient.v1.ListResourcesResponse
+	(*UpdateResourceRequest)(nil),            // 81: patient.v1.UpdateResourceRequest
+	(*UpdateResourceResponse)(nil),           // 82: patient.v1.UpdateResourceResponse
+	(*DeleteResourceRequest)(nil),            // 83: patient.v1.DeleteResourceRequest
+	(*DeleteResourceResponse)(nil),           // 84: patient.v1.DeleteResourceResponse
+	(*CreateFlagRequest)(nil),                // 85: patient.v1.CreateFlagRequest
+	(*CreateFlagResponse)(nil),               // 86: patient.v1.CreateFlagResponse
+	(*UpdateFlagRequest)(nil),                // 87: patient.v1.UpdateFlagRequest
+	(*UpdateFlagResponse)(nil),               // 88: patient.v1.UpdateFlagResponse
+	(*CreateBatchRequest)(nil),               // 89: patient.v1.CreateBatchRequest
+	(*BatchResponse)(nil),                    // 90: patient.v1.BatchResponse
+	(*BatchItemResult)(nil),                  // 91: patient.v1.BatchItemResult
+	(*RebuildIndexRequest)(nil),              // 92: patient.v1.RebuildIndexRequest
+	(*RebuildIndexResponse)(nil),             // 93: patient.v1.RebuildIndexResponse
+	(*CheckIndexHealthRequest)(nil),          // 94: patient.v1.CheckIndexHealthRequest
+	(*IndexHealthResponse)(nil),              // 95: patient.v1.IndexHealthResponse
+	(*ReindexRequest)(nil),                   // 96: patient.v1.ReindexRequest
+	(*ReindexResponse)(nil),                  // 97: patient.v1.ReindexResponse
+	(*HealthRequest)(nil),                    // 98: patient.v1.HealthRequest
+	(*HealthResponse)(nil),                   // 99: patient.v1.HealthResponse
+	(*timestamppb.Timestamp)(nil),            // 100: google.protobuf.Timestamp
+	(*v1.PaginationRequest)(nil),             // 101: common.v1.PaginationRequest
+	(*v1.FHIRResource)(nil),                  // 102: common.v1.FHIRResource
+	(*v1.PaginationResponse)(nil),            // 103: common.v1.PaginationResponse
 }
 var file_patient_v1_patient_proto_depIdxs = []int32{
-	78,  // 0: patient.v1.MutationContext.timestamp:type_name -> google.protobuf.Timestamp
-	78,  // 1: patient.v1.GitCommitInfo.timestamp:type_name -> google.protobuf.Timestamp
-	79,  // 2: patient.v1.ListPatientsRequest.pagination:type_name -> common.v1.PaginationRequest
-	80,  // 3: patient.v1.ListPatientsResponse.patients:type_name -> common.v1.FHIRResource
-	81,  // 4: patient.v1.ListPatientsResponse.pagination:type_name -> common.v1.PaginationResponse
-	80,  // 5: patient.v1.GetPatientResponse.patient:type_name -> common.v1.FHIRResource
-	80,  // 6: patient.v1.GetPatientResponse.encounters:type_name -> common.v1.FHIRResource
-	80,  // 7: patient.v1.GetPatientResponse.observations:type_name -> common.v1.FHIRResource
-	80,  // 8: patient.v1.GetPatientResponse.conditions:type_name -> common.v1.FHIRResource
-	80,  // 9: patient.v1.GetPatientResponse.medication_requests:type_name -> common.v1.FHIRResource
-	80,  // 10: patient.v1.GetPatientResponse.allergy_intolerances:type_name -> common.v1.FHIRResource
-	80,  // 11: patient.v1.GetPatientResponse.flags:type_name -> common.v1.FHIRResource
-	80,  // 12: patient.v1.GetPatientBundleResponse.patient:type_name -> common.v1.FHIRResource
-	80,  // 13: patient.v1.GetPatientBundleResponse.encounters:type_name -> common.v1.FHIRResource
-	80,  // 14: patient.v1.GetPatientBundleResponse.observations:type_name -> common.v1.FHIRResource
-	80,  // 15: patient.v1.GetPatientBundleResponse.conditions:type_name -> common.v1.FHIRResource
-	80,  // 16: patient.v1.GetPatientBundleResponse.medication_requests:type_name -> common.v1.FHIRResource
-	80,  // 17: patient.v1.GetPatientBundleResponse.allergy_intolerances:type_name -> common.v1.FHIRResource
-	80,  // 18: patient.v1.GetPatientBundleResponse.flags:type_name -> common.v1.FHIRResource
+	100, // 0: patient.v1.MutationContext.timestamp:type_name -> google.protobuf.Timestamp
+	100, // 1: patient.v1.GitCommitInfo.timestamp:type_name -> google.protobuf.Timestamp
+	101, // 2: patient.v1.ListPatientsRequest.pagination:type_name -> common.v1.PaginationRequest
+	102, // 3: patient.v1.ListPatientsResponse.patients:type_name -> common.v1.FHIRResource
+	103, // 4: patient.v1.ListPatientsResponse.pagination:type_name -> common.v1.PaginationResponse
+	102, // 5: patient.v1.GetPatientResponse.patient:type_name -> common.v1.FHIRResource
+	102, // 6: patient.v1.GetPatientResponse.encounters:type_name -> common.v1.FHIRResource
+	102, // 7: patient.v1.GetPatientResponse.observations:type_name -> common.v1.FHIRResource
+	102, // 8: patient.v1.GetPatientResponse.conditions:type_name -> common.v1.FHIRResource
+	102, // 9: patient.v1.GetPatientResponse.medication_requests:type_name -> common.v1.FHIRResource
+	102, // 10: patient.v1.GetPatientResponse.allergy_intolerances:type_name -> common.v1.FHIRResource
+	102, // 11: patient.v1.GetPatientResponse.flags:type_name -> common.v1.FHIRResource
+	102, // 12: patient.v1.GetPatientBundleResponse.patient:type_name -> common.v1.FHIRResource
+	102, // 13: patient.v1.GetPatientBundleResponse.encounters:type_name -> common.v1.FHIRResource
+	102, // 14: patient.v1.GetPatientBundleResponse.observations:type_name -> common.v1.FHIRResource
+	102, // 15: patient.v1.GetPatientBundleResponse.conditions:type_name -> common.v1.FHIRResource
+	102, // 16: patient.v1.GetPatientBundleResponse.medication_requests:type_name -> common.v1.FHIRResource
+	102, // 17: patient.v1.GetPatientBundleResponse.allergy_intolerances:type_name -> common.v1.FHIRResource
+	102, // 18: patient.v1.GetPatientBundleResponse.flags:type_name -> common.v1.FHIRResource
 	0,   // 19: patient.v1.CreatePatientRequest.context:type_name -> patient.v1.MutationContext
-	80,  // 20: patient.v1.CreatePatientResponse.patient:type_name -> common.v1.FHIRResource
+	102, // 20: patient.v1.CreatePatientResponse.patient:type_name -> common.v1.FHIRResource
 	1,   // 21: patient.v1.CreatePatientResponse.git:type_name -> patient.v1.GitCommitInfo
 	0,   // 22: patient.v1.UpdatePatientRequest.context:type_name -> patient.v1.MutationContext
-	80,  // 23: patient.v1.UpdatePatientResponse.patient:type_name -> common.v1.FHIRResource
+	102, // 23: patient.v1.UpdatePatientResponse.patient:type_name -> common.v1.FHIRResource
 	1,   // 24: patient.v1.UpdatePatientResponse.git:type_name -> patient.v1.GitCommitInfo
 	0,   // 25: patient.v1.DeletePatientRequest.context:type_name -> patient.v1.MutationContext
 	1,   // 26: patient.v1.DeletePatientResponse.git:type_name -> patient.v1.GitCommitInfo
-	79,  // 27: patient.v1.SearchPatientsRequest.pagination:type_name -> common.v1.PaginationRequest
-	80,  // 28: patient.v1.SearchPatientsResponse.patients:type_name -> common.v1.FHIRResource
-	81,  // 29: patient.v1.SearchPatientsResponse.pagination:type_name -> common.v1.PaginationResponse
+	101, // 27: patient.v1.SearchPatientsRequest.pagination:type_name -> common.v1.PaginationRequest
+	102, // 28: patient.v1.SearchPatientsResponse.patients:type_name -> common.v1.FHIRResource
+	103, // 29: patient.v1.SearchPatientsResponse.pagination:type_name -> common.v1.PaginationResponse
 	18,  // 30: patient.v1.MatchPatientsResponse.matches:type_name -> patient.v1.PatientMatch
 	21,  // 31: patient.v1.GetPatientHistoryResponse.entries:type_name -> patient.v1.HistoryEntry
-	79,  // 32: patient.v1.GetPatientTimelineRequest.pagination:type_name -> common.v1.PaginationRequest
+	101, // 32: patient.v1.GetPatientTimelineRequest.pagination:type_name -> common.v1.PaginationRequest
 	24,  // 33: patient.v1.GetPatientTimelineResponse.events:type_name -> patient.v1.TimelineEvent
-	81,  // 34: patient.v1.GetPatientTimelineResponse.pagination:type_name -> common.v1.PaginationResponse
-	79,  // 35: patient.v1.ListEncountersRequest.pagination:type_name -> common.v1.PaginationRequest
-	80,  // 36: patient.v1.ListEncountersResponse.encounters:type_name -> common.v1.FHIRResource
-	81,  // 37: patient.v1.ListEncountersResponse.pagination:type_name -> common.v1.PaginationResponse
-	80,  // 38: patient.v1.GetEncounterResponse.encounter:type_name -> common.v1.FHIRResource
+	103, // 34: patient.v1.GetPatientTimelineResponse.pagination:type_name -> common.v1.PaginationResponse
+	101, // 35: patient.v1.ListEncountersRequest.pagination:type_name -> common.v1.PaginationRequest
+	102, // 36: patient.v1.ListEncountersResponse.encounters:type_name -> common.v1.FHIRResource
+	103, // 37: patient.v1.ListEncountersResponse.pagination:type_name -> common.v1.PaginationResponse
+	102, // 38: patient.v1.GetEncounterResponse.encounter:type_name -> common.v1.FHIRResource
 	0,   // 39: patient.v1.CreateEncounterRequest.context:type_name -> patient.v1.MutationContext
-	80,  // 40: patient.v1.CreateEncounterResponse.encounter:type_name -> common.v1.FHIRResource
+	102, // 40: patient.v1.CreateEncounterResponse.encounter:type_name -> common.v1.FHIRResource
 	1,   // 41: patient.v1.CreateEncounterResponse.git:type_name -> patient.v1.GitCommitInfo
 	0,   // 42: patient.v1.UpdateEncounterRequest.context:type_name -> patient.v1.MutationContext
-	80,  // 43: patient.v1.UpdateEncounterResponse.encounter:type_name -> common.v1.FHIRResource
+	102, // 43: patient.v1.UpdateEncounterResponse.encounter:type_name -> common.v1.FHIRResource
 	1,   // 44: patient.v1.UpdateEncounterResponse.git:type_name -> patient.v1.GitCommitInfo
-	79,  // 45: patient.v1.ListObservationsRequest.pagination:type_name -> common.v1.PaginationRequest
-	80,  // 46: patient.v1.ListObservationsResponse.observations:type_name -> common.v1.FHIRResource
-	81,  // 47: patient.v1.ListObservationsResponse.pagination:type_name -> common.v1.PaginationResponse
-	80,  // 48: patient.v1.GetObservationResponse.observation:type_name -> common.v1.FHIRResource
+	101, // 45: patient.v1.ListObservationsRequest.pagination:type_name -> common.v1.PaginationRequest
+	102, // 46: patient.v1.ListObservationsResponse.observations:type_name -> common.v1.FHIRResource
+	103, // 47: patient.v1.ListObservationsResponse.pagination:type_name -> common.v1.PaginationResponse
+	102, // 48: patient.v1.GetObservationResponse.observation:type_name -> common.v1.FHIRResource
 	0,   // 49: patient.v1.CreateObservationRequest.context:type_name -> patient.v1.MutationContext
-	80,  // 50: patient.v1.CreateObservationResponse.observation:type_name -> common.v1.FHIRResource
+	102, // 50: patient.v1.CreateObservationResponse.observation:type_name -> common.v1.FHIRResource
 	1,   // 51: patient.v1.CreateObservationResponse.git:type_name -> patient.v1.GitCommitInfo
-	79,  // 52: patient.v1.ListConditionsRequest.pagination:type_name -> common.v1.PaginationRequest
-	80,  // 53: patient.v1.ListConditionsResponse.conditions:type_name -> common.v1.FHIRResource
-	81,  // 54: patient.v1.ListConditionsResponse.pagination:type_name -> common.v1.PaginationResponse
-	80,  // 55: patient.v1.GetConditionResponse.condition:type_name -> common.v1.FHIRResource
+	101, // 52: patient.v1.ListConditionsRequest.pagination:type_name -> common.v1.PaginationRequest
+	102, // 53: patient.v1.ListConditionsResponse.conditions:type_name -> common.v1.FHIRResource
+	103, // 54: patient.v1.ListConditionsResponse.pagination:type_name -> common.v1.PaginationResponse
+	102, // 55: patient.v1.GetConditionResponse.condition:type_name -> common.v1.FHIRResource
 	0,   // 56: patient.v1.CreateConditionRequest.context:type_name -> patient.v1.MutationContext
-	80,  // 57: patient.v1.CreateConditionResponse.condition:type_name -> common.v1.FHIRResource
+	102, // 57: patient.v1.CreateConditionResponse.condition:type_name -> common.v1.FHIRResource
 	1,   // 58: patient.v1.CreateConditionResponse.git:type_name -> patient.v1.GitCommitInfo
 	0,   // 59: patient.v1.UpdateConditionRequest.context:type_name -> patient.v1.MutationContext
-	80,  // 60: patient.v1.UpdateConditionResponse.condition:type_name -> common.v1.FHIRResource
+	102, // 60: patient.v1.UpdateConditionResponse.condition:type_name -> common.v1.FHIRResource
 	1,   // 61: patient.v1.UpdateConditionResponse.git:type_name -> patient.v1.GitCommitInfo
-	79,  // 62: patient.v1.ListMedicationRequestsRequest.pagination:type_name -> common.v1.PaginationRequest
-	80,  // 63: patient.v1.ListMedicationRequestsResponse.medication_requests:type_name -> common.v1.FHIRResource
-	81,  // 64: patient.v1.ListMedicationRequestsResponse.pagination:type_name -> common.v1.PaginationResponse
-	80,  // 65: patient.v1.GetMedicationRequestResponse.medication_request:type_name -> common.v1.FHIRResource
+	101, // 62: patient.v1.ListMedicationRequestsRequest.pagination:type_name -> common.v1.PaginationRequest
+	102, // 63: patient.v1.ListMedicationRequestsResponse.medication_requests:type_name -> common.v1.FHIRResource
+	103, // 64: patient.v1.ListMedicationRequestsResponse.pagination:type_name -> common.v1.PaginationResponse
+	102, // 65: patient.v1.GetMedicationRequestResponse.medication_request:type_name -> common.v1.FHIRResource
 	0,   // 66: patient.v1.CreateMedicationRequestRequest.context:type_name -> patient.v1.MutationContext
-	80,  // 67: patient.v1.CreateMedicationRequestResponse.medication_request:type_name -> common.v1.FHIRResource
+	102, // 67: patient.v1.CreateMedicationRequestResponse.medication_request:type_name -> common.v1.FHIRResource
 	1,   // 68: patient.v1.CreateMedicationRequestResponse.git:type_name -> patient.v1.GitCommitInfo
 	0,   // 69: patient.v1.UpdateMedicationRequestRequest.context:type_name -> patient.v1.MutationContext
-	80,  // 70: patient.v1.UpdateMedicationRequestResponse.medication_request:type_name -> common.v1.FHIRResource
+	102, // 70: patient.v1.UpdateMedicationRequestResponse.medication_request:type_name -> common.v1.FHIRResource
 	1,   // 71: patient.v1.UpdateMedicationRequestResponse.git:type_name -> patient.v1.GitCommitInfo
-	79,  // 72: patient.v1.ListAllergyIntolerancesRequest.pagination:type_name -> common.v1.PaginationRequest
-	80,  // 73: patient.v1.ListAllergyIntolerancesResponse.allergy_intolerances:type_name -> common.v1.FHIRResource
-	81,  // 74: patient.v1.ListAllergyIntolerancesResponse.pagination:type_name -> common.v1.PaginationResponse
-	80,  // 75: patient.v1.GetAllergyIntoleranceResponse.allergy_intolerance:type_name -> common.v1.FHIRResource
+	101, // 72: patient.v1.ListAllergyIntolerancesRequest.pagination:type_name -> common.v1.PaginationRequest
+	102, // 73: patient.v1.ListAllergyIntolerancesResponse.allergy_intolerances:type_name -> common.v1.FHIRResource
+	103, // 74: patient.v1.ListAllergyIntolerancesResponse.pagination:type_name -> common.v1.PaginationResponse
+	102, // 75: patient.v1.GetAllergyIntoleranceResponse.allergy_intolerance:type_name -> common.v1.FHIRResource
 	0,   // 76: patient.v1.CreateAllergyIntoleranceRequest.context:type_name -> patient.v1.MutationContext
-	80,  // 77: patient.v1.CreateAllergyIntoleranceResponse.allergy_intolerance:type_name -> common.v1.FHIRResource
+	102, // 77: patient.v1.CreateAllergyIntoleranceResponse.allergy_intolerance:type_name -> common.v1.FHIRResource
 	1,   // 78: patient.v1.CreateAllergyIntoleranceResponse.git:type_name -> patient.v1.GitCommitInfo
 	0,   // 79: patient.v1.UpdateAllergyIntoleranceRequest.context:type_name -> patient.v1.MutationContext
-	80,  // 80: patient.v1.UpdateAllergyIntoleranceResponse.allergy_intolerance:type_name -> common.v1.FHIRResource
+	102, // 80: patient.v1.UpdateAllergyIntoleranceResponse.allergy_intolerance:type_name -> common.v1.FHIRResource
 	1,   // 81: patient.v1.UpdateAllergyIntoleranceResponse.git:type_name -> patient.v1.GitCommitInfo
-	0,   // 82: patient.v1.CreateFlagRequest.context:type_name -> patient.v1.MutationContext
-	80,  // 83: patient.v1.CreateFlagResponse.flag:type_name -> common.v1.FHIRResource
-	1,   // 84: patient.v1.CreateFlagResponse.git:type_name -> patient.v1.GitCommitInfo
-	0,   // 85: patient.v1.UpdateFlagRequest.context:type_name -> patient.v1.MutationContext
-	80,  // 86: patient.v1.UpdateFlagResponse.flag:type_name -> common.v1.FHIRResource
-	1,   // 87: patient.v1.UpdateFlagResponse.git:type_name -> patient.v1.GitCommitInfo
-	80,  // 88: patient.v1.CreateBatchRequest.resources:type_name -> common.v1.FHIRResource
-	0,   // 89: patient.v1.CreateBatchRequest.context:type_name -> patient.v1.MutationContext
-	69,  // 90: patient.v1.BatchResponse.results:type_name -> patient.v1.BatchItemResult
-	1,   // 91: patient.v1.BatchResponse.git:type_name -> patient.v1.GitCommitInfo
-	2,   // 92: patient.v1.PatientService.ListPatients:input_type -> patient.v1.ListPatientsRequest
-	4,   // 93: patient.v1.PatientService.GetPatient:input_type -> patient.v1.GetPatientRequest
-	6,   // 94: patient.v1.PatientService.GetPatientBundle:input_type -> patient.v1.GetPatientBundleRequest
-	8,   // 95: patient.v1.PatientService.CreatePatient:input_type -> patient.v1.CreatePatientRequest
-	10,  // 96: patient.v1.PatientService.UpdatePatient:input_type -> patient.v1.UpdatePatientRequest
-	12,  // 97: patient.v1.PatientService.DeletePatient:input_type -> patient.v1.DeletePatientRequest
-	14,  // 98: patient.v1.PatientService.SearchPatients:input_type -> patient.v1.SearchPatientsRequest
-	16,  // 99: patient.v1.PatientService.MatchPatients:input_type -> patient.v1.MatchPatientsRequest
-	19,  // 100: patient.v1.PatientService.GetPatientHistory:input_type -> patient.v1.GetPatientHistoryRequest
-	22,  // 101: patient.v1.PatientService.GetPatientTimeline:input_type -> patient.v1.GetPatientTimelineRequest
-	25,  // 102: patient.v1.PatientService.ListEncounters:input_type -> patient.v1.ListEncountersRequest
-	27,  // 103: patient.v1.PatientService.GetEncounter:input_type -> patient.v1.GetEncounterRequest
-	29,  // 104: patient.v1.PatientService.CreateEncounter:input_type -> patient.v1.CreateEncounterRequest
-	31,  // 105: patient.v1.PatientService.UpdateEncounter:input_type -> patient.v1.UpdateEncounterRequest
-	33,  // 106: patient.v1.PatientService.ListObservations:input_type -> patient.v1.ListObservationsRequest
-	35,  // 107: patient.v1.PatientService.GetObservation:input_type -> patient.v1.GetObservationRequest
-	37,  // 108: patient.v1.PatientService.CreateObservation:input_type -> patient.v1.CreateObservationRequest
-	39,  // 109: patient.v1.PatientService.ListConditions:input_type -> patient.v1.ListConditionsRequest
-	41,  // 110: patient.v1.PatientService.GetCondition:input_type -> patient.v1.GetConditionRequest
-	43,  // 111: patient.v1.PatientService.CreateCondition:input_type -> patient.v1.CreateConditionRequest
-	45,  // 112: patient.v1.PatientService.UpdateCondition:input_type -> patient.v1.UpdateConditionRequest
-	47,  // 113: patient.v1.PatientService.ListMedicationRequests:input_type -> patient.v1.ListMedicationRequestsRequest
-	49,  // 114: patient.v1.PatientService.GetMedicationRequest:input_type -> patient.v1.GetMedicationRequestRequest
-	51,  // 115: patient.v1.PatientService.CreateMedicationRequest:input_type -> patient.v1.CreateMedicationRequestRequest
-	53,  // 116: patient.v1.PatientService.UpdateMedicationRequest:input_type -> patient.v1.UpdateMedicationRequestRequest
-	55,  // 117: patient.v1.PatientService.ListAllergyIntolerances:input_type -> patient.v1.ListAllergyIntolerancesRequest
-	57,  // 118: patient.v1.PatientService.GetAllergyIntolerance:input_type -> patient.v1.GetAllergyIntoleranceRequest
-	59,  // 119: patient.v1.PatientService.CreateAllergyIntolerance:input_type -> patient.v1.CreateAllergyIntoleranceRequest
-	61,  // 120: patient.v1.PatientService.UpdateAllergyIntolerance:input_type -> patient.v1.UpdateAllergyIntoleranceRequest
-	63,  // 121: patient.v1.PatientService.CreateFlag:input_type -> patient.v1.CreateFlagRequest
-	65,  // 122: patient.v1.PatientService.UpdateFlag:input_type -> patient.v1.UpdateFlagRequest
-	67,  // 123: patient.v1.PatientService.CreateBatch:input_type -> patient.v1.CreateBatchRequest
-	70,  // 124: patient.v1.PatientService.RebuildIndex:input_type -> patient.v1.RebuildIndexRequest
-	72,  // 125: patient.v1.PatientService.CheckIndexHealth:input_type -> patient.v1.CheckIndexHealthRequest
-	74,  // 126: patient.v1.PatientService.ReindexResources:input_type -> patient.v1.ReindexRequest
-	76,  // 127: patient.v1.PatientService.Health:input_type -> patient.v1.HealthRequest
-	3,   // 128: patient.v1.PatientService.ListPatients:output_type -> patient.v1.ListPatientsResponse
-	5,   // 129: patient.v1.PatientService.GetPatient:output_type -> patient.v1.GetPatientResponse
-	7,   // 130: patient.v1.PatientService.GetPatientBundle:output_type -> patient.v1.GetPatientBundleResponse
-	9,   // 131: patient.v1.PatientService.CreatePatient:output_type -> patient.v1.CreatePatientResponse
-	11,  // 132: patient.v1.PatientService.UpdatePatient:output_type -> patient.v1.UpdatePatientResponse
-	13,  // 133: patient.v1.PatientService.DeletePatient:output_type -> patient.v1.DeletePatientResponse
-	15,  // 134: patient.v1.PatientService.SearchPatients:output_type -> patient.v1.SearchPatientsResponse
-	17,  // 135: patient.v1.PatientService.MatchPatients:output_type -> patient.v1.MatchPatientsResponse
-	20,  // 136: patient.v1.PatientService.GetPatientHistory:output_type -> patient.v1.GetPatientHistoryResponse
-	23,  // 137: patient.v1.PatientService.GetPatientTimeline:output_type -> patient.v1.GetPatientTimelineResponse
-	26,  // 138: patient.v1.PatientService.ListEncounters:output_type -> patient.v1.ListEncountersResponse
-	28,  // 139: patient.v1.PatientService.GetEncounter:output_type -> patient.v1.GetEncounterResponse
-	30,  // 140: patient.v1.PatientService.CreateEncounter:output_type -> patient.v1.CreateEncounterResponse
-	32,  // 141: patient.v1.PatientService.UpdateEncounter:output_type -> patient.v1.UpdateEncounterResponse
-	34,  // 142: patient.v1.PatientService.ListObservations:output_type -> patient.v1.ListObservationsResponse
-	36,  // 143: patient.v1.PatientService.GetObservation:output_type -> patient.v1.GetObservationResponse
-	38,  // 144: patient.v1.PatientService.CreateObservation:output_type -> patient.v1.CreateObservationResponse
-	40,  // 145: patient.v1.PatientService.ListConditions:output_type -> patient.v1.ListConditionsResponse
-	42,  // 146: patient.v1.PatientService.GetCondition:output_type -> patient.v1.GetConditionResponse
-	44,  // 147: patient.v1.PatientService.CreateCondition:output_type -> patient.v1.CreateConditionResponse
-	46,  // 148: patient.v1.PatientService.UpdateCondition:output_type -> patient.v1.UpdateConditionResponse
-	48,  // 149: patient.v1.PatientService.ListMedicationRequests:output_type -> patient.v1.ListMedicationRequestsResponse
-	50,  // 150: patient.v1.PatientService.GetMedicationRequest:output_type -> patient.v1.GetMedicationRequestResponse
-	52,  // 151: patient.v1.PatientService.CreateMedicationRequest:output_type -> patient.v1.CreateMedicationRequestResponse
-	54,  // 152: patient.v1.PatientService.UpdateMedicationRequest:output_type -> patient.v1.UpdateMedicationRequestResponse
-	56,  // 153: patient.v1.PatientService.ListAllergyIntolerances:output_type -> patient.v1.ListAllergyIntolerancesResponse
-	58,  // 154: patient.v1.PatientService.GetAllergyIntolerance:output_type -> patient.v1.GetAllergyIntoleranceResponse
-	60,  // 155: patient.v1.PatientService.CreateAllergyIntolerance:output_type -> patient.v1.CreateAllergyIntoleranceResponse
-	62,  // 156: patient.v1.PatientService.UpdateAllergyIntolerance:output_type -> patient.v1.UpdateAllergyIntoleranceResponse
-	64,  // 157: patient.v1.PatientService.CreateFlag:output_type -> patient.v1.CreateFlagResponse
-	66,  // 158: patient.v1.PatientService.UpdateFlag:output_type -> patient.v1.UpdateFlagResponse
-	68,  // 159: patient.v1.PatientService.CreateBatch:output_type -> patient.v1.BatchResponse
-	71,  // 160: patient.v1.PatientService.RebuildIndex:output_type -> patient.v1.RebuildIndexResponse
-	73,  // 161: patient.v1.PatientService.CheckIndexHealth:output_type -> patient.v1.IndexHealthResponse
-	75,  // 162: patient.v1.PatientService.ReindexResources:output_type -> patient.v1.ReindexResponse
-	77,  // 163: patient.v1.PatientService.Health:output_type -> patient.v1.HealthResponse
-	128, // [128:164] is the sub-list for method output_type
-	92,  // [92:128] is the sub-list for method input_type
-	92,  // [92:92] is the sub-list for extension type_name
-	92,  // [92:92] is the sub-list for extension extendee
-	0,   // [0:92] is the sub-list for field type_name
+	101, // 82: patient.v1.ListImmunizationsRequest.pagination:type_name -> common.v1.PaginationRequest
+	102, // 83: patient.v1.ListImmunizationsResponse.immunizations:type_name -> common.v1.FHIRResource
+	103, // 84: patient.v1.ListImmunizationsResponse.pagination:type_name -> common.v1.PaginationResponse
+	102, // 85: patient.v1.GetImmunizationResponse.immunization:type_name -> common.v1.FHIRResource
+	0,   // 86: patient.v1.CreateImmunizationRequest.context:type_name -> patient.v1.MutationContext
+	102, // 87: patient.v1.CreateImmunizationResponse.immunization:type_name -> common.v1.FHIRResource
+	1,   // 88: patient.v1.CreateImmunizationResponse.git:type_name -> patient.v1.GitCommitInfo
+	101, // 89: patient.v1.ListProceduresRequest.pagination:type_name -> common.v1.PaginationRequest
+	102, // 90: patient.v1.ListProceduresResponse.procedures:type_name -> common.v1.FHIRResource
+	103, // 91: patient.v1.ListProceduresResponse.pagination:type_name -> common.v1.PaginationResponse
+	102, // 92: patient.v1.GetProcedureResponse.procedure:type_name -> common.v1.FHIRResource
+	0,   // 93: patient.v1.CreateProcedureRequest.context:type_name -> patient.v1.MutationContext
+	102, // 94: patient.v1.CreateProcedureResponse.procedure:type_name -> common.v1.FHIRResource
+	1,   // 95: patient.v1.CreateProcedureResponse.git:type_name -> patient.v1.GitCommitInfo
+	0,   // 96: patient.v1.CreateResourceRequest.context:type_name -> patient.v1.MutationContext
+	102, // 97: patient.v1.CreateResourceResponse.resource:type_name -> common.v1.FHIRResource
+	1,   // 98: patient.v1.CreateResourceResponse.git:type_name -> patient.v1.GitCommitInfo
+	102, // 99: patient.v1.GetResourceResponse.resource:type_name -> common.v1.FHIRResource
+	101, // 100: patient.v1.ListResourcesRequest.pagination:type_name -> common.v1.PaginationRequest
+	102, // 101: patient.v1.ListResourcesResponse.resources:type_name -> common.v1.FHIRResource
+	103, // 102: patient.v1.ListResourcesResponse.pagination:type_name -> common.v1.PaginationResponse
+	0,   // 103: patient.v1.UpdateResourceRequest.context:type_name -> patient.v1.MutationContext
+	102, // 104: patient.v1.UpdateResourceResponse.resource:type_name -> common.v1.FHIRResource
+	1,   // 105: patient.v1.UpdateResourceResponse.git:type_name -> patient.v1.GitCommitInfo
+	0,   // 106: patient.v1.DeleteResourceRequest.context:type_name -> patient.v1.MutationContext
+	1,   // 107: patient.v1.DeleteResourceResponse.git:type_name -> patient.v1.GitCommitInfo
+	0,   // 108: patient.v1.CreateFlagRequest.context:type_name -> patient.v1.MutationContext
+	102, // 109: patient.v1.CreateFlagResponse.flag:type_name -> common.v1.FHIRResource
+	1,   // 110: patient.v1.CreateFlagResponse.git:type_name -> patient.v1.GitCommitInfo
+	0,   // 111: patient.v1.UpdateFlagRequest.context:type_name -> patient.v1.MutationContext
+	102, // 112: patient.v1.UpdateFlagResponse.flag:type_name -> common.v1.FHIRResource
+	1,   // 113: patient.v1.UpdateFlagResponse.git:type_name -> patient.v1.GitCommitInfo
+	102, // 114: patient.v1.CreateBatchRequest.resources:type_name -> common.v1.FHIRResource
+	0,   // 115: patient.v1.CreateBatchRequest.context:type_name -> patient.v1.MutationContext
+	91,  // 116: patient.v1.BatchResponse.results:type_name -> patient.v1.BatchItemResult
+	1,   // 117: patient.v1.BatchResponse.git:type_name -> patient.v1.GitCommitInfo
+	2,   // 118: patient.v1.PatientService.ListPatients:input_type -> patient.v1.ListPatientsRequest
+	4,   // 119: patient.v1.PatientService.GetPatient:input_type -> patient.v1.GetPatientRequest
+	6,   // 120: patient.v1.PatientService.GetPatientBundle:input_type -> patient.v1.GetPatientBundleRequest
+	8,   // 121: patient.v1.PatientService.CreatePatient:input_type -> patient.v1.CreatePatientRequest
+	10,  // 122: patient.v1.PatientService.UpdatePatient:input_type -> patient.v1.UpdatePatientRequest
+	12,  // 123: patient.v1.PatientService.DeletePatient:input_type -> patient.v1.DeletePatientRequest
+	14,  // 124: patient.v1.PatientService.SearchPatients:input_type -> patient.v1.SearchPatientsRequest
+	16,  // 125: patient.v1.PatientService.MatchPatients:input_type -> patient.v1.MatchPatientsRequest
+	19,  // 126: patient.v1.PatientService.GetPatientHistory:input_type -> patient.v1.GetPatientHistoryRequest
+	22,  // 127: patient.v1.PatientService.GetPatientTimeline:input_type -> patient.v1.GetPatientTimelineRequest
+	25,  // 128: patient.v1.PatientService.ListEncounters:input_type -> patient.v1.ListEncountersRequest
+	27,  // 129: patient.v1.PatientService.GetEncounter:input_type -> patient.v1.GetEncounterRequest
+	29,  // 130: patient.v1.PatientService.CreateEncounter:input_type -> patient.v1.CreateEncounterRequest
+	31,  // 131: patient.v1.PatientService.UpdateEncounter:input_type -> patient.v1.UpdateEncounterRequest
+	33,  // 132: patient.v1.PatientService.ListObservations:input_type -> patient.v1.ListObservationsRequest
+	35,  // 133: patient.v1.PatientService.GetObservation:input_type -> patient.v1.GetObservationRequest
+	37,  // 134: patient.v1.PatientService.CreateObservation:input_type -> patient.v1.CreateObservationRequest
+	39,  // 135: patient.v1.PatientService.ListConditions:input_type -> patient.v1.ListConditionsRequest
+	41,  // 136: patient.v1.PatientService.GetCondition:input_type -> patient.v1.GetConditionRequest
+	43,  // 137: patient.v1.PatientService.CreateCondition:input_type -> patient.v1.CreateConditionRequest
+	45,  // 138: patient.v1.PatientService.UpdateCondition:input_type -> patient.v1.UpdateConditionRequest
+	47,  // 139: patient.v1.PatientService.ListMedicationRequests:input_type -> patient.v1.ListMedicationRequestsRequest
+	49,  // 140: patient.v1.PatientService.GetMedicationRequest:input_type -> patient.v1.GetMedicationRequestRequest
+	51,  // 141: patient.v1.PatientService.CreateMedicationRequest:input_type -> patient.v1.CreateMedicationRequestRequest
+	53,  // 142: patient.v1.PatientService.UpdateMedicationRequest:input_type -> patient.v1.UpdateMedicationRequestRequest
+	55,  // 143: patient.v1.PatientService.ListAllergyIntolerances:input_type -> patient.v1.ListAllergyIntolerancesRequest
+	57,  // 144: patient.v1.PatientService.GetAllergyIntolerance:input_type -> patient.v1.GetAllergyIntoleranceRequest
+	59,  // 145: patient.v1.PatientService.CreateAllergyIntolerance:input_type -> patient.v1.CreateAllergyIntoleranceRequest
+	61,  // 146: patient.v1.PatientService.UpdateAllergyIntolerance:input_type -> patient.v1.UpdateAllergyIntoleranceRequest
+	63,  // 147: patient.v1.PatientService.ListImmunizations:input_type -> patient.v1.ListImmunizationsRequest
+	65,  // 148: patient.v1.PatientService.GetImmunization:input_type -> patient.v1.GetImmunizationRequest
+	67,  // 149: patient.v1.PatientService.CreateImmunization:input_type -> patient.v1.CreateImmunizationRequest
+	69,  // 150: patient.v1.PatientService.ListProcedures:input_type -> patient.v1.ListProceduresRequest
+	71,  // 151: patient.v1.PatientService.GetProcedure:input_type -> patient.v1.GetProcedureRequest
+	73,  // 152: patient.v1.PatientService.CreateProcedure:input_type -> patient.v1.CreateProcedureRequest
+	75,  // 153: patient.v1.PatientService.CreateResource:input_type -> patient.v1.CreateResourceRequest
+	77,  // 154: patient.v1.PatientService.GetResource:input_type -> patient.v1.GetResourceRequest
+	79,  // 155: patient.v1.PatientService.ListResources:input_type -> patient.v1.ListResourcesRequest
+	81,  // 156: patient.v1.PatientService.UpdateResource:input_type -> patient.v1.UpdateResourceRequest
+	83,  // 157: patient.v1.PatientService.DeleteResource:input_type -> patient.v1.DeleteResourceRequest
+	85,  // 158: patient.v1.PatientService.CreateFlag:input_type -> patient.v1.CreateFlagRequest
+	87,  // 159: patient.v1.PatientService.UpdateFlag:input_type -> patient.v1.UpdateFlagRequest
+	89,  // 160: patient.v1.PatientService.CreateBatch:input_type -> patient.v1.CreateBatchRequest
+	92,  // 161: patient.v1.PatientService.RebuildIndex:input_type -> patient.v1.RebuildIndexRequest
+	94,  // 162: patient.v1.PatientService.CheckIndexHealth:input_type -> patient.v1.CheckIndexHealthRequest
+	96,  // 163: patient.v1.PatientService.ReindexResources:input_type -> patient.v1.ReindexRequest
+	98,  // 164: patient.v1.PatientService.Health:input_type -> patient.v1.HealthRequest
+	3,   // 165: patient.v1.PatientService.ListPatients:output_type -> patient.v1.ListPatientsResponse
+	5,   // 166: patient.v1.PatientService.GetPatient:output_type -> patient.v1.GetPatientResponse
+	7,   // 167: patient.v1.PatientService.GetPatientBundle:output_type -> patient.v1.GetPatientBundleResponse
+	9,   // 168: patient.v1.PatientService.CreatePatient:output_type -> patient.v1.CreatePatientResponse
+	11,  // 169: patient.v1.PatientService.UpdatePatient:output_type -> patient.v1.UpdatePatientResponse
+	13,  // 170: patient.v1.PatientService.DeletePatient:output_type -> patient.v1.DeletePatientResponse
+	15,  // 171: patient.v1.PatientService.SearchPatients:output_type -> patient.v1.SearchPatientsResponse
+	17,  // 172: patient.v1.PatientService.MatchPatients:output_type -> patient.v1.MatchPatientsResponse
+	20,  // 173: patient.v1.PatientService.GetPatientHistory:output_type -> patient.v1.GetPatientHistoryResponse
+	23,  // 174: patient.v1.PatientService.GetPatientTimeline:output_type -> patient.v1.GetPatientTimelineResponse
+	26,  // 175: patient.v1.PatientService.ListEncounters:output_type -> patient.v1.ListEncountersResponse
+	28,  // 176: patient.v1.PatientService.GetEncounter:output_type -> patient.v1.GetEncounterResponse
+	30,  // 177: patient.v1.PatientService.CreateEncounter:output_type -> patient.v1.CreateEncounterResponse
+	32,  // 178: patient.v1.PatientService.UpdateEncounter:output_type -> patient.v1.UpdateEncounterResponse
+	34,  // 179: patient.v1.PatientService.ListObservations:output_type -> patient.v1.ListObservationsResponse
+	36,  // 180: patient.v1.PatientService.GetObservation:output_type -> patient.v1.GetObservationResponse
+	38,  // 181: patient.v1.PatientService.CreateObservation:output_type -> patient.v1.CreateObservationResponse
+	40,  // 182: patient.v1.PatientService.ListConditions:output_type -> patient.v1.ListConditionsResponse
+	42,  // 183: patient.v1.PatientService.GetCondition:output_type -> patient.v1.GetConditionResponse
+	44,  // 184: patient.v1.PatientService.CreateCondition:output_type -> patient.v1.CreateConditionResponse
+	46,  // 185: patient.v1.PatientService.UpdateCondition:output_type -> patient.v1.UpdateConditionResponse
+	48,  // 186: patient.v1.PatientService.ListMedicationRequests:output_type -> patient.v1.ListMedicationRequestsResponse
+	50,  // 187: patient.v1.PatientService.GetMedicationRequest:output_type -> patient.v1.GetMedicationRequestResponse
+	52,  // 188: patient.v1.PatientService.CreateMedicationRequest:output_type -> patient.v1.CreateMedicationRequestResponse
+	54,  // 189: patient.v1.PatientService.UpdateMedicationRequest:output_type -> patient.v1.UpdateMedicationRequestResponse
+	56,  // 190: patient.v1.PatientService.ListAllergyIntolerances:output_type -> patient.v1.ListAllergyIntolerancesResponse
+	58,  // 191: patient.v1.PatientService.GetAllergyIntolerance:output_type -> patient.v1.GetAllergyIntoleranceResponse
+	60,  // 192: patient.v1.PatientService.CreateAllergyIntolerance:output_type -> patient.v1.CreateAllergyIntoleranceResponse
+	62,  // 193: patient.v1.PatientService.UpdateAllergyIntolerance:output_type -> patient.v1.UpdateAllergyIntoleranceResponse
+	64,  // 194: patient.v1.PatientService.ListImmunizations:output_type -> patient.v1.ListImmunizationsResponse
+	66,  // 195: patient.v1.PatientService.GetImmunization:output_type -> patient.v1.GetImmunizationResponse
+	68,  // 196: patient.v1.PatientService.CreateImmunization:output_type -> patient.v1.CreateImmunizationResponse
+	70,  // 197: patient.v1.PatientService.ListProcedures:output_type -> patient.v1.ListProceduresResponse
+	72,  // 198: patient.v1.PatientService.GetProcedure:output_type -> patient.v1.GetProcedureResponse
+	74,  // 199: patient.v1.PatientService.CreateProcedure:output_type -> patient.v1.CreateProcedureResponse
+	76,  // 200: patient.v1.PatientService.CreateResource:output_type -> patient.v1.CreateResourceResponse
+	78,  // 201: patient.v1.PatientService.GetResource:output_type -> patient.v1.GetResourceResponse
+	80,  // 202: patient.v1.PatientService.ListResources:output_type -> patient.v1.ListResourcesResponse
+	82,  // 203: patient.v1.PatientService.UpdateResource:output_type -> patient.v1.UpdateResourceResponse
+	84,  // 204: patient.v1.PatientService.DeleteResource:output_type -> patient.v1.DeleteResourceResponse
+	86,  // 205: patient.v1.PatientService.CreateFlag:output_type -> patient.v1.CreateFlagResponse
+	88,  // 206: patient.v1.PatientService.UpdateFlag:output_type -> patient.v1.UpdateFlagResponse
+	90,  // 207: patient.v1.PatientService.CreateBatch:output_type -> patient.v1.BatchResponse
+	93,  // 208: patient.v1.PatientService.RebuildIndex:output_type -> patient.v1.RebuildIndexResponse
+	95,  // 209: patient.v1.PatientService.CheckIndexHealth:output_type -> patient.v1.IndexHealthResponse
+	97,  // 210: patient.v1.PatientService.ReindexResources:output_type -> patient.v1.ReindexResponse
+	99,  // 211: patient.v1.PatientService.Health:output_type -> patient.v1.HealthResponse
+	165, // [165:212] is the sub-list for method output_type
+	118, // [118:165] is the sub-list for method input_type
+	118, // [118:118] is the sub-list for extension type_name
+	118, // [118:118] is the sub-list for extension extendee
+	0,   // [0:118] is the sub-list for field type_name
 }
 
 func init() { file_patient_v1_patient_proto_init() }
@@ -5198,7 +6533,7 @@ func file_patient_v1_patient_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_patient_v1_patient_proto_rawDesc), len(file_patient_v1_patient_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   78,
+			NumMessages:   100,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

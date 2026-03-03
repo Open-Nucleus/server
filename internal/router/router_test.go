@@ -317,6 +317,7 @@ func setupTestRouter(t *testing.T) (http.Handler, ed25519.PublicKey, ed25519.Pri
 	mux := router.New(router.Config{
 		AuthHandler:      handler.NewAuthHandler(&testAuthSvc{}),
 		PatientHandler:   handler.NewPatientHandler(&testPatientSvc{}),
+		ResourceHandler:  handler.NewResourceHandler(&testPatientSvc{}),
 		SyncHandler:      handler.NewSyncHandler(&testSyncSvc{}),
 		ConflictHandler:  handler.NewConflictHandler(&testConflictSvc{}),
 		SentinelHandler:  handler.NewSentinelHandler(&testSentinelSvc{}),
