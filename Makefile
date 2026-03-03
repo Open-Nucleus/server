@@ -1,4 +1,4 @@
-.PHONY: build build-all build-patient build-auth build-sync build-formulary build-anchor build-sentinel run test test-patient test-auth test-sync test-formulary test-anchor test-sentinel test-e2e test-all smoke proto-gen proto-gen-python run-sentinel lint clean
+.PHONY: build build-all build-patient build-auth build-sync build-formulary build-anchor build-sentinel run test test-patient test-auth test-sync test-formulary test-anchor test-fhir test-sentinel test-e2e test-all smoke proto-gen proto-gen-python run-sentinel lint clean
 
 BINARY := gateway
 BUILD_DIR := bin
@@ -43,6 +43,9 @@ test-formulary:
 
 test-anchor:
 	go test -v -race ./services/anchor/... ./pkg/merge/openanchor/...
+
+test-fhir:
+	go test -v -race ./internal/handler/fhir/...
 
 build-sentinel:
 	cd services/sentinel && pip install -e . 2>/dev/null || true
