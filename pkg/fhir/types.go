@@ -17,6 +17,8 @@ const (
 	ResourceOrganization         = "Organization"
 	ResourceLocation             = "Location"
 	ResourceProvenance           = "Provenance"
+	ResourceMeasureReport        = "MeasureReport"
+	ResourceStructureDefinition  = "StructureDefinition"
 )
 
 // Operation constants for commit messages.
@@ -226,6 +228,20 @@ type LocationRow struct {
 	Name        string  `json:"name"`
 	Type        *string `json:"type"`
 	Status      string  `json:"status"`
+	SiteID      string  `json:"site_id"`
+	LastUpdated string  `json:"last_updated"`
+	GitBlobHash string  `json:"git_blob_hash"`
+	FHIRJson    string  `json:"fhir_json"`
+}
+
+// MeasureReportRow holds indexed fields extracted from a MeasureReport FHIR resource.
+type MeasureReportRow struct {
+	ID          string  `json:"id"`
+	Status      string  `json:"status"`
+	Type        string  `json:"type"`
+	PeriodStart string  `json:"period_start"`
+	PeriodEnd   *string `json:"period_end"`
+	Reporter    *string `json:"reporter"`
 	SiteID      string  `json:"site_id"`
 	LastUpdated string  `json:"last_updated"`
 	GitBlobHash string  `json:"git_blob_hash"`

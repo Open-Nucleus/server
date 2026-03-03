@@ -22,6 +22,7 @@ type Index interface {
 	UpsertPractitioner(row *fhir.PractitionerRow) error
 	UpsertOrganization(row *fhir.OrganizationRow) error
 	UpsertLocation(row *fhir.LocationRow) error
+	UpsertMeasureReport(row *fhir.MeasureReportRow) error
 
 	GetPatient(id string) (*fhir.PatientRow, error)
 	ListPatients(opts PatientListOpts) ([]*fhir.PatientRow, *fhir.Pagination, error)
@@ -47,6 +48,8 @@ type Index interface {
 	ListOrganizations(opts fhir.PaginationOpts) ([]*fhir.OrganizationRow, *fhir.Pagination, error)
 	GetLocation(id string) (*fhir.LocationRow, error)
 	ListLocations(opts fhir.PaginationOpts) ([]*fhir.LocationRow, *fhir.Pagination, error)
+	GetMeasureReport(id string) (*fhir.MeasureReportRow, error)
+	ListMeasureReports(opts fhir.PaginationOpts) ([]*fhir.MeasureReportRow, *fhir.Pagination, error)
 
 	// ID-only lookups (for FHIR REST API — no patient ID needed)
 	GetEncounterByID(id string) (*fhir.EncounterRow, error)
@@ -238,6 +241,13 @@ func (idx *sqliteIndex) UpsertLocation(row *fhir.LocationRow) error {
 	return err
 }
 
+func (idx *sqliteIndex) UpsertMeasureReport(row *fhir.MeasureReportRow) error {
+	_, err := idx.db.Exec(`INSERT OR REPLACE INTO measure_reports (id, status, type, period_start, period_end, reporter, site_id, last_updated, git_blob_hash, fhir_json)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		row.ID, row.Status, row.Type, row.PeriodStart, row.PeriodEnd, row.Reporter, row.SiteID, row.LastUpdated, row.GitBlobHash, row.FHIRJson)
+	return err
+}
+
 // --- Get methods ---
 
 func (idx *sqliteIndex) GetPatient(id string) (*fhir.PatientRow, error) {
@@ -387,6 +397,19 @@ func (idx *sqliteIndex) GetLocation(id string) (*fhir.LocationRow, error) {
 		return nil, err
 	}
 	return l, nil
+}
+
+func (idx *sqliteIndex) GetMeasureReport(id string) (*fhir.MeasureReportRow, error) {
+	row := idx.db.QueryRow(`SELECT id, status, type, period_start, period_end, reporter, site_id, last_updated, git_blob_hash, fhir_json FROM measure_reports WHERE id = ?`, id)
+	m := &fhir.MeasureReportRow{}
+	err := row.Scan(&m.ID, &m.Status, &m.Type, &m.PeriodStart, &m.PeriodEnd, &m.Reporter, &m.SiteID, &m.LastUpdated, &m.GitBlobHash, &m.FHIRJson)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 // --- ID-only Get methods (for FHIR REST API) ---
@@ -887,6 +910,31 @@ func (idx *sqliteIndex) ListLocations(opts fhir.PaginationOpts) ([]*fhir.Locatio
 	return results, pg, rows.Err()
 }
 
+func (idx *sqliteIndex) ListMeasureReports(opts fhir.PaginationOpts) ([]*fhir.MeasureReportRow, *fhir.Pagination, error) {
+	var total int
+	if err := idx.db.QueryRow("SELECT COUNT(*) FROM measure_reports").Scan(&total); err != nil {
+		return nil, nil, err
+	}
+	pg := paginate(opts, total)
+
+	rows, err := idx.db.Query("SELECT id, status, type, period_start, period_end, reporter, site_id, last_updated, git_blob_hash, fhir_json FROM measure_reports ORDER BY period_start DESC LIMIT ? OFFSET ?",
+		pg.PerPage, (pg.Page-1)*pg.PerPage)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer rows.Close()
+
+	var results []*fhir.MeasureReportRow
+	for rows.Next() {
+		m := &fhir.MeasureReportRow{}
+		if err := rows.Scan(&m.ID, &m.Status, &m.Type, &m.PeriodStart, &m.PeriodEnd, &m.Reporter, &m.SiteID, &m.LastUpdated, &m.GitBlobHash, &m.FHIRJson); err != nil {
+			return nil, nil, err
+		}
+		results = append(results, m)
+	}
+	return results, pg, rows.Err()
+}
+
 // --- Meta ---
 
 func (idx *sqliteIndex) GetMeta(key string) (string, error) {
@@ -905,7 +953,7 @@ func (idx *sqliteIndex) SetMeta(key, value string) error {
 
 func (idx *sqliteIndex) ResourceCount() (int, error) {
 	var total int
-	for _, table := range []string{"patients", "encounters", "observations", "conditions", "medication_requests", "allergy_intolerances", "flags", "immunizations", "procedures", "practitioners", "organizations", "locations"} {
+	for _, table := range []string{"patients", "encounters", "observations", "conditions", "medication_requests", "allergy_intolerances", "flags", "immunizations", "procedures", "practitioners", "organizations", "locations", "measure_reports"} {
 		var count int
 		if err := idx.db.QueryRow("SELECT COUNT(*) FROM " + table).Scan(&count); err != nil {
 			return 0, err

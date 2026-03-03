@@ -75,8 +75,8 @@ func NewWriter(git gitstore.Store, idx sqliteindex.Index, lockTimeout time.Durat
 
 // Write performs a single resource write operation.
 func (w *Writer) Write(ctx context.Context, op, resourceType, patientID string, fhirJSON []byte, mutCtx MutationContext) (*WriteResult, error) {
-	// 1. Validate
-	errs := fhir.Validate(resourceType, fhirJSON)
+	// 1. Validate (with profile support)
+	errs := fhir.ValidateWithProfile(resourceType, fhirJSON)
 	if len(errs) > 0 {
 		errJSON, _ := json.Marshal(errs)
 		return nil, &ValidationError{FieldErrors: errs, Message: string(errJSON)}
@@ -236,7 +236,7 @@ func (w *Writer) WriteBatch(ctx context.Context, patientID string, items []Batch
 	var results []BatchItemResult
 
 	for _, item := range items {
-		errs := fhir.Validate(item.ResourceType, item.FHIRJson)
+		errs := fhir.ValidateWithProfile(item.ResourceType, item.FHIRJson)
 		if len(errs) > 0 {
 			if atomic {
 				errJSON, _ := json.Marshal(errs)
@@ -465,6 +465,12 @@ func (w *Writer) upsertIndex(resourceType, patientID, siteID, commitHash string,
 			return err
 		}
 		return w.idx.UpsertLocation(row)
+	case fhir.ResourceMeasureReport:
+		row, err := fhir.ExtractMeasureReportFields(fhirJSON, siteID, commitHash)
+		if err != nil {
+			return err
+		}
+		return w.idx.UpsertMeasureReport(row)
 	default:
 		return nil
 	}

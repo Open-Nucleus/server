@@ -555,6 +555,42 @@ func ExtractLocationFields(fhirJSON []byte, siteID, gitBlobHash string) (*Locati
 	return row, nil
 }
 
+// ExtractMeasureReportFields extracts SQLite indexed columns from a MeasureReport.
+func ExtractMeasureReportFields(fhirJSON []byte, siteID, gitBlobHash string) (*MeasureReportRow, error) {
+	var r map[string]any
+	if err := json.Unmarshal(fhirJSON, &r); err != nil {
+		return nil, fmt.Errorf("invalid JSON: %w", err)
+	}
+
+	row := &MeasureReportRow{
+		ID:          getStr(r, "id"),
+		Status:      getStr(r, "status"),
+		Type:        getStr(r, "type"),
+		SiteID:      siteID,
+		GitBlobHash: gitBlobHash,
+		FHIRJson:    string(fhirJSON),
+	}
+
+	if period, ok := r["period"].(map[string]any); ok {
+		row.PeriodStart = getStr(period, "start")
+		if end := getStr(period, "end"); end != "" {
+			row.PeriodEnd = &end
+		}
+	}
+
+	if reporter, ok := r["reporter"].(map[string]any); ok {
+		if ref := getStr(reporter, "reference"); ref != "" {
+			row.Reporter = &ref
+		}
+	}
+
+	if meta, ok := r["meta"].(map[string]any); ok {
+		row.LastUpdated = getStr(meta, "lastUpdated")
+	}
+
+	return row, nil
+}
+
 // ExtractPatientReference extracts the patient ID from a FHIR resource's
 // subject.reference or patient.reference field. Returns ("", nil) if no
 // patient reference is found.

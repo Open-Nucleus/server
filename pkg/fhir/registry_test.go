@@ -10,6 +10,7 @@ func TestGetResourceDef_KnownTypes(t *testing.T) {
 		ResourceImmunization, ResourceProcedure,
 		ResourcePractitioner, ResourceOrganization, ResourceLocation,
 		ResourceProvenance,
+		ResourceMeasureReport, ResourceStructureDefinition,
 	}
 	for _, rt := range known {
 		def := GetResourceDef(rt)
@@ -40,8 +41,8 @@ func TestIsKnownResource(t *testing.T) {
 
 func TestAllResourceDefs_Count(t *testing.T) {
 	defs := AllResourceDefs()
-	if len(defs) != 15 {
-		t.Errorf("AllResourceDefs() returned %d defs, want 15", len(defs))
+	if len(defs) != 17 {
+		t.Errorf("AllResourceDefs() returned %d defs, want 17", len(defs))
 	}
 }
 

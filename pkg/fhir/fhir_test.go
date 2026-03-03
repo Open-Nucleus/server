@@ -22,6 +22,8 @@ func TestGitPath_AllResourceTypes(t *testing.T) {
 		{ResourceFlag, "pat-123", "flag-1", "patients/pat-123/flags/flag-1.json"},
 		{ResourceDetectedIssue, "", "di-1", "alerts/di-1.json"},
 		{ResourceSupplyDelivery, "", "sd-1", "supply/deliveries/sd-1.json"},
+		{ResourceMeasureReport, "", "mr-1", "measure-reports/mr-1.json"},
+		{ResourceStructureDefinition, "", "sd-1", ".nucleus/profiles/sd-1.json"},
 	}
 	for _, tt := range tests {
 		got := GitPath(tt.resType, tt.patientID, tt.resID)
@@ -275,4 +277,181 @@ func TestApplySoftDelete_Encounter(t *testing.T) {
 	if r["status"] != "entered-in-error" {
 		t.Errorf("expected status=entered-in-error, got %v", r["status"])
 	}
+}
+
+func TestApplySoftDelete_MeasureReport(t *testing.T) {
+	input := []byte(`{"resourceType":"MeasureReport","id":"mr-1","status":"complete"}`)
+	out, err := ApplySoftDelete(ResourceMeasureReport, input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var r map[string]any
+	json.Unmarshal(out, &r)
+	if r["status"] != "error" {
+		t.Errorf("expected status=error, got %v", r["status"])
+	}
+}
+
+func TestValidateMeasureReport_Valid(t *testing.T) {
+	input := []byte(`{
+		"resourceType": "MeasureReport",
+		"status": "complete",
+		"type": "summary",
+		"period": {"start": "2026-01-01"}
+	}`)
+	errs := Validate(ResourceMeasureReport, input)
+	if len(errs) != 0 {
+		t.Errorf("expected 0 errors, got %d: %+v", len(errs), errs)
+	}
+}
+
+func TestValidateMeasureReport_MissingStatus(t *testing.T) {
+	input := []byte(`{
+		"resourceType": "MeasureReport",
+		"type": "summary",
+		"period": {"start": "2026-01-01"}
+	}`)
+	errs := Validate(ResourceMeasureReport, input)
+	found := false
+	for _, e := range errs {
+		if e.Path == "status" {
+			found = true
+		}
+	}
+	if !found {
+		t.Error("expected error for missing status")
+	}
+}
+
+func TestValidateMeasureReport_InvalidType(t *testing.T) {
+	input := []byte(`{
+		"resourceType": "MeasureReport",
+		"status": "complete",
+		"type": "invalid",
+		"period": {"start": "2026-01-01"}
+	}`)
+	errs := Validate(ResourceMeasureReport, input)
+	found := false
+	for _, e := range errs {
+		if e.Path == "type" && e.Rule == "value_set" {
+			found = true
+		}
+	}
+	if !found {
+		t.Error("expected value_set error for type")
+	}
+}
+
+func TestExtractMeasureReportFields(t *testing.T) {
+	input := []byte(`{
+		"resourceType": "MeasureReport",
+		"id": "mr-1",
+		"status": "complete",
+		"type": "summary",
+		"period": {"start": "2026-01-01", "end": "2026-01-31"},
+		"reporter": {"reference": "Organization/org-1"},
+		"meta": {"lastUpdated": "2026-03-15T09:42:00Z"}
+	}`)
+
+	row, err := ExtractMeasureReportFields(input, "site-1", "abc123")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if row.ID != "mr-1" {
+		t.Errorf("ID = %s", row.ID)
+	}
+	if row.Status != "complete" {
+		t.Errorf("Status = %s", row.Status)
+	}
+	if row.Type != "summary" {
+		t.Errorf("Type = %s", row.Type)
+	}
+	if row.PeriodStart != "2026-01-01" {
+		t.Errorf("PeriodStart = %s", row.PeriodStart)
+	}
+	if row.PeriodEnd == nil || *row.PeriodEnd != "2026-01-31" {
+		t.Errorf("PeriodEnd = %v", row.PeriodEnd)
+	}
+	if row.Reporter == nil || *row.Reporter != "Organization/org-1" {
+		t.Errorf("Reporter = %v", row.Reporter)
+	}
+}
+
+func TestValidateWithProfile_NoProfile(t *testing.T) {
+	input := []byte(`{
+		"resourceType": "Patient",
+		"name": [{"family": "Test", "given": ["User"]}],
+		"gender": "female",
+		"birthDate": "1990-01-15"
+	}`)
+	errs := ValidateWithProfile(ResourcePatient, input)
+	if len(errs) != 0 {
+		t.Errorf("expected 0 errors, got %d: %+v", len(errs), errs)
+	}
+}
+
+func TestValidateWithProfile_ValidProfile(t *testing.T) {
+	input := []byte(`{
+		"resourceType": "Patient",
+		"meta": {"profile": ["` + ProfilePatient + `"]},
+		"name": [{"family": "Ibrahim", "given": ["Fatima"]}],
+		"gender": "female",
+		"birthDate": "1990-01-15",
+		"extension": [
+			{"url": "` + extBaseURL + `national-health-id", "valueIdentifier": {"system": "urn:ng:nin", "value": "12345"}}
+		]
+	}`)
+	errs := ValidateWithProfile(ResourcePatient, input)
+	if len(errs) != 0 {
+		t.Errorf("expected 0 errors, got %d: %+v", len(errs), errs)
+	}
+}
+
+func TestValidateWithProfile_WrongResourceType(t *testing.T) {
+	input := []byte(`{
+		"resourceType": "Patient",
+		"meta": {"profile": ["` + ProfileImmunization + `"]},
+		"name": [{"family": "Test", "given": ["User"]}],
+		"gender": "female",
+		"birthDate": "1990-01-15"
+	}`)
+	errs := ValidateWithProfile(ResourcePatient, input)
+	found := false
+	for _, e := range errs {
+		if e.Rule == "profile_mismatch" {
+			found = true
+		}
+	}
+	if !found {
+		t.Error("expected profile_mismatch error")
+	}
+}
+
+func TestCapabilityStatement_SupportedProfile(t *testing.T) {
+	cfg := CapabilityConfig{ServerName: "Test", ServerURL: "http://localhost:8080", Version: "0.1.0"}
+	data, err := GenerateCapabilityStatement(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var cs map[string]any
+	json.Unmarshal(data, &cs)
+
+	rest0 := cs["rest"].([]any)[0].(map[string]any)
+	resources := rest0["resource"].([]any)
+
+	for _, r := range resources {
+		res := r.(map[string]any)
+		if res["type"] == "Patient" {
+			profiles, ok := res["supportedProfile"].([]any)
+			if !ok || len(profiles) == 0 {
+				t.Error("Patient should have supportedProfile")
+				return
+			}
+			if profiles[0] != ProfilePatient {
+				t.Errorf("supportedProfile[0] = %v, want %s", profiles[0], ProfilePatient)
+			}
+			return
+		}
+	}
+	t.Error("Patient resource not found")
 }

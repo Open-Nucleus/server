@@ -187,6 +187,25 @@ func registerAll() {
 		},
 	})
 
+	// --- System-scoped MeasureReport ---
+	register(&ResourceDef{
+		Type:         ResourceMeasureReport,
+		Scope:        SystemScoped,
+		Interactions: []string{"read", "search-type", "create"},
+		SearchParams: []SearchParamDef{
+			{Name: "status", Type: "token", SQLColumn: "status", SQLTable: "measure_reports", FHIRPath: "MeasureReport.status"},
+			{Name: "type", Type: "token", SQLColumn: "type", SQLTable: "measure_reports", FHIRPath: "MeasureReport.type"},
+			{Name: "date", Type: "date", SQLColumn: "period_start", SQLTable: "measure_reports", FHIRPath: "MeasureReport.period"},
+		},
+	})
+
+	// --- Read-only StructureDefinition (profile discovery) ---
+	register(&ResourceDef{
+		Type:         ResourceStructureDefinition,
+		Scope:        SystemScoped,
+		Interactions: []string{"read", "search-type"},
+	})
+
 	// --- Auto-generated resources ---
 	register(&ResourceDef{
 		Type:         ResourceProvenance,

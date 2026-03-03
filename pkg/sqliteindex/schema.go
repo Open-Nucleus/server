@@ -29,6 +29,7 @@ DROP TRIGGER IF EXISTS patients_ad;
 DROP TRIGGER IF EXISTS patients_au;
 DROP TABLE IF EXISTS patients_fts;
 DROP TABLE IF EXISTS patients;
+DROP TABLE IF EXISTS measure_reports;
 DROP TABLE IF EXISTS detected_issues;
 DROP TABLE IF EXISTS practitioners;
 DROP TABLE IF EXISTS organizations;
@@ -273,6 +274,23 @@ CREATE TABLE IF NOT EXISTS locations (
 
 CREATE INDEX IF NOT EXISTS idx_loc_name ON locations(name);
 CREATE INDEX IF NOT EXISTS idx_loc_status ON locations(status);
+
+CREATE TABLE IF NOT EXISTS measure_reports (
+    id TEXT PRIMARY KEY,
+    status TEXT NOT NULL,
+    type TEXT NOT NULL,
+    period_start TEXT NOT NULL,
+    period_end TEXT,
+    reporter TEXT,
+    site_id TEXT NOT NULL,
+    last_updated TEXT NOT NULL,
+    git_blob_hash TEXT NOT NULL,
+    fhir_json TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_mr_status ON measure_reports(status);
+CREATE INDEX IF NOT EXISTS idx_mr_type ON measure_reports(type);
+CREATE INDEX IF NOT EXISTS idx_mr_period ON measure_reports(period_start);
 
 CREATE TABLE IF NOT EXISTS detected_issues (
     id TEXT PRIMARY KEY,

@@ -43,7 +43,7 @@ Flutter App (HTTP REST/JSON)
   +------------------------------------------------------+
 ```
 
-**Dual-layer data model:** FHIR R4 resources stored as JSON files in a Git repository (source of truth) with SQLite as a rebuildable query index. Every clinical write commits to Git first, then upserts SQLite. If SQLite is lost, it rebuilds from Git. Supports 12 indexed resource types (Patient, Encounter, Observation, Condition, MedicationRequest, AllergyIntolerance, Flag, DetectedIssue, Immunization, Procedure, Practitioner, Organization, Location) with automatic FHIR Provenance generation on every write.
+**Dual-layer data model:** FHIR R4 resources stored as JSON files in a Git repository (source of truth) with SQLite as a rebuildable query index. Every clinical write commits to Git first, then upserts SQLite. If SQLite is lost, it rebuilds from Git. Supports 17 resource types (Patient, Encounter, Observation, Condition, MedicationRequest, AllergyIntolerance, Flag, DetectedIssue, Immunization, Procedure, Practitioner, Organization, Location, Provenance, SupplyDelivery, MeasureReport, StructureDefinition) with automatic FHIR Provenance generation on every write. Includes 5 Open Nucleus FHIR profiles for African healthcare deployment (national IDs, WHO vaccines, growth monitoring, AI provenance, DHIS2 reporting).
 
 **Git-based sync:** Nodes discover each other via Wi-Fi Direct, Bluetooth, or local network and sync using Git fetch/merge/push. A FHIR-aware merge driver classifies conflicts into auto-merge (safe), review (flag for clinician), or block (clinical safety risk).
 

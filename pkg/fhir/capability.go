@@ -50,6 +50,15 @@ func GenerateCapabilityStatement(cfg CapabilityConfig) ([]byte, error) {
 		if len(searchParams) > 0 {
 			res["searchParam"] = searchParams
 		}
+		// Add supported profiles
+		profiles := ProfilesForResource(def.Type)
+		if len(profiles) > 0 {
+			urls := make([]string, len(profiles))
+			for i, p := range profiles {
+				urls[i] = p.URL
+			}
+			res["supportedProfile"] = urls
+		}
 		resources = append(resources, res)
 	}
 

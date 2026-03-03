@@ -13,9 +13,10 @@ import (
 
 // validGenericTypes are the resource types supported by the generic CRUD RPCs.
 var validGenericTypes = map[string]bool{
-	fhir.ResourcePractitioner: true,
-	fhir.ResourceOrganization: true,
-	fhir.ResourceLocation:     true,
+	fhir.ResourcePractitioner:  true,
+	fhir.ResourceOrganization:  true,
+	fhir.ResourceLocation:      true,
+	fhir.ResourceMeasureReport: true,
 }
 
 func (s *Server) CreateResource(ctx context.Context, req *patientv1.CreateResourceRequest) (*patientv1.CreateResourceResponse, error) {
@@ -162,6 +163,16 @@ func (s *Server) GetResource(ctx context.Context, req *patientv1.GetResourceRequ
 		}
 		fhirJSON = row.FHIRJson
 		resourceID = row.ID
+	case fhir.ResourceMeasureReport:
+		row, err := s.idx.GetMeasureReport(req.ResourceId)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "query failed: %v", err)
+		}
+		if row == nil {
+			return nil, status.Errorf(codes.NotFound, "%s %s not found", req.ResourceType, req.ResourceId)
+		}
+		fhirJSON = row.FHIRJson
+		resourceID = row.ID
 	default:
 		return nil, status.Errorf(codes.InvalidArgument, "unsupported resource type: %s", req.ResourceType)
 	}
@@ -207,6 +218,15 @@ func (s *Server) ListResources(ctx context.Context, req *patientv1.ListResources
 		pg = p
 		for _, row := range rows {
 			resources = append(resources, toFHIRResource(fhir.ResourceLocation, row.ID, rowFHIRBytes(row.FHIRJson)))
+		}
+	case fhir.ResourceMeasureReport:
+		rows, p, err := s.idx.ListMeasureReports(opts)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "query failed: %v", err)
+		}
+		pg = p
+		for _, row := range rows {
+			resources = append(resources, toFHIRResource(fhir.ResourceMeasureReport, row.ID, rowFHIRBytes(row.FHIRJson)))
 		}
 	default:
 		return nil, status.Errorf(codes.InvalidArgument, "unsupported: %s", req.ResourceType)

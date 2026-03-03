@@ -1,7 +1,7 @@
 # Open Nucleus — Architectural Memory
 
 > Living document. Updated after every major feature or structural change.
-> Last updated: FHIR Phase 2 — REST API Layer (2026-03-03)
+> Last updated: FHIR Phase 3 — Open Nucleus FHIR Profiles (2026-03-03)
 
 ---
 
@@ -677,6 +677,47 @@ internal/handler/fhir/
 
 ---
 
+## FHIR Phase 3 — Open Nucleus FHIR Profiles
+
+**Goal:** FHIR profiles specific to African healthcare deployment — custom extensions for national IDs, WHO vaccine codes, AI provenance, growth monitoring, and DHIS2 reporting. Adds MeasureReport as a new resource type and StructureDefinition as a read-only endpoint for profile discovery.
+
+**Five profiles:**
+
+| Profile | Base | Extensions |
+|---------|------|------------|
+| OpenNucleus-Patient | Patient | national-health-id (valueIdentifier), ethnic-group (valueCoding) |
+| OpenNucleus-Immunization | Immunization | dose-schedule-name (valueString), dose-expected-age (valueString) + CVX/ATC warning |
+| OpenNucleus-GrowthObservation | Observation | who-zscore (valueDecimal), nutritional-classification (valueCoding) + growth code + vital-signs constraints |
+| OpenNucleus-DetectedIssue | DetectedIssue | ai-model-name, ai-confidence-score, ai-reflection-count, ai-reasoning-chain |
+| OpenNucleus-MeasureReport | MeasureReport | dhis2-data-element, dhis2-org-unit, dhis2-period |
+
+**New resource types:** MeasureReport (full stack: type → registry → validation → extraction → Git path → soft delete → SQLite schema/index → pipeline → RPCs → dispatch), StructureDefinition (read-only, served from profile registry).
+
+**Architecture:**
+
+```
+pkg/fhir/
+├── extension.go              ← ExtensionDef, ExtractExtension, HasExtension, ValidateExtensions
+├── profile.go                ← Profile registry (GetProfileDef, AllProfileDefs, ProfilesForResource, GetMetaProfiles)
+├── profile_defs.go           ← 5 profile builders with validation functions
+├── structuredefinition.go    ← GenerateStructureDefinition, GenerateAllStructureDefinitions
+├── validate.go               ← +ValidateWithProfile, +validateMeasureReport (profile-aware validation)
+├── types.go                  ← +ResourceMeasureReport, +ResourceStructureDefinition, +MeasureReportRow
+├── registry.go               ← +MeasureReport (SystemScoped), +StructureDefinition (SystemScoped, read-only)
+├── extract.go                ← +ExtractMeasureReportFields
+├── path.go                   ← +measure-reports/, +.nucleus/profiles/
+├── softdelete.go             ← +MeasureReport → status="error"
+└── capability.go             ← +supportedProfile per resource type
+```
+
+**Profile validation:** `ValidateWithProfile` runs base `Validate` then checks `meta.profile` URLs against the profile registry. Each profile can have required extensions, value type checks, and custom constraint functions (e.g. growth code whitelist, CVX/ATC warning). Unknown extensions pass through (FHIR open model).
+
+**StructureDefinition endpoint:** `GET /fhir/StructureDefinition` returns all 5 profiles as FHIR R4 StructureDefinition resources generated from ProfileDef metadata.
+
+**Resource count:** 15 → 17 (MeasureReport + StructureDefinition). 58 pkg/fhir tests (26 new).
+
+---
+
 ## Phase Roadmap
 
 | Phase | Scope | Status |
@@ -689,4 +730,5 @@ internal/handler/fhir/
 | 5 — Formulary + Anchor + Sentinel | Formulary COMPLETE (16 RPCs, 26 tests). Anchor COMPLETE (14 RPCs, 19 tests). Sentinel Agent COMPLETE (10 RPCs, 13 HTTP endpoints, 68 tests). Go gateway adapters wired for all 3. | COMPLETE |
 | FHIR Phase 1 — Core Foundation | 5 new resource types (Immunization, Procedure, Practitioner, Organization, Location) + Provenance auto-generation. Resource registry (15 types), CapabilityStatement, Bundle/OperationOutcome builders. 49 Patient Service RPCs, ~70 gateway endpoints. 36 pkg/fhir tests. | COMPLETE |
 | FHIR Phase 2 — REST API Layer | Standards-compliant `/fhir/{Type}` REST API. Raw FHIR JSON (no envelope), Bundle for search, OperationOutcome for errors, ETag/conditional reads. ~50 new endpoints auto-generated from resource registry. Dispatch table, content negotiation, $everything. 22 handler tests. | COMPLETE |
+| FHIR Phase 3 — FHIR Profiles | 5 Open Nucleus profiles (Patient, Immunization, GrowthObservation, DetectedIssue, MeasureReport). Extension utilities, profile registry, profile-aware validation. MeasureReport full stack (17 resource types). StructureDefinition read-only endpoint. CapabilityStatement supportedProfile. 58 pkg/fhir tests. | COMPLETE |
 | 6 — WebSocket + Hardening | Real-time events, production config, TLS, metrics | Not started |

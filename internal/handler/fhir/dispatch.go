@@ -273,6 +273,59 @@ func buildDispatchers(svc service.PatientService) map[string]*ResourceDispatch {
 		}
 	}
 
+	// --- MeasureReport (SystemScoped, generic RPCs) ---
+	d[pkgfhir.ResourceMeasureReport] = &ResourceDispatch{
+		ReadPerm:  "alert:read",
+		WritePerm: "alert:write",
+		Read:      genericRead(pkgfhir.ResourceMeasureReport),
+		Search: func(ctx context.Context, params *FHIRSearchParams) ([]json.RawMessage, int, int, int, error) {
+			resp, err := svc.ListResources(ctx, pkgfhir.ResourceMeasureReport, params.Page, params.Count)
+			if err != nil {
+				return nil, 0, 0, 0, err
+			}
+			resources, err := marshalSlice(resp.Resources)
+			return resources, resp.Page, resp.PerPage, resp.Total, err
+		},
+		Create: func(ctx context.Context, body json.RawMessage) (json.RawMessage, string, error) {
+			resp, err := svc.CreateResource(ctx, pkgfhir.ResourceMeasureReport, body)
+			if err != nil {
+				return nil, "", err
+			}
+			raw, err := marshalResource(resp.Resource)
+			return raw, extractID(resp.Resource), err
+		},
+	}
+
+	// --- StructureDefinition (read-only, served from profile registry) ---
+	d[pkgfhir.ResourceStructureDefinition] = &ResourceDispatch{
+		ReadPerm: "patient:read",
+		Read: func(ctx context.Context, id string) (json.RawMessage, error) {
+			// Look up profile by name (id) and generate StructureDefinition
+			for _, def := range pkgfhir.AllProfileDefs() {
+				if def.Name == id {
+					data, err := pkgfhir.GenerateStructureDefinition(def)
+					if err != nil {
+						return nil, fmt.Errorf("failed to generate StructureDefinition: %w", err)
+					}
+					return data, nil
+				}
+			}
+			return nil, fmt.Errorf("StructureDefinition %s not found", id)
+		},
+		Search: func(ctx context.Context, params *FHIRSearchParams) ([]json.RawMessage, int, int, int, error) {
+			defs := pkgfhir.AllProfileDefs()
+			var resources []json.RawMessage
+			for _, def := range defs {
+				data, err := pkgfhir.GenerateStructureDefinition(def)
+				if err != nil {
+					continue
+				}
+				resources = append(resources, data)
+			}
+			return resources, 1, len(resources), len(resources), nil
+		},
+	}
+
 	// --- Read-only types (Provenance, DetectedIssue, SupplyDelivery) ---
 	d[pkgfhir.ResourceProvenance] = &ResourceDispatch{
 		ReadPerm: "patient:read",

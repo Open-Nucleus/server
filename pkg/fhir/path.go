@@ -38,6 +38,10 @@ func GitPath(resourceType, patientID, resourceID string) string {
 		return fmt.Sprintf("alerts/%s.json", resourceID)
 	case ResourceSupplyDelivery:
 		return fmt.Sprintf("supply/deliveries/%s.json", resourceID)
+	case ResourceMeasureReport:
+		return fmt.Sprintf("measure-reports/%s.json", resourceID)
+	case ResourceStructureDefinition:
+		return fmt.Sprintf(".nucleus/profiles/%s.json", resourceID)
 	default:
 		return fmt.Sprintf("unknown/%s/%s.json", resourceType, resourceID)
 	}

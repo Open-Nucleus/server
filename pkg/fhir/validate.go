@@ -46,9 +46,45 @@ func Validate(resourceType string, fhirJSON []byte) []FieldError {
 		return validateOrganization(resource)
 	case ResourceLocation:
 		return validateLocation(resource)
+	case ResourceMeasureReport:
+		return validateMeasureReport(resource)
 	default:
 		return nil
 	}
+}
+
+// ValidateWithProfile performs base validation then profile-specific validation
+// for any profiles declared in meta.profile.
+func ValidateWithProfile(resourceType string, fhirJSON []byte) []FieldError {
+	errs := Validate(resourceType, fhirJSON)
+	if len(errs) > 0 {
+		return errs
+	}
+
+	var resource map[string]any
+	if err := json.Unmarshal(fhirJSON, &resource); err != nil {
+		return errs // base validation already passed, shouldn't happen
+	}
+
+	for _, profileURL := range GetMetaProfiles(resource) {
+		def := GetProfileDef(profileURL)
+		if def == nil {
+			continue
+		}
+		if def.BaseResource != resourceType {
+			errs = append(errs, FieldError{
+				Path:    "meta.profile",
+				Rule:    "profile_mismatch",
+				Message: fmt.Sprintf("Profile %s targets %s but resource is %s", profileURL, def.BaseResource, resourceType),
+			})
+			continue
+		}
+		errs = append(errs, ValidateExtensions(resource, def.Extensions)...)
+		if def.ValidateFunc != nil {
+			errs = append(errs, def.ValidateFunc(resource)...)
+		}
+	}
+	return errs
 }
 
 func validatePatient(r map[string]any) []FieldError {
@@ -407,6 +443,49 @@ func isValidProcedureStatus(s string) bool {
 func isValidLocationStatus(s string) bool {
 	switch s {
 	case "active", "suspended", "inactive":
+		return true
+	}
+	return false
+}
+
+func validateMeasureReport(r map[string]any) []FieldError {
+	var errs []FieldError
+
+	status := getStr(r, "status")
+	if status == "" {
+		errs = append(errs, FieldError{Path: "status", Rule: "required", Message: "MeasureReport.status is required"})
+	} else if !isValidMeasureReportStatus(status) {
+		errs = append(errs, FieldError{Path: "status", Rule: "value_set", Message: "Must be one of: complete, pending, error"})
+	}
+
+	mrType := getStr(r, "type")
+	if mrType == "" {
+		errs = append(errs, FieldError{Path: "type", Rule: "required", Message: "MeasureReport.type is required"})
+	} else if !isValidMeasureReportType(mrType) {
+		errs = append(errs, FieldError{Path: "type", Rule: "value_set", Message: "Must be one of: individual, subject-list, summary, data-collection"})
+	}
+
+	period, ok := r["period"].(map[string]any)
+	if !ok {
+		errs = append(errs, FieldError{Path: "period", Rule: "required", Message: "MeasureReport.period is required"})
+	} else if getStr(period, "start") == "" {
+		errs = append(errs, FieldError{Path: "period.start", Rule: "required", Message: "MeasureReport.period.start is required"})
+	}
+
+	return errs
+}
+
+func isValidMeasureReportStatus(s string) bool {
+	switch s {
+	case "complete", "pending", "error":
+		return true
+	}
+	return false
+}
+
+func isValidMeasureReportType(s string) bool {
+	switch s {
+	case "individual", "subject-list", "summary", "data-collection":
 		return true
 	}
 	return false
