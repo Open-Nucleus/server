@@ -8,10 +8,12 @@ import (
 
 // CapabilityConfig holds server metadata for the CapabilityStatement.
 type CapabilityConfig struct {
-	ServerName  string
-	ServerURL   string
-	Version     string
-	PublishedAt time.Time
+	ServerName   string
+	ServerURL    string
+	Version      string
+	PublishedAt  time.Time
+	SmartEnabled bool   // set to true to include SMART security extension
+	SmartBaseURL string // base URL for SMART endpoints (e.g. "http://localhost:8080")
 }
 
 // GenerateCapabilityStatement auto-generates a FHIR R4 CapabilityStatement from the registry.
@@ -62,6 +64,38 @@ func GenerateCapabilityStatement(cfg CapabilityConfig) ([]byte, error) {
 		resources = append(resources, res)
 	}
 
+	restEntry := map[string]any{
+		"mode":     "server",
+		"resource": resources,
+	}
+
+	// Add SMART on FHIR security extension if enabled.
+	if cfg.SmartEnabled && cfg.SmartBaseURL != "" {
+		restEntry["security"] = map[string]any{
+			"extension": []any{
+				map[string]any{
+					"url": "http://fhir-registry.smarthealthit.org/StructureDefinition/oauth-uris",
+					"extension": []any{
+						map[string]any{"url": "authorize", "valueUri": cfg.SmartBaseURL + "/auth/smart/authorize"},
+						map[string]any{"url": "token", "valueUri": cfg.SmartBaseURL + "/auth/smart/token"},
+						map[string]any{"url": "revoke", "valueUri": cfg.SmartBaseURL + "/auth/smart/revoke"},
+						map[string]any{"url": "register", "valueUri": cfg.SmartBaseURL + "/auth/smart/register"},
+					},
+				},
+			},
+			"service": []any{
+				map[string]any{
+					"coding": []any{
+						map[string]any{
+							"system": "http://hl7.org/fhir/restful-security-service",
+							"code":   "SMART-on-FHIR",
+						},
+					},
+				},
+			},
+		}
+	}
+
 	cs := map[string]any{
 		"resourceType":  "CapabilityStatement",
 		"status":        "active",
@@ -78,12 +112,7 @@ func GenerateCapabilityStatement(cfg CapabilityConfig) ([]byte, error) {
 			"name":    cfg.ServerName,
 			"version": cfg.Version,
 		},
-		"rest": []any{
-			map[string]any{
-				"mode":     "server",
-				"resource": resources,
-			},
-		},
+		"rest": []any{restEntry},
 	}
 
 	return json.Marshal(cs)

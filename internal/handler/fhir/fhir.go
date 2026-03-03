@@ -36,29 +36,29 @@ func (h *FHIRHandler) RegisterRoutes(r chi.Router, jwtAuth *middleware.JWTAuth, 
 			}
 
 			if hasInteraction(def, "search-type") && disp.Search != nil {
-				r.With(rateLimiter.Middleware(middleware.CategoryRead), middleware.RequirePermission(disp.ReadPerm)).
+				r.With(rateLimiter.Middleware(middleware.CategoryRead), middleware.RequirePermission(disp.ReadPerm), middleware.SmartScope(rt, "s")).
 					Get("/"+rt, h.Search(rt))
 			}
 			if hasInteraction(def, "read") && disp.Read != nil {
-				r.With(rateLimiter.Middleware(middleware.CategoryRead), middleware.RequirePermission(disp.ReadPerm)).
+				r.With(rateLimiter.Middleware(middleware.CategoryRead), middleware.RequirePermission(disp.ReadPerm), middleware.SmartScope(rt, "r")).
 					Get("/"+rt+"/{id}", h.Read(rt))
 			}
 			if hasInteraction(def, "create") && disp.Create != nil {
-				r.With(rateLimiter.Middleware(middleware.CategoryWrite), middleware.RequirePermission(disp.WritePerm)).
+				r.With(rateLimiter.Middleware(middleware.CategoryWrite), middleware.RequirePermission(disp.WritePerm), middleware.SmartScope(rt, "c")).
 					Post("/"+rt, h.Create(rt))
 			}
 			if hasInteraction(def, "update") && disp.Update != nil {
-				r.With(rateLimiter.Middleware(middleware.CategoryWrite), middleware.RequirePermission(disp.WritePerm)).
+				r.With(rateLimiter.Middleware(middleware.CategoryWrite), middleware.RequirePermission(disp.WritePerm), middleware.SmartScope(rt, "u")).
 					Put("/"+rt+"/{id}", h.Update(rt))
 			}
 			if hasInteraction(def, "delete") && disp.Delete != nil {
-				r.With(rateLimiter.Middleware(middleware.CategoryWrite), middleware.RequirePermission(disp.WritePerm)).
+				r.With(rateLimiter.Middleware(middleware.CategoryWrite), middleware.RequirePermission(disp.WritePerm), middleware.SmartScope(rt, "d")).
 					Delete("/"+rt+"/{id}", h.Delete(rt))
 			}
 		}
 
 		// Patient $everything
-		r.With(rateLimiter.Middleware(middleware.CategoryRead), middleware.RequirePermission("patient:read")).
+		r.With(rateLimiter.Middleware(middleware.CategoryRead), middleware.RequirePermission("patient:read"), middleware.SmartScope("Patient", "r")).
 			Get("/Patient/{id}/$everything", h.Everything)
 	})
 }

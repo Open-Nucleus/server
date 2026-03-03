@@ -309,3 +309,77 @@ func TestFileKeyStore_CRUD(t *testing.T) {
 	require.NoError(t, err)
 	assert.False(t, ks.HasKey("node-1"))
 }
+
+// --- SMART JWT Tests ---
+
+func TestJWT_SmartAccessClaims(t *testing.T) {
+	pub, priv, err := GenerateKeypair()
+	require.NoError(t, err)
+
+	claims := NewSmartAccessClaims(
+		"practitioner-1", "device-1", "node-1", "site-1", "physician",
+		[]string{"patient:read"}, "local",
+		"patient/Patient.r launch", "client-abc", "Practitioner/practitioner-1",
+		"patient-123", "encounter-456",
+		"jti-smart-1", "open-nucleus-auth", time.Hour,
+	)
+
+	assert.Equal(t, "patient/Patient.r launch", claims.Scope)
+	assert.Equal(t, "client-abc", claims.ClientID)
+	assert.Equal(t, "Practitioner/practitioner-1", claims.FHIRUser)
+	assert.Equal(t, "patient-123", claims.LaunchPatient)
+	assert.Equal(t, "encounter-456", claims.LaunchEncounter)
+	assert.Equal(t, "access", claims.TokenType)
+
+	token, err := SignToken(claims, priv, "key-1")
+	require.NoError(t, err)
+
+	parsed, err := VerifyToken(token, pub)
+	require.NoError(t, err)
+	assert.Equal(t, "patient/Patient.r launch", parsed.Scope)
+	assert.Equal(t, "client-abc", parsed.ClientID)
+	assert.Equal(t, "Practitioner/practitioner-1", parsed.FHIRUser)
+	assert.Equal(t, "patient-123", parsed.LaunchPatient)
+	assert.Equal(t, "encounter-456", parsed.LaunchEncounter)
+	assert.Equal(t, "physician", parsed.Role)
+	assert.Equal(t, "device-1", parsed.DeviceID)
+}
+
+func TestJWT_SmartClaimsEmpty_WhenNotSmart(t *testing.T) {
+	pub, priv, err := GenerateKeypair()
+	require.NoError(t, err)
+
+	claims := NewAccessClaims("practitioner-1", "device-1", "node-1", "site-1", "physician", []string{"patient:read"}, "local", "jti-1", "open-nucleus-auth", time.Hour)
+	token, err := SignToken(claims, priv, "key-1")
+	require.NoError(t, err)
+
+	parsed, err := VerifyToken(token, pub)
+	require.NoError(t, err)
+	assert.Empty(t, parsed.Scope)
+	assert.Empty(t, parsed.ClientID)
+	assert.Empty(t, parsed.LaunchPatient)
+}
+
+func TestJWT_SmartRoundtrip_PreservesFields(t *testing.T) {
+	pub, priv, err := GenerateKeypair()
+	require.NoError(t, err)
+
+	claims := NewSmartAccessClaims(
+		"sub-1", "dev-1", "node-1", "site-1", "nurse",
+		[]string{"observation:read"}, "local",
+		"user/Observation.rs fhirUser", "my-client", "Practitioner/pract-1",
+		"", "", // no patient/encounter context
+		"jti-2", "issuer", 30*time.Minute,
+	)
+
+	token, err := SignToken(claims, priv, "key-2")
+	require.NoError(t, err)
+
+	parsed, err := VerifyToken(token, pub)
+	require.NoError(t, err)
+	assert.Equal(t, "user/Observation.rs fhirUser", parsed.Scope)
+	assert.Equal(t, "my-client", parsed.ClientID)
+	assert.Equal(t, "Practitioner/pract-1", parsed.FHIRUser)
+	assert.Empty(t, parsed.LaunchPatient)
+	assert.Empty(t, parsed.LaunchEncounter)
+}

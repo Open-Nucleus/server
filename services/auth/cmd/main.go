@@ -10,6 +10,7 @@ import (
 	"syscall"
 
 	authv1 "github.com/FibrinLab/open-nucleus/gen/proto/auth/v1"
+	smartv1 "github.com/FibrinLab/open-nucleus/gen/proto/smart/v1"
 	"github.com/FibrinLab/open-nucleus/pkg/auth"
 	"github.com/FibrinLab/open-nucleus/pkg/gitstore"
 	"github.com/FibrinLab/open-nucleus/services/auth/internal/config"
@@ -81,10 +82,19 @@ func main() {
 		log.Fatalf("init auth service: %v", err)
 	}
 
+	// Init SMART client store
+	if err := store.InitClientSchema(db); err != nil {
+		log.Fatalf("init smart client schema: %v", err)
+	}
+	clientStore := store.NewClientStore(git, db)
+	smartSvc := service.NewSmartService(svc, clientStore)
+
 	// Create gRPC server
 	srv := server.NewServer(cfg, svc)
+	smartSrv := server.NewSmartServer(smartSvc)
 	grpcServer := grpc.NewServer()
 	authv1.RegisterAuthServiceServer(grpcServer, srv)
+	smartv1.RegisterSmartServiceServer(grpcServer, smartSrv)
 
 	// Listen
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", cfg.GRPCPort))

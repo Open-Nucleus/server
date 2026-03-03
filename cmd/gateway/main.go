@@ -58,6 +58,7 @@ func main() {
 	formularySvc := service.NewFormularyService(pool)
 	anchorSvc := service.NewAnchorService(pool)
 	supplySvc := service.NewSupplyService(pool)
+	smartSvc := service.NewSmartService(pool)
 
 	// Handlers
 	authHandler := handler.NewAuthHandler(authSvc)
@@ -70,6 +71,7 @@ func main() {
 	supplyHandler := handler.NewSupplyHandler(supplySvc)
 	resourceHandler := handler.NewResourceHandler(patientSvc)
 	fhirHandler := fhirhandler.NewFHIRHandler(patientSvc)
+	smartHandler := handler.NewSmartHandler(smartSvc, cfg.Smart.BaseURL)
 
 	// Schema validator
 	sv := middleware.NewSchemaValidator()
@@ -115,6 +117,7 @@ func main() {
 		AnchorHandler:    anchorHandler,
 		SupplyHandler:    supplyHandler,
 		FHIRHandler:      fhirHandler,
+		SmartHandler:     smartHandler,
 		SchemaValidator:  sv,
 		JWTAuth:          jwtAuth,
 		RateLimiter:      rateLimiter,

@@ -14,6 +14,13 @@ type NucleusClaims struct {
 	Permissions []string `json:"permissions"`
 	SiteScope   string   `json:"site_scope"`
 	TokenType   string   `json:"token_type"`
+
+	// SMART on FHIR fields (present only on OAuth2 tokens).
+	Scope           string `json:"scope,omitempty"`
+	ClientID        string `json:"client_id,omitempty"`
+	FHIRUser        string `json:"fhirUser,omitempty"`
+	LaunchPatient   string `json:"patient,omitempty"`
+	LaunchEncounter string `json:"encounter,omitempty"`
 }
 
 // LoginRequest is the body of POST /auth/login.

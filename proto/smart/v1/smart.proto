@@ -1,0 +1,164 @@
+syntax = "proto3";
+
+package smart.v1;
+
+option go_package = "github.com/FibrinLab/open-nucleus/gen/proto/smart/v1;smartv1";
+
+import "google/protobuf/timestamp.proto";
+
+service SmartService {
+  // OAuth2 Flow
+  rpc Authorize(AuthorizeRequest) returns (AuthorizeResponse);
+  rpc ExchangeToken(ExchangeTokenRequest) returns (TokenResponse);
+  rpc IntrospectToken(IntrospectTokenRequest) returns (IntrospectResponse);
+  rpc RevokeToken(RevokeTokenRequest) returns (RevokeTokenResponse);
+
+  // Client Registration
+  rpc RegisterClient(RegisterClientRequest) returns (ClientInfo);
+  rpc ListClients(ListClientsRequest) returns (ListClientsResponse);
+  rpc GetClient(GetClientRequest) returns (ClientInfo);
+  rpc UpdateClient(UpdateClientRequest) returns (ClientInfo);
+  rpc DeleteClient(DeleteClientRequest) returns (DeleteClientResponse);
+
+  // EHR Launch
+  rpc CreateLaunch(CreateLaunchRequest) returns (CreateLaunchResponse);
+
+  // Health
+  rpc Health(HealthRequest) returns (HealthResponse);
+}
+
+// --- OAuth2 Flow Messages ---
+
+message AuthorizeRequest {
+  string client_id = 1;
+  string redirect_uri = 2;
+  string scope = 3;
+  string state = 4;
+  string code_challenge = 5;
+  string code_challenge_method = 6; // "S256"
+  string launch = 7;                // optional launch token
+  // Caller identity (set by gateway from JWT context)
+  string device_id = 8;
+  string practitioner_id = 9;
+  string site_id = 10;
+  string role = 11;
+}
+
+message AuthorizeResponse {
+  string redirect_uri = 1; // redirect_uri?code={code}&state={state}
+}
+
+message ExchangeTokenRequest {
+  string grant_type = 1;      // "authorization_code"
+  string code = 2;
+  string redirect_uri = 3;
+  string code_verifier = 4;   // PKCE
+  string client_id = 5;
+  string client_secret = 6;   // optional, for confidential clients
+}
+
+message TokenResponse {
+  string access_token = 1;
+  string token_type = 2;      // "Bearer"
+  int32 expires_in = 3;
+  string scope = 4;
+  string patient = 5;         // patient launch context (if applicable)
+  string encounter = 6;       // encounter launch context (if applicable)
+  string refresh_token = 7;
+}
+
+message IntrospectTokenRequest {
+  string token = 1;
+}
+
+message IntrospectResponse {
+  bool active = 1;
+  string scope = 2;
+  string client_id = 3;
+  string sub = 4;
+  string patient = 5;
+  string encounter = 6;
+  string fhir_user = 7;
+  int64 exp = 8;
+  int64 iat = 9;
+}
+
+message RevokeTokenRequest {
+  string token = 1;
+}
+
+message RevokeTokenResponse {}
+
+// --- Client Registration Messages ---
+
+message RegisterClientRequest {
+  string client_name = 1;
+  repeated string redirect_uris = 2;
+  string scope = 3;
+  repeated string grant_types = 4;
+  string token_endpoint_auth_method = 5;
+  repeated string launch_modes = 6;
+  // Caller identity
+  string registered_by = 7;
+}
+
+message ClientInfo {
+  string client_id = 1;
+  string client_secret = 2;
+  string client_name = 3;
+  repeated string redirect_uris = 4;
+  string scope = 5;
+  repeated string grant_types = 6;
+  string token_endpoint_auth_method = 7;
+  repeated string launch_modes = 8;
+  string status = 9;
+  string registered_at = 10;
+  string registered_by = 11;
+  string approved_by = 12;
+  string approved_at = 13;
+}
+
+message ListClientsRequest {}
+
+message ListClientsResponse {
+  repeated ClientInfo clients = 1;
+}
+
+message GetClientRequest {
+  string client_id = 1;
+}
+
+message UpdateClientRequest {
+  string client_id = 1;
+  string status = 2;          // "approved", "revoked"
+  string approved_by = 3;
+  string scope = 4;           // optional scope update
+}
+
+message DeleteClientRequest {
+  string client_id = 1;
+}
+
+message DeleteClientResponse {}
+
+// --- EHR Launch Messages ---
+
+message CreateLaunchRequest {
+  string client_id = 1;
+  string patient_id = 2;
+  string encounter_id = 3;
+  string created_by = 4;      // device_id
+}
+
+message CreateLaunchResponse {
+  string launch_token = 1;
+}
+
+// --- Health Messages ---
+
+message HealthRequest {}
+
+message HealthResponse {
+  string status = 1;
+  google.protobuf.Timestamp timestamp = 2;
+}

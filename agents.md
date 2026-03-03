@@ -1,7 +1,7 @@
 # Open Nucleus — Architectural Memory
 
 > Living document. Updated after every major feature or structural change.
-> Last updated: FHIR Phase 3 — Open Nucleus FHIR Profiles (2026-03-03)
+> Last updated: FHIR Phase 4 — SMART on FHIR (2026-03-03)
 
 ---
 
@@ -80,6 +80,10 @@ grpcclient.NewPool(cfg.GRPC)          ← dials 6 backend services (non-blocking
     │       ▼
     │   handler.NewSupplyHandler(supplySvc)
     │
+    ├─► service.NewSmartService(pool)    ← uses auth pool connection
+    │       ▼
+    │   handler.NewSmartHandler(smartSvc, cfg.Smart.BaseURL)
+    │
     ├─► middleware.NewSchemaValidator() + load 6 JSON schemas from schemas/
     │
     ├─► middleware.NewJWTAuth(pubKey, issuer)
@@ -145,6 +149,7 @@ Each middleware is a `func(http.Handler) http.Handler` or a method that returns 
 | **validator.go** | — | — (reads r.Body) | `github.com/santhosh-tekuri/jsonschema/v5` |
 | **cors.go** | — | — (reads Origin header) | — |
 | **audit.go** | — | `CtxRequestID`, `CtxClaims` | `log/slog` |
+| **smartscope.go** | — | `CtxClaims` (reads Scope, LaunchPatient) | `pkg/smart` |
 
 **Context data flow:**
 ```
@@ -718,6 +723,59 @@ pkg/fhir/
 
 ---
 
+## FHIR Phase 4 — SMART on FHIR
+
+**Goal:** OAuth2 authorization code flow with SMART on FHIR v2 scopes, enabling third-party clinical apps (growth chart widgets, immunization trackers, DHIS2 connectors) to connect securely via standardized launch protocols. All OAuth2 flows execute on the local node — no cloud IdP required.
+
+**Coexistence model:** Internal devices use Ed25519 challenge-response. SMART apps use OAuth2 auth code + PKCE. Both produce EdDSA JWTs — SMART tokens carry additional `scope`, `client_id`, and launch context claims. FHIR endpoints enforce SMART scopes when present, otherwise fall back to existing RBAC.
+
+**Architecture:**
+
+```
+pkg/smart/
+├── scope.go          ← SMART v2 scope parser (patient/Resource.cruds)
+├── client.go         ← Client model + validation (pending/approved/revoked)
+├── authcode.go       ← Auth code + PKCE (S256, one-shot exchange)
+├── launch.go         ← EHR launch token store (one-shot consume)
+└── config.go         ← SMART configuration builder (/.well-known/smart-configuration)
+
+proto/smart/v1/
+└── smart.proto       ← SmartService (11 RPCs: OAuth2, client mgmt, launch, health)
+
+services/auth/
+├── internal/store/clients.go   ← Client storage (Git + SQLite dual store)
+├── internal/service/smart.go   ← SmartService implementation
+└── internal/server/smart_rpcs.go ← gRPC server adapter
+
+internal/
+├── service/smart.go           ← SmartService interface + gRPC adapter
+├── handler/smart.go           ← 11 HTTP endpoints (OAuth2 + admin)
+└── middleware/smartscope.go   ← SMART scope enforcement on FHIR routes
+```
+
+**OAuth2 endpoints:**
+
+| Method | Path | Auth | Purpose |
+|--------|------|------|---------|
+| GET | `/.well-known/smart-configuration` | Public | SMART discovery |
+| GET | `/auth/smart/authorize` | JWT | Authorization (returns redirect with code) |
+| POST | `/auth/smart/token` | Public | Token exchange (client auth via body/Basic) |
+| POST | `/auth/smart/revoke` | JWT | Token revocation |
+| POST | `/auth/smart/introspect` | JWT | Token introspection |
+| POST | `/auth/smart/register` | JWT (admin) | Dynamic client registration |
+| POST | `/auth/smart/launch` | JWT | Create EHR launch token |
+| GET/PUT/DELETE | `/api/v1/smart/clients/{id}` | JWT (admin) | Client management |
+
+**SMART scope middleware:** `SmartScope(resourceType, interaction)` enforces v2 scopes on all FHIR endpoints. Patient-context scopes restrict access to launch patient only. Wildcard resource (`*`) supported. No-scope tokens pass through to existing RBAC.
+
+**CapabilityStatement:** Security section includes oauth-uris extension (authorize, token, revoke, register endpoints) and SMART-on-FHIR service coding when `SmartEnabled=true`.
+
+**New permissions:** `smart:launch` (physician, site-admin, regional-admin), `smart:register` (site-admin, regional-admin).
+
+**Test count:** 408 total (37 new SMART tests: 27 pkg/smart, 3 pkg/auth SMART claims, 6 smartscope middleware, 8 handler, 2 capability).
+
+---
+
 ## Phase Roadmap
 
 | Phase | Scope | Status |
@@ -731,4 +789,5 @@ pkg/fhir/
 | FHIR Phase 1 — Core Foundation | 5 new resource types (Immunization, Procedure, Practitioner, Organization, Location) + Provenance auto-generation. Resource registry (15 types), CapabilityStatement, Bundle/OperationOutcome builders. 49 Patient Service RPCs, ~70 gateway endpoints. 36 pkg/fhir tests. | COMPLETE |
 | FHIR Phase 2 — REST API Layer | Standards-compliant `/fhir/{Type}` REST API. Raw FHIR JSON (no envelope), Bundle for search, OperationOutcome for errors, ETag/conditional reads. ~50 new endpoints auto-generated from resource registry. Dispatch table, content negotiation, $everything. 22 handler tests. | COMPLETE |
 | FHIR Phase 3 — FHIR Profiles | 5 Open Nucleus profiles (Patient, Immunization, GrowthObservation, DetectedIssue, MeasureReport). Extension utilities, profile registry, profile-aware validation. MeasureReport full stack (17 resource types). StructureDefinition read-only endpoint. CapabilityStatement supportedProfile. 58 pkg/fhir tests. | COMPLETE |
+| FHIR Phase 4 — SMART on FHIR | OAuth2 auth code + PKCE, SMART v2 scopes, EHR launch, client registration, scope middleware on FHIR endpoints. 11 gRPC RPCs, 11 HTTP endpoints, CapabilityStatement SMART security, 37 new tests (408 total). | COMPLETE |
 | 6 — WebSocket + Hardening | Real-time events, production config, TLS, metrics | Not started |

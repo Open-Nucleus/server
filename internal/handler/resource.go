@@ -88,9 +88,11 @@ func (h *ResourceHandler) UpdateFactory(resourceType string) http.HandlerFunc {
 func CapabilityStatementHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		cs, err := fhir.GenerateCapabilityStatement(fhir.CapabilityConfig{
-			ServerName: "Open Nucleus",
-			ServerURL:  "http://localhost:8080",
-			Version:    "0.8.0",
+			ServerName:   "Open Nucleus",
+			ServerURL:    "http://localhost:8080",
+			Version:      "0.9.0",
+			SmartEnabled: true,
+			SmartBaseURL: "http://localhost:8080",
 		})
 		if err != nil {
 			model.WriteError(w, model.ErrInternal, "Failed to generate CapabilityStatement", nil)

@@ -40,3 +40,7 @@ logging:
   level: info
   audit_file: /var/log/open-nucleus/audit.log
   format: json
+
+smart:
+  enabled: true
+  base_url: http://localhost:8080

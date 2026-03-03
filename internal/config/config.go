@@ -16,6 +16,12 @@ type Config struct {
 	CORS      CORSConfig      `koanf:"cors"`
 	WebSocket WebSocketConfig `koanf:"websocket"`
 	Logging   LoggingConfig   `koanf:"logging"`
+	Smart     SmartConfig     `koanf:"smart"`
+}
+
+type SmartConfig struct {
+	Enabled bool   `koanf:"enabled"`
+	BaseURL string `koanf:"base_url"`
 }
 
 type ServerConfig struct {

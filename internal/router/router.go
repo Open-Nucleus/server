@@ -23,6 +23,7 @@ type Config struct {
 	FormularyHandler *handler.FormularyHandler
 	AnchorHandler    *handler.AnchorHandler
 	SupplyHandler    *handler.SupplyHandler
+	SmartHandler     *handler.SmartHandler
 	FHIRHandler      *fhirhandler.FHIRHandler
 	SchemaValidator  *middleware.SchemaValidator
 	JWTAuth          *middleware.JWTAuth
@@ -45,12 +46,30 @@ func New(cfg Config) http.Handler {
 		model.Success(w, http.StatusOK, map[string]string{"status": "healthy"})
 	})
 
+	// SMART on FHIR discovery (public, no auth)
+	if cfg.SmartHandler != nil {
+		r.Get("/.well-known/smart-configuration", cfg.SmartHandler.SmartConfiguration)
+	}
+
 	// FHIR metadata endpoint (no auth — public discovery)
 	r.Get("/fhir/metadata", handler.CapabilityStatementHandler())
 
 	// FHIR R4 REST API (/fhir/{Type}) — authenticated, raw FHIR JSON
 	if cfg.FHIRHandler != nil {
 		cfg.FHIRHandler.RegisterRoutes(r, cfg.JWTAuth, cfg.RateLimiter)
+	}
+
+	// SMART OAuth2 endpoints (outside /api/v1 — standard OAuth2 paths)
+	if cfg.SmartHandler != nil {
+		r.Route("/auth/smart", func(r chi.Router) {
+			r.Use(cfg.RateLimiter.Middleware(middleware.CategoryAuth))
+			r.With(cfg.JWTAuth.Middleware).Get("/authorize", cfg.SmartHandler.Authorize)
+			r.Post("/token", cfg.SmartHandler.Token)
+			r.With(cfg.JWTAuth.Middleware).Post("/revoke", cfg.SmartHandler.Revoke)
+			r.With(cfg.JWTAuth.Middleware).Post("/introspect", cfg.SmartHandler.Introspect)
+			r.With(cfg.JWTAuth.Middleware, middleware.RequirePermission(model.PermSmartRegister)).Post("/register", cfg.SmartHandler.Register)
+			r.With(cfg.JWTAuth.Middleware, middleware.RequirePermission(model.PermSmartLaunch)).Post("/launch", cfg.SmartHandler.Launch)
+		})
 	}
 
 	r.Route("/api/v1", func(r chi.Router) {
@@ -591,6 +610,16 @@ func New(cfg Config) http.Handler {
 					middleware.RequirePermission(model.PermSupplyRead),
 				).Get("/redistribution", cfg.SupplyHandler.Redistribution)
 			})
+
+			// SMART client management (admin only)
+			if cfg.SmartHandler != nil {
+				r.Route("/smart/clients", func(r chi.Router) {
+					r.With(middleware.RequirePermission(model.PermDeviceManage)).Get("/", cfg.SmartHandler.ListClients)
+					r.With(middleware.RequirePermission(model.PermDeviceManage)).Get("/{id}", cfg.SmartHandler.GetClient)
+					r.With(middleware.RequirePermission(model.PermDeviceManage)).Put("/{id}", cfg.SmartHandler.UpdateClient)
+					r.With(middleware.RequirePermission(model.PermDeviceManage)).Delete("/{id}", cfg.SmartHandler.DeleteClient)
+				})
+			}
 
 			// WebSocket endpoint (stub for now — Phase 5)
 			r.Get("/ws", handler.StubHandler())

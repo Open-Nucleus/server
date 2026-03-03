@@ -18,6 +18,13 @@ type NucleusClaims struct {
 	Permissions []string `json:"permissions"`
 	SiteScope   string   `json:"site_scope"` // "local" or "regional"
 	TokenType   string   `json:"token_type"` // "access" or "refresh"
+
+	// SMART on FHIR fields (present only on OAuth2 tokens).
+	Scope           string `json:"scope,omitempty"`            // space-delimited SMART scopes
+	ClientID        string `json:"client_id,omitempty"`        // OAuth2 client ID
+	FHIRUser        string `json:"fhirUser,omitempty"`         // "Practitioner/{id}"
+	LaunchPatient   string `json:"patient,omitempty"`          // patient launch context
+	LaunchEncounter string `json:"encounter,omitempty"`        // encounter launch context
 }
 
 // SignToken creates a signed JWT using Ed25519 (EdDSA).
@@ -84,5 +91,36 @@ func NewRefreshClaims(subject, deviceID, jti, issuer string, lifetime time.Durat
 		},
 		DeviceID:  deviceID,
 		TokenType: "refresh",
+	}
+}
+
+// NewSmartAccessClaims creates access token claims with SMART on FHIR fields.
+func NewSmartAccessClaims(
+	subject, deviceID, nodeID, siteID, role string,
+	permissions []string, siteScope string,
+	scope, clientID, fhirUser, patientID, encounterID string,
+	jti, issuer string, lifetime time.Duration,
+) NucleusClaims {
+	now := time.Now()
+	return NucleusClaims{
+		RegisteredClaims: jwt.RegisteredClaims{
+			Issuer:    issuer,
+			Subject:   subject,
+			ID:        jti,
+			IssuedAt:  jwt.NewNumericDate(now),
+			ExpiresAt: jwt.NewNumericDate(now.Add(lifetime)),
+		},
+		DeviceID:        deviceID,
+		NodeID:          nodeID,
+		SiteID:          siteID,
+		Role:            role,
+		Permissions:     permissions,
+		SiteScope:       siteScope,
+		TokenType:       "access",
+		Scope:           scope,
+		ClientID:        clientID,
+		FHIRUser:        fhirUser,
+		LaunchPatient:   patientID,
+		LaunchEncounter: encounterID,
 	}
 }

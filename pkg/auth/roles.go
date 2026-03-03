@@ -60,6 +60,10 @@ const (
 	// Flag permissions
 	PermFlagRead  = "flag:read"
 	PermFlagWrite = "flag:write"
+
+	// SMART on FHIR permissions
+	PermSmartLaunch   = "smart:launch"
+	PermSmartRegister = "smart:register"
 )
 
 // Role constants.
@@ -133,6 +137,7 @@ var roleDefinitions = map[string]RoleDefinition{
 			PermAnchorRead,
 			PermSupplyRead,
 			PermFlagRead, PermFlagWrite,
+			PermSmartLaunch,
 		},
 		SiteScope: "local",
 	},
@@ -154,6 +159,7 @@ var roleDefinitions = map[string]RoleDefinition{
 			PermSupplyRead, PermSupplyWrite,
 			PermDeviceManage, PermRoleAssign,
 			PermFlagRead, PermFlagWrite,
+			PermSmartLaunch, PermSmartRegister,
 		},
 		SiteScope: "local",
 	},
@@ -175,6 +181,7 @@ var roleDefinitions = map[string]RoleDefinition{
 			PermSupplyRead, PermSupplyWrite,
 			PermDeviceManage, PermRoleAssign,
 			PermFlagRead, PermFlagWrite,
+			PermSmartLaunch, PermSmartRegister,
 		},
 		SiteScope: "regional",
 	},

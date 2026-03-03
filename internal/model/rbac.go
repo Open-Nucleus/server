@@ -35,6 +35,9 @@ const (
 	PermAnchorTrigger     = "anchor:trigger"
 	PermSupplyRead        = "supply:read"
 	PermSupplyWrite       = "supply:write"
+	PermSmartLaunch       = "smart:launch"
+	PermSmartRegister     = "smart:register"
+	PermDeviceManage      = "device:manage"
 )
 
 // RolePermissions maps each role to its allowed permissions per spec section 12.2.
@@ -60,6 +63,7 @@ var RolePermissions = map[string][]string{
 		PermAlertRead, PermAlertWrite,
 		PermSyncRead, PermFormularyRead,
 		PermAnchorRead, PermSupplyRead,
+		PermSmartLaunch,
 	},
 	RoleSiteAdmin: {
 		PermPatientRead, PermPatientWrite,
@@ -74,6 +78,8 @@ var RolePermissions = map[string][]string{
 		PermFormularyRead, PermFormularyWrite,
 		PermAnchorRead, PermAnchorTrigger,
 		PermSupplyRead, PermSupplyWrite,
+		PermDeviceManage,
+		PermSmartLaunch, PermSmartRegister,
 	},
 	RoleRegionalAdmin: {
 		PermPatientRead, PermPatientWrite,
@@ -88,6 +94,8 @@ var RolePermissions = map[string][]string{
 		PermFormularyRead, PermFormularyWrite,
 		PermAnchorRead, PermAnchorTrigger,
 		PermSupplyRead, PermSupplyWrite,
+		PermDeviceManage,
+		PermSmartLaunch, PermSmartRegister,
 	},
 }
 

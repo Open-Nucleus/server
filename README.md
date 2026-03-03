@@ -53,7 +53,7 @@ Flutter App (HTTP REST/JSON)
 
 | Service | Port | RPCs | Status |
 |---------|------|------|--------|
-| **Auth** | :50053 | 15 | Ed25519 challenge-response, EdDSA JWT, RBAC (5 roles), device registry |
+| **Auth** | :50053 | 26 | Ed25519 challenge-response, EdDSA JWT, RBAC (5 roles), device registry, SMART on FHIR (11 RPCs: OAuth2, client mgmt, launch) |
 | **Patient** | :50051 | 49 | FHIR R4 CRUD, 13 indexed resource types, clinical sub-resources, generic top-level CRUD, FTS5 search, patient matching |
 | **Sync** | :50052 | ~25 | Transport-agnostic sync, FHIR-aware merge driver, conflict resolution, event bus |
 | **Formulary** | :50054 | 16 | WHO essential medicines, drug interactions, allergy cross-reactivity, stock management |
@@ -71,11 +71,11 @@ cmd/
 internal/
 ├── config/                      Koanf YAML config loader
 ├── server/                      HTTP server with graceful shutdown
-├── router/                      chi route tree — ~95 REST endpoints + ~85 FHIR endpoints + middleware scoping
-├── middleware/                   7-stage pipeline (ratelimit, requestid, jwt, rbac, validator, cors, audit)
-├── handler/                     HTTP handlers (auth, patient, clinical, resource, sync, conflict, sentinel, formulary, anchor, supply)
+├── router/                      chi route tree — ~95 REST + ~85 FHIR + 11 SMART endpoints + middleware scoping
+├── middleware/                   8-stage pipeline (ratelimit, requestid, jwt, rbac, smartscope, validator, cors, audit)
+├── handler/                     HTTP handlers (auth, patient, clinical, resource, sync, conflict, sentinel, formulary, anchor, supply, smart)
 │   └── fhir/                   FHIR R4 REST API handlers (read, search, write, $everything, content negotiation)
-├── service/                     8 interfaces + gRPC adapters (decouples handlers from transport)
+├── service/                     9 interfaces + gRPC adapters (decouples handlers from transport)
 ├── grpcclient/                  Connection pool for 6 backend services
 └── model/                       Response envelope, error codes, pagination, JWT claims, RBAC
 pkg/
@@ -83,6 +83,7 @@ pkg/
 ├── gitstore/                    Git operations via go-git/v5 (pure Go)
 ├── sqliteindex/                 SQLite query index via modernc.org/sqlite (pure Go, no CGO)
 ├── auth/                        Ed25519 crypto, EdDSA JWT, nonce store, RBAC, brute-force guard
+├── smart/                       SMART on FHIR v2 (scope parser, OAuth2 auth code + PKCE, client model, launch tokens, configuration)
 ├── merge/                       FHIR-aware merge driver (3-tier conflict classification)
 └── merge/openanchor/            Merkle tree, did:key, Verifiable Credentials, base58btc
 services/
@@ -92,7 +93,7 @@ services/
 ├── formulary/                   Formulary Service (drug DB, interactions, stock)
 ├── anchor/                      Anchor Service (Merkle anchoring, DID, VCs)
 └── sentinel/                    Sentinel Agent (Python — alerts, supply, Ollama sidecar)
-proto/                           Protobuf definitions (common, auth, patient, sync, formulary, anchor, sentinel)
+proto/                           Protobuf definitions (common, auth, patient, sync, formulary, anchor, sentinel, smart)
 schemas/                         8 JSON schemas for FHIR resource validation
 ```
 
@@ -108,7 +109,8 @@ Every protected request passes through these stages in order:
 | 4 | RBAC Enforcer | Role permissions against endpoint requirements |
 | 5 | Schema Validator | JSON schema validation for POST/PUT FHIR bodies |
 | 6 | CORS | Configurable allowed origins |
-| 7 | Audit Logger | JSON structured log of every request |
+| 7 | SMART Scope | SMART v2 scope enforcement on FHIR endpoints (patient-context restriction) |
+| 8 | Audit Logger | JSON structured log of every request |
 
 ## RBAC Roles
 
@@ -145,6 +147,7 @@ All settings in [`config.yaml`](./config.yaml) — server port, gRPC service add
 - **Git as source of truth** — All clinical data in a Git repository. SQLite is a rebuildable index.
 - **Offline-first** — Every feature works without network. Sync is opportunistic.
 - **FHIR R4** — Interoperable with global health systems. CapabilityStatement at `/fhir/metadata`. 5 custom profiles for African deployment (national IDs, WHO vaccines, growth monitoring, AI provenance, DHIS2).
+- **SMART on FHIR** — OAuth2 authorization code + PKCE with SMART v2 scopes. Third-party apps connect via standardized EHR/standalone launch. All OAuth2 flows execute locally — no cloud IdP.
 - **Provenance by default** — Every clinical write auto-generates a FHIR Provenance resource (HL7 v3-DataOperation coding, author/custodian agents).
 - **No new module deps for anchor crypto** — Merkle trees, did:key, and VCs use only Go stdlib (crypto/ed25519, crypto/sha256).
 
