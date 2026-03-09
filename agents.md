@@ -1,7 +1,7 @@
 # Open Nucleus — Architectural Memory
 
 > Living document. Updated after every major feature or structural change.
-> Last updated: FHIR Phase 4 — SMART on FHIR (2026-03-03)
+> Last updated: Overhaul Phase 3 — Sync Crypto Fix (2026-03-09)
 
 ---
 
@@ -501,6 +501,19 @@ services/sync/
 - **priority.go** — `ClassifyResource()` → 5-tier sync priority based on resource type and status
 - **merge_test.go** — 19 tests
 
+### pkg/sync — Transport-Layer Cryptography
+
+ECDH-based key exchange and AES-256-GCM authenticated encryption for node-to-node sync bundles. Replaces the previous broken scheme that prepended the AES key to ciphertext.
+
+- **transport_crypto.go** — `DeriveSharedKey()` (Ed25519 → X25519 → ECDH → HKDF-SHA256), `EncryptPayload()`, `DecryptPayload()` (AES-256-GCM)
+- **transport_crypto_test.go** — 11 tests (shared key derivation, round-trip, wrong-key rejection, determinism, nonce uniqueness, edge cases)
+
+**Key design decisions:**
+- Ed25519 → X25519 conversion: private key via SHA-512 + clamping (RFC 8032), public key via Edwards → Montgomery (`u = (1+y)/(1-y) mod p`)
+- HKDF salt: `open-nucleus-sync-v1`, info: `transport-encryption`
+- Bundle export uses ECIES pattern: ephemeral keypair per bundle, ephemeral public key prepended to ciphertext
+- No external deps beyond `golang.org/x/crypto` (curve25519, hkdf)
+
 ## Formulary Service (services/formulary/)
 
 Port :50054, 16 RPCs. Drug database, interaction checking, allergy cross-reactivity, stock management. Dosing RPCs return "not configured" cleanly (awaiting open-pharm-dosing integration).
@@ -790,4 +803,5 @@ internal/
 | FHIR Phase 2 — REST API Layer | Standards-compliant `/fhir/{Type}` REST API. Raw FHIR JSON (no envelope), Bundle for search, OperationOutcome for errors, ETag/conditional reads. ~50 new endpoints auto-generated from resource registry. Dispatch table, content negotiation, $everything. 22 handler tests. | COMPLETE |
 | FHIR Phase 3 — FHIR Profiles | 5 Open Nucleus profiles (Patient, Immunization, GrowthObservation, DetectedIssue, MeasureReport). Extension utilities, profile registry, profile-aware validation. MeasureReport full stack (17 resource types). StructureDefinition read-only endpoint. CapabilityStatement supportedProfile. 58 pkg/fhir tests. | COMPLETE |
 | FHIR Phase 4 — SMART on FHIR | OAuth2 auth code + PKCE, SMART v2 scopes, EHR launch, client registration, scope middleware on FHIR endpoints. 11 gRPC RPCs, 11 HTTP endpoints, CapabilityStatement SMART security, 37 new tests (408 total). | COMPLETE |
+| Overhaul Phase 3 — Sync Crypto Fix | Replaced broken AES-GCM (key-in-ciphertext) with ECDH X25519 + HKDF-SHA256 + AES-256-GCM. New `pkg/sync` (transport_crypto.go), ECIES-pattern bundle encryption in SyncEngine. 11 new crypto tests, 23 total sync tests. | COMPLETE |
 | 6 — WebSocket + Hardening | Real-time events, production config, TLS, metrics | Not started |

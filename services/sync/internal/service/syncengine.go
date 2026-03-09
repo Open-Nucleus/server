@@ -1,12 +1,10 @@
 package service
 
 import (
-	"crypto/aes"
-	"crypto/cipher"
+	"crypto/ed25519"
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
-	"io"
 	"sync"
 	"time"
 
@@ -14,6 +12,7 @@ import (
 
 	"github.com/FibrinLab/open-nucleus/pkg/gitstore"
 	"github.com/FibrinLab/open-nucleus/pkg/merge"
+	synccrypto "github.com/FibrinLab/open-nucleus/pkg/sync"
 	"github.com/FibrinLab/open-nucleus/services/sync/internal/config"
 	"github.com/FibrinLab/open-nucleus/services/sync/internal/store"
 	"github.com/FibrinLab/open-nucleus/services/sync/internal/transport"
@@ -41,6 +40,8 @@ type SyncEngine struct {
 	queue       *SyncQueue
 	transports  map[string]transport.Adapter
 
+	identityKey ed25519.PrivateKey // node's Ed25519 identity key for ECDH
+
 	state         SyncState
 	currentSyncID string
 	currentPeer   string
@@ -51,6 +52,7 @@ type SyncEngine struct {
 }
 
 // NewSyncEngine creates a new sync engine.
+// If identityKey is nil, an ephemeral Ed25519 keypair is generated.
 func NewSyncEngine(
 	cfg *config.Config,
 	git gitstore.Store,
@@ -61,6 +63,10 @@ func NewSyncEngine(
 	eventBus *EventBus,
 	nodeID, siteID string,
 ) *SyncEngine {
+	// Generate an ephemeral identity key if none provided.
+	// In production, the identity key is loaded from the node's keystore.
+	_, priv, _ := ed25519.GenerateKey(rand.Reader)
+
 	return &SyncEngine{
 		cfg:         cfg,
 		git:         git,
@@ -71,11 +77,17 @@ func NewSyncEngine(
 		eventBus:    eventBus,
 		queue:       NewSyncQueue(),
 		transports:  make(map[string]transport.Adapter),
+		identityKey: priv,
 		state:       StateIdle,
 		nodeID:      nodeID,
 		siteID:      siteID,
 		startedAt:   time.Now(),
 	}
+}
+
+// IdentityPublicKey returns this node's Ed25519 public key.
+func (se *SyncEngine) IdentityPublicKey() ed25519.PublicKey {
+	return se.identityKey.Public().(ed25519.PublicKey)
 }
 
 // RegisterTransport adds a transport adapter.
@@ -188,7 +200,15 @@ func (se *SyncEngine) UptimeSeconds() int64 {
 	return int64(time.Since(se.startedAt).Seconds())
 }
 
-// ExportBundle creates an encrypted bundle of resources.
+// ExportBundle creates an encrypted bundle of resources using ECDH + AES-256-GCM.
+//
+// The bundle is encrypted using an ECIES-like scheme:
+//  1. Generate an ephemeral Ed25519 keypair
+//  2. Derive a shared key via ECDH(ephemeral_private, node_identity_public)
+//  3. Encrypt the bundle with AES-256-GCM using the derived key
+//  4. Prepend the ephemeral public key (32 bytes) so the recipient can derive the same key
+//
+// Output format: [32-byte ephemeral public key][encrypted payload]
 func (se *SyncEngine) ExportBundle(resourceTypes []string, since string) ([]byte, int, error) {
 	var resources []json.RawMessage
 
@@ -217,19 +237,53 @@ func (se *SyncEngine) ExportBundle(resourceTypes []string, since string) ([]byte
 		return nil, 0, fmt.Errorf("marshal bundle: %w", err)
 	}
 
-	// Encrypt with AES-256-GCM
-	encrypted, err := encryptAESGCM(bundle)
+	// Generate ephemeral keypair for this bundle.
+	ephPub, ephPriv, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		return nil, 0, fmt.Errorf("generate ephemeral key: %w", err)
+	}
+
+	// Derive shared key: ECDH(ephemeral_private, our_identity_public).
+	// The recipient (who holds our identity private key) will do
+	// ECDH(identity_private, ephemeral_public) and get the same key.
+	sharedKey, err := synccrypto.DeriveSharedKey(ephPriv, se.IdentityPublicKey())
+	if err != nil {
+		return nil, 0, fmt.Errorf("derive shared key: %w", err)
+	}
+
+	encrypted, err := synccrypto.EncryptPayload(sharedKey, bundle)
 	if err != nil {
 		return nil, 0, fmt.Errorf("encrypt bundle: %w", err)
 	}
 
-	return encrypted, len(resources), nil
+	// Prepend ephemeral public key (32 bytes) to the encrypted payload.
+	result := make([]byte, ed25519.PublicKeySize+len(encrypted))
+	copy(result, ephPub)
+	copy(result[ed25519.PublicKeySize:], encrypted)
+
+	return result, len(resources), nil
 }
 
-// ImportBundle decrypts and imports a bundle.
+// ImportBundle decrypts and imports a bundle encrypted by ExportBundle.
+//
+// It extracts the ephemeral public key from the bundle header, derives
+// the shared key via ECDH(identity_private, ephemeral_public), and decrypts.
 func (se *SyncEngine) ImportBundle(bundleData []byte) (int, int, []string, error) {
-	// Decrypt
-	decrypted, err := decryptAESGCM(bundleData)
+	if len(bundleData) < ed25519.PublicKeySize {
+		return 0, 0, nil, fmt.Errorf("bundle too short: need at least %d bytes for public key header", ed25519.PublicKeySize)
+	}
+
+	// Extract ephemeral public key.
+	ephPub := ed25519.PublicKey(bundleData[:ed25519.PublicKeySize])
+	ciphertext := bundleData[ed25519.PublicKeySize:]
+
+	// Derive shared key: ECDH(our_identity_private, ephemeral_public).
+	sharedKey, err := synccrypto.DeriveSharedKey(se.identityKey, ephPub)
+	if err != nil {
+		return 0, 0, nil, fmt.Errorf("derive shared key: %w", err)
+	}
+
+	decrypted, err := synccrypto.DecryptPayload(sharedKey, ciphertext)
 	if err != nil {
 		return 0, 0, nil, fmt.Errorf("decrypt bundle: %w", err)
 	}
@@ -259,65 +313,4 @@ func containsStr(s, sub string) bool {
 		}
 	}
 	return false
-}
-
-// encryptAESGCM encrypts data with a random AES-256-GCM key.
-// The key is prepended to the ciphertext (32 bytes key + 12 bytes nonce + ciphertext + tag).
-func encryptAESGCM(data []byte) ([]byte, error) {
-	key := make([]byte, 32)
-	if _, err := io.ReadFull(rand.Reader, key); err != nil {
-		return nil, err
-	}
-
-	block, err := aes.NewCipher(key)
-	if err != nil {
-		return nil, err
-	}
-
-	gcm, err := cipher.NewGCM(block)
-	if err != nil {
-		return nil, err
-	}
-
-	nonce := make([]byte, gcm.NonceSize())
-	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
-		return nil, err
-	}
-
-	ciphertext := gcm.Seal(nonce, nonce, data, nil)
-	// Prepend key so recipient can decrypt (in production, key exchange happens via handshake)
-	result := make([]byte, 32+len(ciphertext))
-	copy(result, key)
-	copy(result[32:], ciphertext)
-	return result, nil
-}
-
-// decryptAESGCM decrypts data encrypted by encryptAESGCM.
-func decryptAESGCM(data []byte) ([]byte, error) {
-	if len(data) < 44 { // 32 key + 12 nonce minimum
-		return nil, fmt.Errorf("ciphertext too short")
-	}
-
-	key := data[:32]
-	ciphertext := data[32:]
-
-	block, err := aes.NewCipher(key)
-	if err != nil {
-		return nil, err
-	}
-
-	gcm, err := cipher.NewGCM(block)
-	if err != nil {
-		return nil, err
-	}
-
-	nonceSize := gcm.NonceSize()
-	if len(ciphertext) < nonceSize {
-		return nil, fmt.Errorf("ciphertext too short for nonce")
-	}
-
-	nonce := ciphertext[:nonceSize]
-	ciphertext = ciphertext[nonceSize:]
-
-	return gcm.Open(nil, nonce, ciphertext, nil)
 }
