@@ -61,6 +61,17 @@ type Index interface {
 	GetProcedureByID(id string) (*fhir.ProcedureRow, error)
 	GetFlagByID(id string) (*fhir.FlagRow, error)
 
+	// Blind index operations
+	UpsertPatientNgrams(patientID string, field string, ngramHashes []string) error
+	SearchPatientsByNgrams(ngramHashes []string, opts fhir.PaginationOpts) ([]*fhir.PatientRow, *fhir.Pagination, error)
+
+	// Consent operations
+	UpsertConsent(row *fhir.ConsentRow) error
+	GetConsent(id string) (*fhir.ConsentRow, error)
+	ListConsentsForPatient(patientID string, opts fhir.PaginationOpts) ([]*fhir.ConsentRow, *fhir.Pagination, error)
+	GetActiveConsent(patientID, performerID, scopeCode string) (*fhir.ConsentRow, error)
+	DeleteConsent(id string) error
+
 	GetPatientBundle(patientID string) (*BundleResult, error)
 	SearchPatients(query string, opts fhir.PaginationOpts) ([]*fhir.PatientRow, *fhir.Pagination, error)
 	GetTimeline(patientID string, opts fhir.PaginationOpts) ([]fhir.TimelineEvent, *fhir.Pagination, error)
@@ -941,6 +952,177 @@ func (idx *sqliteIndex) ListMeasureReports(opts fhir.PaginationOpts) ([]*fhir.Me
 		results = append(results, m)
 	}
 	return results, pg, rows.Err()
+}
+
+// --- Blind index methods ---
+
+func (idx *sqliteIndex) UpsertPatientNgrams(patientID string, field string, ngramHashes []string) error {
+	tx, err := idx.db.Begin()
+	if err != nil {
+		return fmt.Errorf("begin tx: %w", err)
+	}
+
+	// Delete existing n-grams for this patient+field
+	if _, err := tx.Exec("DELETE FROM patients_ngrams WHERE patient_id = ? AND field = ?", patientID, field); err != nil {
+		tx.Rollback()
+		return fmt.Errorf("delete old ngrams: %w", err)
+	}
+
+	// Insert new n-grams
+	stmt, err := tx.Prepare("INSERT OR IGNORE INTO patients_ngrams (patient_id, ngram_hash, field) VALUES (?, ?, ?)")
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("prepare stmt: %w", err)
+	}
+	defer stmt.Close()
+
+	for _, hash := range ngramHashes {
+		if _, err := stmt.Exec(patientID, hash, field); err != nil {
+			tx.Rollback()
+			return fmt.Errorf("insert ngram: %w", err)
+		}
+	}
+
+	return tx.Commit()
+}
+
+func (idx *sqliteIndex) SearchPatientsByNgrams(ngramHashes []string, opts fhir.PaginationOpts) ([]*fhir.PatientRow, *fhir.Pagination, error) {
+	if len(ngramHashes) == 0 {
+		return nil, &fhir.Pagination{Page: 1, PerPage: 25, Total: 0, TotalPages: 1}, nil
+	}
+
+	// Build IN clause
+	placeholders := ""
+	args := make([]any, len(ngramHashes))
+	for i, h := range ngramHashes {
+		if i > 0 {
+			placeholders += ","
+		}
+		placeholders += "?"
+		args[i] = h
+	}
+
+	// Find patients matching ALL n-grams (intersection via COUNT)
+	countQuery := fmt.Sprintf(`SELECT COUNT(DISTINCT p.id) FROM patients p
+		INNER JOIN patients_ngrams ng ON p.id = ng.patient_id
+		WHERE ng.ngram_hash IN (%s) AND p.active = 1
+		GROUP BY p.id
+		HAVING COUNT(DISTINCT ng.ngram_hash) = ?`, placeholders)
+
+	countArgs := append(args, len(ngramHashes))
+
+	// Count matching patients
+	var total int
+	rows, err := idx.db.Query(countQuery, countArgs...)
+	if err != nil {
+		return nil, nil, err
+	}
+	for rows.Next() {
+		total++
+	}
+	rows.Close()
+
+	pg := paginate(opts, total)
+
+	// Fetch matching patient IDs with pagination
+	query := fmt.Sprintf(`SELECT p.id, p.family_name, p.given_names, p.gender, p.birth_date, p.site_id, p.active, p.last_updated, p.git_blob_hash
+		FROM patients p
+		INNER JOIN patients_ngrams ng ON p.id = ng.patient_id
+		WHERE ng.ngram_hash IN (%s) AND p.active = 1
+		GROUP BY p.id
+		HAVING COUNT(DISTINCT ng.ngram_hash) = ?
+		ORDER BY p.last_updated DESC
+		LIMIT ? OFFSET ?`, placeholders)
+
+	queryArgs := append(args, len(ngramHashes), pg.PerPage, (pg.Page-1)*pg.PerPage)
+
+	pRows, err := idx.db.Query(query, queryArgs...)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer pRows.Close()
+
+	var results []*fhir.PatientRow
+	for pRows.Next() {
+		p := &fhir.PatientRow{}
+		var active int
+		if err := pRows.Scan(&p.ID, &p.FamilyName, &p.GivenNames, &p.Gender, &p.BirthDate, &p.SiteID, &active, &p.LastUpdated, &p.GitBlobHash); err != nil {
+			return nil, nil, err
+		}
+		p.Active = active == 1
+		results = append(results, p)
+	}
+	return results, pg, pRows.Err()
+}
+
+// --- Consent methods ---
+
+func (idx *sqliteIndex) UpsertConsent(row *fhir.ConsentRow) error {
+	_, err := idx.db.Exec(`INSERT OR REPLACE INTO consents (id, patient_id, status, scope_code, performer_id, provision_type, period_start, period_end, category, last_updated, git_blob_hash)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		row.ID, row.PatientID, row.Status, row.ScopeCode, row.PerformerID, row.ProvisionType, row.PeriodStart, row.PeriodEnd, row.Category, row.LastUpdated, row.GitBlobHash)
+	return err
+}
+
+func (idx *sqliteIndex) GetConsent(id string) (*fhir.ConsentRow, error) {
+	row := idx.db.QueryRow(`SELECT id, patient_id, status, scope_code, performer_id, provision_type, period_start, period_end, category, last_updated, git_blob_hash FROM consents WHERE id = ?`, id)
+	c := &fhir.ConsentRow{}
+	err := row.Scan(&c.ID, &c.PatientID, &c.Status, &c.ScopeCode, &c.PerformerID, &c.ProvisionType, &c.PeriodStart, &c.PeriodEnd, &c.Category, &c.LastUpdated, &c.GitBlobHash)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return c, nil
+}
+
+func (idx *sqliteIndex) ListConsentsForPatient(patientID string, opts fhir.PaginationOpts) ([]*fhir.ConsentRow, *fhir.Pagination, error) {
+	var total int
+	if err := idx.db.QueryRow("SELECT COUNT(*) FROM consents WHERE patient_id = ?", patientID).Scan(&total); err != nil {
+		return nil, nil, err
+	}
+	pg := paginate(opts, total)
+
+	rows, err := idx.db.Query(`SELECT id, patient_id, status, scope_code, performer_id, provision_type, period_start, period_end, category, last_updated, git_blob_hash FROM consents WHERE patient_id = ? ORDER BY last_updated DESC LIMIT ? OFFSET ?`,
+		patientID, pg.PerPage, (pg.Page-1)*pg.PerPage)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer rows.Close()
+
+	var results []*fhir.ConsentRow
+	for rows.Next() {
+		c := &fhir.ConsentRow{}
+		if err := rows.Scan(&c.ID, &c.PatientID, &c.Status, &c.ScopeCode, &c.PerformerID, &c.ProvisionType, &c.PeriodStart, &c.PeriodEnd, &c.Category, &c.LastUpdated, &c.GitBlobHash); err != nil {
+			return nil, nil, err
+		}
+		results = append(results, c)
+	}
+	return results, pg, rows.Err()
+}
+
+func (idx *sqliteIndex) GetActiveConsent(patientID, performerID, scopeCode string) (*fhir.ConsentRow, error) {
+	row := idx.db.QueryRow(`SELECT id, patient_id, status, scope_code, performer_id, provision_type, period_start, period_end, category, last_updated, git_blob_hash
+		FROM consents
+		WHERE patient_id = ? AND performer_id = ? AND scope_code = ? AND status = 'active' AND provision_type = 'permit'
+		AND (period_start IS NULL OR period_start <= datetime('now'))
+		AND (period_end IS NULL OR period_end >= datetime('now'))
+		ORDER BY last_updated DESC LIMIT 1`, patientID, performerID, scopeCode)
+	c := &fhir.ConsentRow{}
+	err := row.Scan(&c.ID, &c.PatientID, &c.Status, &c.ScopeCode, &c.PerformerID, &c.ProvisionType, &c.PeriodStart, &c.PeriodEnd, &c.Category, &c.LastUpdated, &c.GitBlobHash)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return c, nil
+}
+
+func (idx *sqliteIndex) DeleteConsent(id string) error {
+	_, err := idx.db.Exec("DELETE FROM consents WHERE id = ?", id)
+	return err
 }
 
 // --- Meta ---

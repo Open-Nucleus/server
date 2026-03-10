@@ -48,6 +48,8 @@ func Validate(resourceType string, fhirJSON []byte) []FieldError {
 		return validateLocation(resource)
 	case ResourceMeasureReport:
 		return validateMeasureReport(resource)
+	case ResourceConsent:
+		return validateConsent(resource)
 	default:
 		return nil
 	}

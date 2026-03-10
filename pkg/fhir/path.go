@@ -23,6 +23,8 @@ func GitPath(resourceType, patientID, resourceID string) string {
 		return fmt.Sprintf("patients/%s/immunizations/%s.json", patientID, resourceID)
 	case ResourceProcedure:
 		return fmt.Sprintf("patients/%s/procedures/%s.json", patientID, resourceID)
+	case ResourceConsent:
+		return fmt.Sprintf("patients/%s/consents/%s.json", patientID, resourceID)
 	case ResourcePractitioner:
 		return fmt.Sprintf("practitioners/%s.json", resourceID)
 	case ResourceOrganization:

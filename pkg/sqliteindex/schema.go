@@ -153,6 +153,8 @@ CREATE INDEX IF NOT EXISTS idx_queue_enqueued ON anchor_queue(enqueued_at);
 
 const dropDDL = `
 DROP TABLE IF EXISTS patient_summaries;
+DROP TABLE IF EXISTS consents;
+DROP TABLE IF EXISTS patients_ngrams;
 DROP TABLE IF EXISTS flags;
 DROP TABLE IF EXISTS allergy_intolerances;
 DROP TABLE IF EXISTS medication_requests;
@@ -433,6 +435,34 @@ CREATE TABLE IF NOT EXISTS detected_issues (
 CREATE INDEX IF NOT EXISTS idx_di_severity ON detected_issues(severity);
 CREATE INDEX IF NOT EXISTS idx_di_status ON detected_issues(status);
 CREATE INDEX IF NOT EXISTS idx_di_date ON detected_issues(identified_datetime);
+
+CREATE TABLE IF NOT EXISTS patients_ngrams (
+    patient_id TEXT NOT NULL REFERENCES patients(id),
+    ngram_hash TEXT NOT NULL,
+    field TEXT NOT NULL,
+    PRIMARY KEY (patient_id, ngram_hash, field)
+);
+
+CREATE INDEX IF NOT EXISTS idx_ngram_hash ON patients_ngrams(ngram_hash);
+
+CREATE TABLE IF NOT EXISTS consents (
+    id TEXT PRIMARY KEY,
+    patient_id TEXT NOT NULL,
+    status TEXT NOT NULL,
+    scope_code TEXT NOT NULL,
+    performer_id TEXT NOT NULL,
+    provision_type TEXT NOT NULL,
+    period_start TEXT,
+    period_end TEXT,
+    category TEXT,
+    last_updated TEXT NOT NULL,
+    git_blob_hash TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_consent_patient ON consents(patient_id);
+CREATE INDEX IF NOT EXISTS idx_consent_status ON consents(status);
+CREATE INDEX IF NOT EXISTS idx_consent_performer ON consents(performer_id);
+CREATE INDEX IF NOT EXISTS idx_consent_scope ON consents(scope_code);
 
 CREATE TABLE IF NOT EXISTS patient_summaries (
     patient_id TEXT PRIMARY KEY REFERENCES patients(id),

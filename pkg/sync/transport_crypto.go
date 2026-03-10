@@ -12,12 +12,11 @@ import (
 	"crypto/ed25519"
 	"crypto/rand"
 	"crypto/sha256"
-	"crypto/sha512"
 	"errors"
 	"fmt"
 	"io"
-	"math/big"
 
+	nucleocrypto "github.com/FibrinLab/open-nucleus/pkg/crypto"
 	"golang.org/x/crypto/curve25519"
 	"golang.org/x/crypto/hkdf"
 )
@@ -137,78 +136,12 @@ func DecryptPayload(sharedKey, ciphertext []byte) ([]byte, error) {
 	return plaintext, nil
 }
 
-// edPrivateToX25519 converts an Ed25519 private key to an X25519 private key.
-//
-// Per RFC 8032 Section 5.1.5, the Ed25519 private scalar is computed by hashing
-// the 32-byte seed with SHA-512, then clamping bits in the lower 32 bytes.
-// Those clamped 32 bytes are the X25519 private key (scalar).
+// edPrivateToX25519 delegates to the shared crypto package.
 func edPrivateToX25519(edPriv ed25519.PrivateKey) []byte {
-	seed := edPriv.Seed() // 32-byte seed
-	h := sha512.Sum512(seed)
-	// Clamp per RFC 7748 / RFC 8032
-	h[0] &= 248
-	h[31] &= 127
-	h[31] |= 64
-	x25519Key := make([]byte, 32)
-	copy(x25519Key, h[:32])
-	return x25519Key
+	return nucleocrypto.EdPrivateToX25519(edPriv)
 }
 
-// edPublicToX25519 converts an Ed25519 public key (Edwards y-coordinate) to an
-// X25519 public key (Montgomery u-coordinate).
-//
-// The conversion formula is:  u = (1 + y) / (1 - y)  mod p
-// where p = 2^255 - 19 (the field prime for Curve25519).
+// edPublicToX25519 delegates to the shared crypto package.
 func edPublicToX25519(edPub ed25519.PublicKey) ([]byte, error) {
-	// The Ed25519 public key is a 32-byte compressed Edwards point.
-	// The y-coordinate is stored in the lower 255 bits (little-endian),
-	// and the top bit of byte 31 is the sign of x.
-
-	// Extract y (clear the sign bit)
-	yBytes := make([]byte, 32)
-	copy(yBytes, edPub)
-	yBytes[31] &= 0x7f // clear sign bit
-
-	// Convert from little-endian to big.Int
-	y := new(big.Int)
-	// big.Int expects big-endian, so reverse
-	reversed := make([]byte, 32)
-	for i := 0; i < 32; i++ {
-		reversed[i] = yBytes[31-i]
-	}
-	y.SetBytes(reversed)
-
-	// p = 2^255 - 19
-	p := new(big.Int).SetBit(new(big.Int), 255, 1)
-	p.Sub(p, big.NewInt(19))
-
-	// u = (1 + y) * (1 - y)^(-1) mod p
-	one := big.NewInt(1)
-	numerator := new(big.Int).Add(one, y)
-	numerator.Mod(numerator, p)
-
-	denominator := new(big.Int).Sub(one, y)
-	denominator.Mod(denominator, p)
-
-	// Check for degenerate case (y == 1 → denominator == 0)
-	if denominator.Sign() == 0 {
-		return nil, errors.New("sync/crypto: degenerate public key (y == 1)")
-	}
-
-	denominatorInv := new(big.Int).ModInverse(denominator, p)
-	if denominatorInv == nil {
-		return nil, errors.New("sync/crypto: failed to compute modular inverse")
-	}
-
-	u := new(big.Int).Mul(numerator, denominatorInv)
-	u.Mod(u, p)
-
-	// Convert u back to 32 bytes little-endian
-	uBytes := u.Bytes() // big-endian
-	result := make([]byte, 32)
-	for i, b := range uBytes {
-		result[len(uBytes)-1-i] = b
-	}
-
-	return result, nil
+	return nucleocrypto.EdPublicToX25519(edPub)
 }

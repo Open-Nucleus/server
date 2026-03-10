@@ -41,8 +41,8 @@ func TestIsKnownResource(t *testing.T) {
 
 func TestAllResourceDefs_Count(t *testing.T) {
 	defs := AllResourceDefs()
-	if len(defs) != 17 {
-		t.Errorf("AllResourceDefs() returned %d defs, want 17", len(defs))
+	if len(defs) != 18 {
+		t.Errorf("AllResourceDefs() returned %d defs, want 18", len(defs))
 	}
 }
 

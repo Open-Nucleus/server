@@ -21,6 +21,7 @@ const (
 	ErrSQLiteIndexFailed   = "SQLITE_INDEX_FAILED"
 	ErrServiceUnavailable  = "SERVICE_UNAVAILABLE"
 	ErrNotImplemented      = "NOT_IMPLEMENTED"
+	ErrConsentRequired     = "CONSENT_REQUIRED"
 )
 
 // ErrorHTTPStatus maps error codes to HTTP status codes.
@@ -42,6 +43,7 @@ var ErrorHTTPStatus = map[string]int{
 	ErrSQLiteIndexFailed:   http.StatusInternalServerError,
 	ErrServiceUnavailable:  http.StatusServiceUnavailable,
 	ErrNotImplemented:      http.StatusNotImplemented,
+	ErrConsentRequired:     http.StatusForbidden,
 }
 
 // WriteError writes a typed error response.

@@ -24,10 +24,12 @@ type Config struct {
 	AnchorHandler    *handler.AnchorHandler
 	SupplyHandler    *handler.SupplyHandler
 	SmartHandler     *handler.SmartHandler
+	ConsentHandler   *handler.ConsentHandler
 	FHIRHandler      *fhirhandler.FHIRHandler
 	SchemaValidator  *middleware.SchemaValidator
 	JWTAuth          *middleware.JWTAuth
 	RateLimiter      *middleware.RateLimiter
+	ConsentMiddleware func(http.Handler) http.Handler
 	CORSOrigins      []string
 	AuditLogger      *slog.Logger
 }
@@ -110,6 +112,11 @@ func New(cfg Config) http.Handler {
 				).Post("/match", cfg.PatientHandler.Match)
 
 				r.Route("/{id}", func(r chi.Router) {
+					// Apply consent middleware on patient-scoped routes (if configured)
+					if cfg.ConsentMiddleware != nil {
+						r.Use(cfg.ConsentMiddleware)
+					}
+
 					r.With(
 						cfg.RateLimiter.Middleware(middleware.CategoryRead),
 						middleware.RequirePermission(model.PermPatientRead),
@@ -285,8 +292,40 @@ func New(cfg Config) http.Handler {
 							middleware.RequirePermission(model.PermEncounterRead),
 						).Get("/{pid}", cfg.PatientHandler.GetProcedure)
 					})
+
+					// Consents (patient-scoped)
+					if cfg.ConsentHandler != nil {
+						r.Route("/consents", func(r chi.Router) {
+							r.With(
+								cfg.RateLimiter.Middleware(middleware.CategoryRead),
+								middleware.RequirePermission(model.PermConsentRead),
+							).Get("/", cfg.ConsentHandler.ListConsents)
+
+							r.With(
+								cfg.RateLimiter.Middleware(middleware.CategoryWrite),
+								middleware.RequirePermission(model.PermConsentWrite),
+							).Post("/", cfg.ConsentHandler.GrantConsent)
+						})
+					}
 				})
 			})
+
+			// Consent management (top-level, for revoke + VC by consent ID)
+			if cfg.ConsentHandler != nil {
+				r.Route("/consents", func(r chi.Router) {
+					r.Route("/{consentId}", func(r chi.Router) {
+						r.With(
+							cfg.RateLimiter.Middleware(middleware.CategoryWrite),
+							middleware.RequirePermission(model.PermConsentWrite),
+						).Delete("/", cfg.ConsentHandler.RevokeConsent)
+
+						r.With(
+							cfg.RateLimiter.Middleware(middleware.CategoryWrite),
+							middleware.RequirePermission(model.PermConsentWrite),
+						).Post("/vc", cfg.ConsentHandler.IssueVC)
+					})
+				})
+			}
 
 			// Practitioner endpoints (top-level)
 			r.Route("/practitioners", func(r chi.Router) {

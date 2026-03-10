@@ -60,8 +60,8 @@ func TestGenerateCapabilityStatement_RestResources(t *testing.T) {
 	}
 
 	resources := rest0["resource"].([]any)
-	if len(resources) != 17 {
-		t.Errorf("resource count = %d, want 17", len(resources))
+	if len(resources) != 18 {
+		t.Errorf("resource count = %d, want 18", len(resources))
 	}
 }
 

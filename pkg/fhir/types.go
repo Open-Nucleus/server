@@ -19,6 +19,7 @@ const (
 	ResourceProvenance           = "Provenance"
 	ResourceMeasureReport        = "MeasureReport"
 	ResourceStructureDefinition  = "StructureDefinition"
+	ResourceConsent              = "Consent"
 )
 
 // Operation constants for commit messages.
@@ -219,6 +220,21 @@ type LocationRow struct {
 	SiteID      string  `json:"site_id"`
 	LastUpdated string  `json:"last_updated"`
 	GitBlobHash string  `json:"git_blob_hash"`
+}
+
+// ConsentRow holds indexed fields extracted from a Consent FHIR resource.
+type ConsentRow struct {
+	ID            string  `json:"id"`
+	PatientID     string  `json:"patient_id"`
+	Status        string  `json:"status"`
+	ScopeCode     string  `json:"scope_code"`
+	PerformerID   string  `json:"performer_id"`
+	ProvisionType string  `json:"provision_type"`
+	PeriodStart   *string `json:"period_start"`
+	PeriodEnd     *string `json:"period_end"`
+	Category      *string `json:"category"`
+	LastUpdated   string  `json:"last_updated"`
+	GitBlobHash   string  `json:"git_blob_hash"`
 }
 
 // MeasureReportRow holds indexed fields extracted from a MeasureReport FHIR resource.

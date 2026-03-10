@@ -206,6 +206,20 @@ func registerAll() {
 		Interactions: []string{"read", "search-type"},
 	})
 
+	// --- Consent (patient-scoped access control) ---
+	register(&ResourceDef{
+		Type:         ResourceConsent,
+		Scope:        PatientScoped,
+		Interactions: []string{"read", "search-type", "create", "update", "delete"},
+		SearchParams: []SearchParamDef{
+			{Name: "patient", Type: "reference", SQLColumn: "patient_id", SQLTable: "consents", FHIRPath: "Consent.patient"},
+			{Name: "status", Type: "token", SQLColumn: "status", SQLTable: "consents", FHIRPath: "Consent.status"},
+			{Name: "scope", Type: "token", SQLColumn: "scope_code", SQLTable: "consents", FHIRPath: "Consent.scope"},
+			{Name: "actor", Type: "reference", SQLColumn: "performer_id", SQLTable: "consents", FHIRPath: "Consent.performer"},
+			{Name: "category", Type: "token", SQLColumn: "category", SQLTable: "consents", FHIRPath: "Consent.category"},
+		},
+	})
+
 	// --- Auto-generated resources ---
 	register(&ResourceDef{
 		Type:         ResourceProvenance,

@@ -990,3 +990,58 @@ type CreateLaunchRequest struct {
 type CreateLaunchResponse struct {
 	LaunchToken string `json:"launch_token"`
 }
+
+// ConsentService defines the interface for consent management operations.
+type ConsentService interface {
+	CheckAccess(ctx context.Context, patientID, performerID, role string) (*ConsentAccessDecision, error)
+	GrantConsent(ctx context.Context, patientID, performerID, scope string, period *ConsentPeriod, category string) (*ConsentGrantResponse, error)
+	RevokeConsent(ctx context.Context, consentID string) error
+	ListConsentsForPatient(ctx context.Context, patientID string, page, perPage int) (*ConsentListResponse, error)
+	IssueConsentVC(ctx context.Context, consentID string) (*ConsentVCResponse, error)
+}
+
+type ConsentAccessDecision struct {
+	Allowed   bool   `json:"allowed"`
+	ConsentID string `json:"consent_id,omitempty"`
+	Reason    string `json:"reason"`
+}
+
+type ConsentPeriod struct {
+	Start string `json:"start"`
+	End   string `json:"end"`
+}
+
+type ConsentGrantResponse struct {
+	ConsentID  string `json:"consent_id"`
+	CommitHash string `json:"commit_hash"`
+	Status     string `json:"status"`
+}
+
+type ConsentListResponse struct {
+	Consents   []ConsentSummary `json:"consents"`
+	Pagination *PaginationMeta  `json:"pagination,omitempty"`
+}
+
+type ConsentSummary struct {
+	ID            string  `json:"id"`
+	PatientID     string  `json:"patient_id"`
+	Status        string  `json:"status"`
+	ScopeCode     string  `json:"scope_code"`
+	PerformerID   string  `json:"performer_id"`
+	ProvisionType string  `json:"provision_type"`
+	PeriodStart   *string `json:"period_start,omitempty"`
+	PeriodEnd     *string `json:"period_end,omitempty"`
+	Category      *string `json:"category,omitempty"`
+	LastUpdated   string  `json:"last_updated"`
+}
+
+type PaginationMeta struct {
+	Page       int `json:"page"`
+	PerPage    int `json:"per_page"`
+	Total      int `json:"total"`
+	TotalPages int `json:"total_pages"`
+}
+
+type ConsentVCResponse struct {
+	VerifiableCredential any `json:"verifiable_credential"`
+}

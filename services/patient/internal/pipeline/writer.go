@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/FibrinLab/open-nucleus/pkg/blindindex"
 	"github.com/FibrinLab/open-nucleus/pkg/envelope"
 	"github.com/FibrinLab/open-nucleus/pkg/fhir"
 	"github.com/FibrinLab/open-nucleus/pkg/gitstore"
@@ -59,7 +60,8 @@ type Writer struct {
 	mu          sync.Mutex
 	git         gitstore.Store
 	idx         sqliteindex.Index
-	keys        envelope.KeyManager // optional; nil = no encryption
+	keys        envelope.KeyManager     // optional; nil = no encryption
+	blind       *blindindex.Indexer     // optional; nil = no blind indexing
 	lockTimeout time.Duration
 }
 
@@ -79,6 +81,13 @@ func NewWriter(git gitstore.Store, idx sqliteindex.Index, lockTimeout time.Durat
 // When set, FHIR JSON is encrypted before writing to Git.
 func (w *Writer) WithEncryption(km envelope.KeyManager) *Writer {
 	w.keys = km
+	return w
+}
+
+// WithBlindIndexer attaches a blind indexer for PII-safe SQLite indexes.
+// When set, patient name n-grams are stored as HMAC hashes in patients_ngrams.
+func (w *Writer) WithBlindIndexer(bi *blindindex.Indexer) *Writer {
+	w.blind = bi
 	return w
 }
 
@@ -469,7 +478,19 @@ func (w *Writer) upsertIndex(resourceType, patientID, siteID, commitHash string,
 		if err != nil {
 			return err
 		}
-		return w.idx.UpsertPatient(row)
+		if err := w.idx.UpsertPatient(row); err != nil {
+			return err
+		}
+		// Compute and store blind n-grams for PII search (if blind indexer configured)
+		if w.blind != nil {
+			if familyNgrams := w.blind.BlindNgram(row.FamilyName, 3); len(familyNgrams) > 0 {
+				w.idx.UpsertPatientNgrams(row.ID, "family_name", familyNgrams)
+			}
+			if givenNgrams := w.blind.BlindNgram(row.GivenNames, 3); len(givenNgrams) > 0 {
+				w.idx.UpsertPatientNgrams(row.ID, "given_names", givenNgrams)
+			}
+		}
+		return nil
 	case fhir.ResourceEncounter:
 		row, err := fhir.ExtractEncounterFields(fhirJSON, patientID, siteID, commitHash)
 		if err != nil {
@@ -542,6 +563,12 @@ func (w *Writer) upsertIndex(resourceType, patientID, siteID, commitHash string,
 			return err
 		}
 		return w.idx.UpsertMeasureReport(row)
+	case fhir.ResourceConsent:
+		row, err := fhir.ExtractConsentFields(fhirJSON, commitHash)
+		if err != nil {
+			return err
+		}
+		return w.idx.UpsertConsent(row)
 	default:
 		return nil
 	}

@@ -11,6 +11,7 @@ func (idx *sqliteIndex) DeletePatientData(patientID string) error {
 		column string
 	}{
 		{"patient_summaries", "patient_id"},
+		{"consents", "patient_id"},
 		{"flags", "patient_id"},
 		{"allergy_intolerances", "patient_id"},
 		{"medication_requests", "patient_id"},

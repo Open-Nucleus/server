@@ -1,7 +1,7 @@
 # Open Nucleus — Architectural Memory
 
 > Living document. Updated after every major feature or structural change.
-> Last updated: Overhaul Phases 0–2 — Monolith, Encryption, Crypto-Erasure (2026-03-10)
+> Last updated: IPEHR-Inspired Access Control & Encrypted Indexes — Consent, Key Wrapping, Blind Indexes (2026-03-10)
 
 ---
 
@@ -15,7 +15,11 @@ Open Nucleus is an open-source, offline-first electronic health record (EHR) sys
 
 **Dual-layer data model:** FHIR R4 resources are stored as **encrypted** JSON files in a Git repository (source of truth) with SQLite as a rebuildable search index containing extracted fields only (no full FHIR JSON). Every clinical write validates, extracts search fields, encrypts, commits to Git, then upserts SQLite.
 
-**Per-patient encryption:** AES-256-GCM envelope encryption with master key wrapping per-patient DEKs. Destroying a patient's key renders their Git data permanently unreadable (crypto-erasure).
+**Per-patient encryption:** AES-256-GCM envelope encryption with master key wrapping per-patient DEKs. Per-provider ECDH key grants allow individual DEK copies per device. Destroying a patient's key renders their Git data permanently unreadable (crypto-erasure).
+
+**Consent-based access control:** FHIR Consent resources gate patient data access. ConsentCheck middleware enforces consent after JWT auth. Break-glass emergency access creates time-limited (4h) consents with mandatory audit. Verifiable Credentials provide offline consent proofs.
+
+**Blind indexes:** SQLite stores HMAC-SHA256 blind indexes of PII (names, dates) in a `patients_ngrams` table, enabling n-gram substring search without exposing plaintext in the index.
 
 **Git-based sync:** Nodes sync using Git fetch/merge/push over ECDH-encrypted channels. A FHIR-aware merge driver classifies conflicts into auto-merge (safe), review (flag for clinician), or block (clinical safety risk).
 
@@ -838,4 +842,7 @@ internal/
 | FHIR Phase 3 — FHIR Profiles | 5 Open Nucleus profiles (Patient, Immunization, GrowthObservation, DetectedIssue, MeasureReport). Extension utilities, profile registry, profile-aware validation. MeasureReport full stack (17 resource types). StructureDefinition read-only endpoint. CapabilityStatement supportedProfile. 58 pkg/fhir tests. | COMPLETE |
 | FHIR Phase 4 — SMART on FHIR | OAuth2 auth code + PKCE, SMART v2 scopes, EHR launch, client registration, scope middleware on FHIR endpoints. 11 gRPC RPCs, 11 HTTP endpoints, CapabilityStatement SMART security, 37 new tests (408 total). | COMPLETE |
 | Overhaul Phase 3 — Sync Crypto Fix | Replaced broken AES-GCM (key-in-ciphertext) with ECDH X25519 + HKDF-SHA256 + AES-256-GCM. New `pkg/sync` (transport_crypto.go), ECIES-pattern bundle encryption in SyncEngine. 11 new crypto tests, 23 total sync tests. | COMPLETE |
+| IPEHR Phase A — Consent Management | FHIR Consent resource type (18th), ConsentManager with VC support, consent middleware (break-glass), HTTP endpoints (4 routes), ConsentService interface. `pkg/consent/`, `pkg/fhir/consent.go`, `internal/middleware/consent.go`, `internal/handler/consent.go`. | COMPLETE |
+| IPEHR Phase B — Per-Provider Key Wrapping | ECDH key grants via Ed25519→X25519 conversion, per-provider wrapped DEKs. `pkg/envelope/grants.go`, `pkg/crypto/convert.go`, shared crypto utilities extracted from sync. | COMPLETE |
+| IPEHR Phase C — Blind Indexes | HMAC-SHA256 blind indexing for PII, n-gram sliding window for substring search, blinded date prefixes. `pkg/blindindex/`, `patients_ngrams` table, write pipeline integration. | COMPLETE |
 | 6 — WebSocket + Hardening | Real-time events, production config, TLS, metrics | Not started |
