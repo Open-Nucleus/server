@@ -1,4 +1,4 @@
-.PHONY: build build-nucleus build-all build-gateway build-patient build-auth build-sync build-formulary build-anchor build-sentinel run test test-patient test-auth test-sync test-formulary test-anchor test-fhir test-sentinel test-e2e test-all smoke proto-gen proto-gen-python run-sentinel lint clean
+.PHONY: build build-nucleus build-sentinel run test test-patient test-auth test-sync test-formulary test-anchor test-fhir test-sentinel test-e2e test-all smoke proto-gen proto-gen-python run-sentinel lint clean
 
 BUILD_DIR := bin
 
@@ -7,26 +7,6 @@ build: build-nucleus
 
 build-nucleus:
 	go build -o $(BUILD_DIR)/nucleus ./cmd/nucleus
-
-build-gateway:
-	go build -o $(BUILD_DIR)/gateway ./cmd/gateway
-
-build-all: build-nucleus build-gateway build-patient build-auth build-sync build-formulary build-anchor
-
-build-patient:
-	go build -o $(BUILD_DIR)/patient-service ./services/patient/cmd
-
-build-auth:
-	go build -o $(BUILD_DIR)/auth-service ./services/auth/cmd
-
-build-sync:
-	go build -o $(BUILD_DIR)/sync-service ./services/sync/cmd
-
-build-formulary:
-	go build -o $(BUILD_DIR)/formulary-service ./services/formulary/cmd
-
-build-anchor:
-	go build -o $(BUILD_DIR)/anchor-service ./services/anchor/cmd
 
 run: build-nucleus
 	./$(BUILD_DIR)/nucleus

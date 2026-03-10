@@ -1,5 +1,5 @@
-// Command smoke boots all microservices in-process, wires the API Gateway,
-// and runs a full REST smoke test with colored pass/fail output.
+// Command smoke boots the monolith in-process and runs a full REST smoke test
+// with colored pass/fail output.
 //
 // Usage:
 //
@@ -9,7 +9,7 @@ package main
 
 import (
 	"bytes"
-	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -19,31 +19,34 @@ import (
 	"os"
 	"time"
 
-	authv1 "github.com/FibrinLab/open-nucleus/gen/proto/auth/v1"
 	"github.com/FibrinLab/open-nucleus/internal/config"
-	"github.com/FibrinLab/open-nucleus/internal/grpcclient"
 	"github.com/FibrinLab/open-nucleus/internal/handler"
+	fhirhandler "github.com/FibrinLab/open-nucleus/internal/handler/fhir"
 	"github.com/FibrinLab/open-nucleus/internal/middleware"
 	"github.com/FibrinLab/open-nucleus/internal/router"
-	"github.com/FibrinLab/open-nucleus/internal/service"
+	"github.com/FibrinLab/open-nucleus/internal/service/local"
 	"github.com/FibrinLab/open-nucleus/pkg/auth"
-	"github.com/FibrinLab/open-nucleus/services/anchor/anchortest"
-	"github.com/FibrinLab/open-nucleus/services/auth/authtest"
-	"github.com/FibrinLab/open-nucleus/services/formulary/formularytest"
-	"github.com/FibrinLab/open-nucleus/services/patient/patienttest"
-	"github.com/FibrinLab/open-nucleus/services/sync/synctest"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"github.com/FibrinLab/open-nucleus/pkg/gitstore"
+	"github.com/FibrinLab/open-nucleus/pkg/merge"
+	"github.com/FibrinLab/open-nucleus/pkg/merge/openanchor"
+	"github.com/FibrinLab/open-nucleus/pkg/sqliteindex"
+	"github.com/FibrinLab/open-nucleus/services/anchor/anchorservice"
+	"github.com/FibrinLab/open-nucleus/services/auth/authservice"
+	"github.com/FibrinLab/open-nucleus/services/formulary/formularyservice"
+	"github.com/FibrinLab/open-nucleus/services/patient/pipeline"
+	"github.com/FibrinLab/open-nucleus/services/sync/syncservice"
+
+	_ "modernc.org/sqlite"
 )
 
 // ANSI color codes.
 const (
-	colorReset  = "\033[0m"
-	colorGreen  = "\033[32m"
-	colorRed    = "\033[31m"
-	colorCyan   = "\033[36m"
-	colorBold   = "\033[1m"
-	colorDim    = "\033[2m"
+	colorReset = "\033[0m"
+	colorGreen = "\033[32m"
+	colorRed   = "\033[31m"
+	colorCyan  = "\033[36m"
+	colorBold  = "\033[1m"
+	colorDim   = "\033[2m"
 )
 
 // cleanups tracks teardown functions accumulated during setup.
@@ -59,125 +62,181 @@ func runCleanups() {
 	}
 }
 
-// ---------- Gateway wiring ----------
+// ---------- Monolith wiring ----------
 
 type stack struct {
 	server      *httptest.Server
 	accessToken string
 }
 
-func wireGateway(aEnv *authtest.StandaloneEnv, pEnv *patienttest.Env, sEnv *synctest.Env, fEnv *formularytest.Env, ancEnv *anchortest.Env) (*stack, error) {
-	gatewayCfg := &config.Config{
-		Auth: config.AuthConfig{
-			JWTIssuer:     "open-nucleus-auth",
-			TokenLifetime: time.Hour,
-			RefreshWindow: 2 * time.Hour,
+func wireMonolith(tmpDir, bootstrapSecret string) (*stack, error) {
+	// --- Shared data layer ---
+	git, err := gitstore.NewStore(tmpDir+"/repo", "smoke", "smoke@test.local")
+	if err != nil {
+		return nil, fmt.Errorf("gitstore: %w", err)
+	}
+
+	db, err := sql.Open("sqlite", tmpDir+"/nucleus.db?_journal_mode=WAL&_busy_timeout=5000")
+	if err != nil {
+		return nil, fmt.Errorf("sqlite: %w", err)
+	}
+	db.SetMaxOpenConns(1)
+	addCleanup(func() { db.Close() })
+
+	if err := sqliteindex.InitUnifiedSchema(db); err != nil {
+		return nil, fmt.Errorf("schema: %w", err)
+	}
+	idx := sqliteindex.NewIndexFromDB(db)
+
+	// --- Patient ---
+	pw := pipeline.NewWriter(git, idx, 10*time.Second)
+	patientSvc := local.NewPatientService(pw, idx, git)
+
+	// --- Auth ---
+	ks := auth.NewMemoryKeyStore()
+	denyList := authservice.NewDenyList(db)
+	clientStore := authservice.NewClientStore(git, db)
+
+	authCfg := &authservice.Config{
+		JWT: authservice.JWTConfig{
+			Issuer:          "open-nucleus-auth",
+			AccessLifetime:  time.Hour,
+			RefreshLifetime: 24 * time.Hour,
+			ClockSkew:       2 * time.Hour,
 		},
-		GRPC: config.GRPCConfig{
-			AuthService:      aEnv.Addr,
-			PatientService:   pEnv.Addr,
-			SyncService:      sEnv.Addr,
-			FormularyService: fEnv.Addr,
-			AnchorService:    ancEnv.Addr,
-			DialTimeout:      5 * time.Second,
-			RequestTimeout:   30 * time.Second,
+		Git: authservice.GitConfig{
+			RepoPath:    tmpDir + "/repo",
+			AuthorName:  "smoke",
+			AuthorEmail: "smoke@test.local",
 		},
+		Devices: authservice.DevicesConfig{Path: ".nucleus/devices"},
+		Security: authservice.SecurityConfig{
+			NonceTTL:        60 * time.Second,
+			MaxFailures:     10,
+			FailureWindow:   60 * time.Second,
+			BootstrapSecret: bootstrapSecret,
+		},
+		KeyStore: authservice.KeyStoreConfig{Type: "memory"},
+		SQLite:   authservice.SQLiteConfig{DBPath: tmpDir + "/nucleus.db"},
+	}
+
+	authImpl, err := authservice.NewAuthService(authCfg, git, ks, denyList)
+	if err != nil {
+		return nil, fmt.Errorf("auth service: %w", err)
+	}
+	authSvc := local.NewAuthService(authImpl)
+	smartImpl := authservice.NewSmartService(authImpl, clientStore)
+	smartSvc := local.NewSmartService(smartImpl)
+
+	// --- Sync ---
+	mergeDriver := merge.NewDriver(nil)
+	eventBus := syncservice.NewEventBus(100)
+	conflictStore := syncservice.NewConflictStore(db)
+	historyStore := syncservice.NewHistoryStore(db, 10000)
+	peerStore := syncservice.NewPeerStore(db)
+
+	syncCfg := &syncservice.Config{
+		Git: syncservice.GitConfig{
+			RepoPath:    tmpDir + "/repo",
+			AuthorName:  "smoke",
+			AuthorEmail: "smoke@test.local",
+		},
+	}
+
+	syncEngine := syncservice.NewSyncEngine(
+		syncCfg, git, conflictStore, historyStore, peerStore,
+		mergeDriver, eventBus, "node-smoke", "site-smoke",
+	)
+	syncSvc := local.NewSyncService(syncEngine, historyStore, peerStore)
+	conflictSvc := local.NewConflictService(conflictStore, eventBus)
+
+	// --- Formulary ---
+	formularyImpl := formularyservice.New(
+		formularyservice.NewDrugDB(),
+		formularyservice.NewInteractionIndex(),
+		formularyservice.NewStockStore(db),
+		formularyservice.NewStubDosingEngine(),
+	)
+	formularySvc := local.NewFormularyService(formularyImpl)
+
+	// --- Anchor ---
+	anchorImpl := anchorservice.New(
+		git, openanchor.NewStubBackend(), openanchor.NewLocalIdentityEngine(),
+		anchorservice.NewAnchorQueue(db), anchorservice.NewAnchorStore(git),
+		anchorservice.NewCredentialStore(git), anchorservice.NewDIDStore(git),
+		authImpl.NodePrivateKey(),
+	)
+	anchorSvc := local.NewAnchorService(anchorImpl)
+
+	// --- Stubs ---
+	sentinelSvc := local.NewStubSentinelService()
+	supplySvc := local.NewStubSupplyService()
+
+	// --- Handlers ---
+	authH := handler.NewAuthHandler(authSvc)
+	patientH := handler.NewPatientHandler(patientSvc)
+	syncH := handler.NewSyncHandler(syncSvc)
+	conflictH := handler.NewConflictHandler(conflictSvc)
+	sentinelH := handler.NewSentinelHandler(sentinelSvc)
+	formularyH := handler.NewFormularyHandler(formularySvc)
+	anchorH := handler.NewAnchorHandler(anchorSvc)
+	supplyH := handler.NewSupplyHandler(supplySvc)
+	resourceH := handler.NewResourceHandler(patientSvc)
+	fhirH := fhirhandler.NewFHIRHandler(patientSvc)
+	smartH := handler.NewSmartHandler(smartSvc, "http://localhost:8080")
+
+	cfg := &config.Config{
 		RateLimit: config.RateLimitConfig{
-			ReadRPM:    200,
-			ReadBurst:  50,
-			WriteRPM:   60,
-			WriteBurst: 20,
-			AuthRPM:    100,
-			AuthBurst:  50,
+			ReadRPM: 200, ReadBurst: 50,
+			WriteRPM: 60, WriteBurst: 20,
+			AuthRPM: 100, AuthBurst: 50,
 		},
 		CORS: config.CORSConfig{AllowedOrigins: []string{"*"}},
 	}
 
-	pool, err := grpcclient.NewPool(gatewayCfg.GRPC)
-	if err != nil {
-		return nil, fmt.Errorf("grpc pool: %w", err)
-	}
-	addCleanup(func() { pool.Close() })
-
-	// Service adapters
-	authAdapt := service.NewAuthService(pool)
-	patientAdapt := service.NewPatientService(pool)
-	syncAdapt := service.NewSyncService(pool)
-	conflictAdapt := service.NewConflictService(pool)
-	sentinelAdapt := service.NewSentinelService(pool)
-	formularyAdapt := service.NewFormularyService(pool)
-	anchorAdapt := service.NewAnchorService(pool)
-	supplyAdapt := service.NewSupplyService(pool)
-
-	// Handlers
-	authH := handler.NewAuthHandler(authAdapt)
-	patientH := handler.NewPatientHandler(patientAdapt)
-	syncH := handler.NewSyncHandler(syncAdapt)
-	conflictH := handler.NewConflictHandler(conflictAdapt)
-	sentinelH := handler.NewSentinelHandler(sentinelAdapt)
-	formularyH := handler.NewFormularyHandler(formularyAdapt)
-	anchorH := handler.NewAnchorHandler(anchorAdapt)
-	supplyH := handler.NewSupplyHandler(supplyAdapt)
-
-	jwtAuth := middleware.NewJWTAuth(aEnv.PublicKey, gatewayCfg.Auth.JWTIssuer)
-	rateLimiter := middleware.NewRateLimiter(gatewayCfg.RateLimit)
+	jwtAuth := middleware.NewJWTAuth(authImpl.NodePublicKey(), "open-nucleus-auth")
+	rateLimiter := middleware.NewRateLimiter(cfg.RateLimit)
 	auditLogger := slog.New(slog.NewJSONHandler(io.Discard, nil))
 
 	mux := router.New(router.Config{
 		AuthHandler:      authH,
 		PatientHandler:   patientH,
-		ResourceHandler:  handler.NewResourceHandler(patientAdapt),
+		ResourceHandler:  resourceH,
 		SyncHandler:      syncH,
 		ConflictHandler:  conflictH,
 		SentinelHandler:  sentinelH,
 		FormularyHandler: formularyH,
 		AnchorHandler:    anchorH,
 		SupplyHandler:    supplyH,
+		FHIRHandler:      fhirH,
+		SmartHandler:     smartH,
 		JWTAuth:          jwtAuth,
 		RateLimiter:      rateLimiter,
-		CORSOrigins:      gatewayCfg.CORS.AllowedOrigins,
+		CORSOrigins:      cfg.CORS.AllowedOrigins,
 		AuditLogger:      auditLogger,
 	})
 
 	httpServer := httptest.NewServer(mux)
 	addCleanup(func() { httpServer.Close() })
 
-	// --- Bootstrap device & authenticate ---
-	const bootstrapSecret = "smoke-bootstrap-secret"
-
+	// --- Bootstrap device & authenticate (direct Go calls) ---
 	pub, priv, err := auth.GenerateKeypair()
 	if err != nil {
 		return nil, fmt.Errorf("keypair: %w", err)
 	}
 
-	authConn, err := grpc.NewClient(aEnv.Addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		return nil, fmt.Errorf("auth dial: %w", err)
-	}
-	addCleanup(func() { authConn.Close() })
-
-	authClient := authv1.NewAuthServiceClient(authConn)
-	regResp, err := authClient.RegisterDevice(context.Background(), &authv1.RegisterDeviceRequest{
-		PublicKey:       auth.EncodePublicKey(pub),
-		PractitionerId: "dr-smoke",
-		SiteId:         "site-smoke",
-		DeviceName:     "smoke-tablet",
-		Role:           "physician",
-		BootstrapSecret: bootstrapSecret,
-	})
+	device, err := authImpl.RegisterDevice(auth.EncodePublicKey(pub), "dr-smoke", "site-smoke", "smoke-tablet", "physician", bootstrapSecret)
 	if err != nil {
 		return nil, fmt.Errorf("register device: %w", err)
 	}
-	deviceID := regResp.Device.DeviceId
 
-	// Challenge-response
-	nonce, _, err := aEnv.GetChallenge(deviceID)
+	nonce, _, err := authImpl.GetChallenge(device.DeviceID)
 	if err != nil {
 		return nil, fmt.Errorf("get challenge: %w", err)
 	}
 
 	sig := auth.Sign(priv, nonce)
-	accessToken, _, err := aEnv.AuthenticateWithNonce(deviceID, nonce, sig)
+	accessToken, _, _, _, _, err := authImpl.AuthenticateWithNonce(device.DeviceID, nonce, sig)
 	if err != nil {
 		return nil, fmt.Errorf("authenticate: %w", err)
 	}
@@ -244,7 +303,7 @@ type step struct {
 
 func main() {
 	fmt.Printf("\n%s%s Open Nucleus — Smoke Test %s\n", colorBold, colorCyan, colorReset)
-	fmt.Printf("%s Booting services in-process...%s\n\n", colorDim, colorReset)
+	fmt.Printf("%s Booting monolith in-process...%s\n\n", colorDim, colorReset)
 
 	tmpDir, err := os.MkdirTemp("", "nucleus-smoke-*")
 	if err != nil {
@@ -255,48 +314,11 @@ func main() {
 
 	const bootstrapSecret = "smoke-bootstrap-secret"
 
-	// Boot microservices using standalone helpers (no *testing.T required)
-	aEnv, authCleanup, err := authtest.StartStandalone(tmpDir, bootstrapSecret)
+	st, err := wireMonolith(tmpDir, bootstrapSecret)
 	if err != nil {
-		fatal("start auth: %v", err)
+		fatal("wire monolith: %v", err)
 	}
-	addCleanup(authCleanup)
-	fmt.Printf("  Auth service    %s%s%s\n", colorDim, aEnv.Addr, colorReset)
-
-	pEnv, patientCleanup, err := patienttest.StartStandalone(tmpDir)
-	if err != nil {
-		fatal("start patient: %v", err)
-	}
-	addCleanup(patientCleanup)
-	fmt.Printf("  Patient service %s%s%s\n", colorDim, pEnv.Addr, colorReset)
-
-	sEnv, syncCleanup, err := synctest.StartStandalone(tmpDir)
-	if err != nil {
-		fatal("start sync: %v", err)
-	}
-	addCleanup(syncCleanup)
-	fmt.Printf("  Sync service    %s%s%s\n", colorDim, sEnv.Addr, colorReset)
-
-	fEnv, formularyCleanup, err := formularytest.StartStandalone(tmpDir)
-	if err != nil {
-		fatal("start formulary: %v", err)
-	}
-	addCleanup(formularyCleanup)
-	fmt.Printf("  Formulary       %s%s%s\n", colorDim, fEnv.Addr, colorReset)
-
-	ancEnv, anchorCleanup, err := anchortest.StartStandalone(tmpDir)
-	if err != nil {
-		fatal("start anchor: %v", err)
-	}
-	addCleanup(anchorCleanup)
-	fmt.Printf("  Anchor          %s%s%s\n", colorDim, ancEnv.Addr, colorReset)
-
-	// Wire gateway
-	st, err := wireGateway(aEnv, pEnv, sEnv, fEnv, ancEnv)
-	if err != nil {
-		fatal("wire gateway: %v", err)
-	}
-	fmt.Printf("  Gateway         %s%s%s\n", colorDim, st.server.URL, colorReset)
+	fmt.Printf("  Monolith        %s%s%s\n", colorDim, st.server.URL, colorReset)
 	fmt.Printf("  Auth            %sPASS (Ed25519 challenge-response)%s\n\n", colorDim, colorReset)
 
 	// --- Define test steps ---
@@ -542,11 +564,10 @@ func main() {
 			auth: true, expect: 200,
 		},
 		{
-			name:            "Schema rejection (bad payload)",
-			method:          "POST", path: "/api/v1/patients/",
-			body:            map[string]any{"invalid": true},
-			auth:            true, expect: 400,
-			acceptAlternate: 503, // validation at gRPC level returns 503 without gateway SchemaValidator
+			name:   "Schema rejection (bad payload)",
+			method: "POST", path: "/api/v1/patients/",
+			body:   map[string]any{"invalid": true},
+			auth:   true, expect: 400,
 		},
 		{
 			name:   "Delete patient",

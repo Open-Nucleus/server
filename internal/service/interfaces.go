@@ -887,3 +887,106 @@ type RedistributionSuggestion struct {
 	SuggestedQuantity int    `json:"suggested_quantity"`
 	Rationale         string `json:"rationale"`
 }
+
+// SmartService defines the interface for SMART on FHIR operations.
+type SmartService interface {
+	Authorize(ctx context.Context, req *AuthorizeRequest) (*AuthorizeResponse, error)
+	ExchangeToken(ctx context.Context, req *ExchangeTokenRequest) (*TokenResponse, error)
+	IntrospectToken(ctx context.Context, token string) (*IntrospectResponse, error)
+	RevokeToken(ctx context.Context, token string) error
+	RegisterClient(ctx context.Context, req *RegisterClientRequest) (*ClientResponse, error)
+	ListClients(ctx context.Context) (*ClientListResponse, error)
+	GetClient(ctx context.Context, clientID string) (*ClientResponse, error)
+	UpdateClient(ctx context.Context, clientID string, req *UpdateClientRequest) (*ClientResponse, error)
+	DeleteClient(ctx context.Context, clientID string) error
+	CreateLaunch(ctx context.Context, req *CreateLaunchRequest) (*CreateLaunchResponse, error)
+}
+
+type AuthorizeRequest struct {
+	ClientID            string `json:"client_id"`
+	RedirectURI         string `json:"redirect_uri"`
+	Scope               string `json:"scope"`
+	State               string `json:"state"`
+	CodeChallenge       string `json:"code_challenge"`
+	CodeChallengeMethod string `json:"code_challenge_method"`
+	Launch              string `json:"launch"`
+}
+
+type AuthorizeResponse struct {
+	RedirectURI string `json:"redirect_uri"`
+}
+
+type ExchangeTokenRequest struct {
+	GrantType    string `json:"grant_type"`
+	Code         string `json:"code"`
+	RedirectURI  string `json:"redirect_uri"`
+	CodeVerifier string `json:"code_verifier"`
+	ClientID     string `json:"client_id"`
+	ClientSecret string `json:"client_secret"`
+}
+
+type TokenResponse struct {
+	AccessToken  string `json:"access_token"`
+	TokenType    string `json:"token_type"`
+	ExpiresIn    int32  `json:"expires_in"`
+	Scope        string `json:"scope"`
+	Patient      string `json:"patient,omitempty"`
+	Encounter    string `json:"encounter,omitempty"`
+	RefreshToken string `json:"refresh_token,omitempty"`
+}
+
+type IntrospectResponse struct {
+	Active    bool   `json:"active"`
+	Scope     string `json:"scope,omitempty"`
+	ClientID  string `json:"client_id,omitempty"`
+	Sub       string `json:"sub,omitempty"`
+	Patient   string `json:"patient,omitempty"`
+	Encounter string `json:"encounter,omitempty"`
+	FHIRUser  string `json:"fhirUser,omitempty"`
+	Exp       int64  `json:"exp,omitempty"`
+	Iat       int64  `json:"iat,omitempty"`
+}
+
+type RegisterClientRequest struct {
+	ClientName              string   `json:"client_name"`
+	RedirectURIs            []string `json:"redirect_uris"`
+	Scope                   string   `json:"scope"`
+	GrantTypes              []string `json:"grant_types"`
+	TokenEndpointAuthMethod string   `json:"token_endpoint_auth_method"`
+	LaunchModes             []string `json:"launch_modes"`
+}
+
+type UpdateClientRequest struct {
+	Status string `json:"status"`
+	Scope  string `json:"scope"`
+}
+
+type ClientResponse struct {
+	ClientID                string   `json:"client_id"`
+	ClientSecret            string   `json:"client_secret,omitempty"`
+	ClientName              string   `json:"client_name"`
+	RedirectURIs            []string `json:"redirect_uris"`
+	Scope                   string   `json:"scope"`
+	GrantTypes              []string `json:"grant_types"`
+	TokenEndpointAuthMethod string   `json:"token_endpoint_auth_method"`
+	LaunchModes             []string `json:"launch_modes"`
+	Status                  string   `json:"status"`
+	RegisteredAt            string   `json:"registered_at"`
+	RegisteredBy            string   `json:"registered_by"`
+	ApprovedBy              string   `json:"approved_by,omitempty"`
+	ApprovedAt              string   `json:"approved_at,omitempty"`
+}
+
+type ClientListResponse struct {
+	Clients []ClientResponse `json:"clients"`
+}
+
+type CreateLaunchRequest struct {
+	ClientID    string `json:"client_id"`
+	PatientID   string `json:"patient_id"`
+	EncounterID string `json:"encounter_id"`
+}
+
+type CreateLaunchResponse struct {
+	LaunchToken string `json:"launch_token"`
+}

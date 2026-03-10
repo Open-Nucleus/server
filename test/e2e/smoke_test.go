@@ -2,7 +2,7 @@ package e2e_test
 
 import (
 	"bytes"
-	"context"
+	"database/sql"
 	"encoding/json"
 	"io"
 	"log/slog"
@@ -12,21 +12,26 @@ import (
 	"testing"
 	"time"
 
-	authv1 "github.com/FibrinLab/open-nucleus/gen/proto/auth/v1"
 	"github.com/FibrinLab/open-nucleus/internal/config"
-	"github.com/FibrinLab/open-nucleus/internal/grpcclient"
 	"github.com/FibrinLab/open-nucleus/internal/handler"
+	fhirhandler "github.com/FibrinLab/open-nucleus/internal/handler/fhir"
 	"github.com/FibrinLab/open-nucleus/internal/middleware"
 	"github.com/FibrinLab/open-nucleus/internal/router"
-	"github.com/FibrinLab/open-nucleus/internal/service"
+	"github.com/FibrinLab/open-nucleus/internal/service/local"
 	"github.com/FibrinLab/open-nucleus/pkg/auth"
-	"github.com/FibrinLab/open-nucleus/services/auth/authtest"
-	"github.com/FibrinLab/open-nucleus/services/patient/patienttest"
-	"github.com/FibrinLab/open-nucleus/services/sync/synctest"
+	"github.com/FibrinLab/open-nucleus/pkg/gitstore"
+	"github.com/FibrinLab/open-nucleus/pkg/merge"
+	"github.com/FibrinLab/open-nucleus/pkg/merge/openanchor"
+	"github.com/FibrinLab/open-nucleus/pkg/sqliteindex"
+	"github.com/FibrinLab/open-nucleus/services/anchor/anchorservice"
+	"github.com/FibrinLab/open-nucleus/services/auth/authservice"
+	"github.com/FibrinLab/open-nucleus/services/formulary/formularyservice"
+	"github.com/FibrinLab/open-nucleus/services/patient/pipeline"
+	"github.com/FibrinLab/open-nucleus/services/sync/syncservice"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+
+	_ "modernc.org/sqlite"
 )
 
 // smokeEnv holds the full in-process stack.
@@ -43,120 +48,168 @@ func setupSmokeEnv(t *testing.T) *smokeEnv {
 	tmpDir := t.TempDir()
 	const bootstrapSecret = "e2e-bootstrap-secret"
 
-	// --- Start all three microservices in-process ---
-	authEnv := authtest.Start(t, tmpDir, bootstrapSecret)
-	patientEnv := patienttest.Start(t, tmpDir)
-	syncEnv := synctest.Start(t, tmpDir)
+	// --- Shared data layer ---
+	git, err := gitstore.NewStore(tmpDir+"/repo", "e2e", "e2e@test.local")
+	require.NoError(t, err)
 
-	// --- Wire the API Gateway ---
-	gatewayCfg := &config.Config{
-		Auth: config.AuthConfig{
-			JWTIssuer:     "open-nucleus-auth",
-			TokenLifetime: time.Hour,
-			RefreshWindow: 2 * time.Hour,
+	db, err := sql.Open("sqlite", tmpDir+"/nucleus.db?_journal_mode=WAL&_busy_timeout=5000")
+	require.NoError(t, err)
+	db.SetMaxOpenConns(1)
+	t.Cleanup(func() { db.Close() })
+
+	require.NoError(t, sqliteindex.InitUnifiedSchema(db))
+	idx := sqliteindex.NewIndexFromDB(db)
+
+	// --- Patient ---
+	pw := pipeline.NewWriter(git, idx, 10*time.Second)
+	patientSvc := local.NewPatientService(pw, idx, git)
+
+	// --- Auth ---
+	ks := auth.NewMemoryKeyStore()
+	denyList := authservice.NewDenyList(db)
+	clientStore := authservice.NewClientStore(git, db)
+
+	authCfg := &authservice.Config{
+		JWT: authservice.JWTConfig{
+			Issuer:          "open-nucleus-auth",
+			AccessLifetime:  time.Hour,
+			RefreshLifetime: 24 * time.Hour,
+			ClockSkew:       2 * time.Hour,
 		},
-		GRPC: config.GRPCConfig{
-			AuthService:    authEnv.Addr,
-			PatientService: patientEnv.Addr,
-			SyncService:    syncEnv.Addr,
-			DialTimeout:    5 * time.Second,
-			RequestTimeout: 30 * time.Second,
+		Git: authservice.GitConfig{
+			RepoPath:    tmpDir + "/repo",
+			AuthorName:  "e2e",
+			AuthorEmail: "e2e@test.local",
 		},
-		RateLimit: config.RateLimitConfig{
-			ReadRPM:    200,
-			ReadBurst:  50,
-			WriteRPM:   60,
-			WriteBurst: 20,
-			AuthRPM:    100,
-			AuthBurst:  50,
+		Devices: authservice.DevicesConfig{Path: ".nucleus/devices"},
+		Security: authservice.SecurityConfig{
+			NonceTTL:        60 * time.Second,
+			MaxFailures:     10,
+			FailureWindow:   60 * time.Second,
+			BootstrapSecret: bootstrapSecret,
 		},
-		CORS: config.CORSConfig{
-			AllowedOrigins: []string{"*"},
+		KeyStore: authservice.KeyStoreConfig{Type: "memory"},
+		SQLite:   authservice.SQLiteConfig{DBPath: tmpDir + "/nucleus.db"},
+	}
+
+	authImpl, err := authservice.NewAuthService(authCfg, git, ks, denyList)
+	require.NoError(t, err)
+
+	authSvc := local.NewAuthService(authImpl)
+	smartImpl := authservice.NewSmartService(authImpl, clientStore)
+	smartSvc := local.NewSmartService(smartImpl)
+
+	// --- Sync ---
+	mergeDriver := merge.NewDriver(nil)
+	eventBus := syncservice.NewEventBus(100)
+	conflictStore := syncservice.NewConflictStore(db)
+	historyStore := syncservice.NewHistoryStore(db, 10000)
+	peerStore := syncservice.NewPeerStore(db)
+
+	syncCfg := &syncservice.Config{
+		Git: syncservice.GitConfig{
+			RepoPath:    tmpDir + "/repo",
+			AuthorName:  "e2e",
+			AuthorEmail: "e2e@test.local",
 		},
 	}
 
-	pool, err := grpcclient.NewPool(gatewayCfg.GRPC)
-	require.NoError(t, err)
-	t.Cleanup(func() { pool.Close() })
+	syncEngine := syncservice.NewSyncEngine(
+		syncCfg, git, conflictStore, historyStore, peerStore,
+		mergeDriver, eventBus, "node-e2e", "site-e2e",
+	)
 
-	// Service adapters
-	authAdapterSvc := service.NewAuthService(pool)
-	patientAdapterSvc := service.NewPatientService(pool)
-	syncAdapterSvc := service.NewSyncService(pool)
-	conflictAdapterSvc := service.NewConflictService(pool)
-	sentinelAdapterSvc := service.NewSentinelService(pool)
-	formularyAdapterSvc := service.NewFormularyService(pool)
-	anchorAdapterSvc := service.NewAnchorService(pool)
-	supplyAdapterSvc := service.NewSupplyService(pool)
+	syncSvc := local.NewSyncService(syncEngine, historyStore, peerStore)
+	conflictSvc := local.NewConflictService(conflictStore, eventBus)
 
-	// Handlers
-	authHandler := handler.NewAuthHandler(authAdapterSvc)
-	patientHandler := handler.NewPatientHandler(patientAdapterSvc)
-	syncHandler := handler.NewSyncHandler(syncAdapterSvc)
-	conflictHandler := handler.NewConflictHandler(conflictAdapterSvc)
-	sentinelHandler := handler.NewSentinelHandler(sentinelAdapterSvc)
-	formularyHandler := handler.NewFormularyHandler(formularyAdapterSvc)
-	anchorHandler := handler.NewAnchorHandler(anchorAdapterSvc)
-	supplyHandler := handler.NewSupplyHandler(supplyAdapterSvc)
+	// --- Formulary ---
+	formularyImpl := formularyservice.New(
+		formularyservice.NewDrugDB(),
+		formularyservice.NewInteractionIndex(),
+		formularyservice.NewStockStore(db),
+		formularyservice.NewStubDosingEngine(),
+	)
+	formularySvc := local.NewFormularyService(formularyImpl)
 
-	// JWT middleware uses the Auth Service's REAL Ed25519 public key
-	jwtAuth := middleware.NewJWTAuth(authEnv.PublicKey, gatewayCfg.Auth.JWTIssuer)
-	rateLimiter := middleware.NewRateLimiter(gatewayCfg.RateLimit)
+	// --- Anchor ---
+	anchorImpl := anchorservice.New(
+		git, openanchor.NewStubBackend(), openanchor.NewLocalIdentityEngine(),
+		anchorservice.NewAnchorQueue(db), anchorservice.NewAnchorStore(git),
+		anchorservice.NewCredentialStore(git), anchorservice.NewDIDStore(git),
+		authImpl.NodePrivateKey(),
+	)
+	anchorSvc := local.NewAnchorService(anchorImpl)
+
+	// --- Sentinel + Supply stubs ---
+	sentinelSvc := local.NewStubSentinelService()
+	supplySvc := local.NewStubSupplyService()
+
+	// --- Handlers ---
+	authHandler := handler.NewAuthHandler(authSvc)
+	patientHandler := handler.NewPatientHandler(patientSvc)
+	syncHandler := handler.NewSyncHandler(syncSvc)
+	conflictHandler := handler.NewConflictHandler(conflictSvc)
+	sentinelHandler := handler.NewSentinelHandler(sentinelSvc)
+	formularyHandler := handler.NewFormularyHandler(formularySvc)
+	anchorHandler := handler.NewAnchorHandler(anchorSvc)
+	supplyHandler := handler.NewSupplyHandler(supplySvc)
+	resourceHandler := handler.NewResourceHandler(patientSvc)
+	fhirHandler := fhirhandler.NewFHIRHandler(patientSvc)
+	smartHandler := handler.NewSmartHandler(smartSvc, "http://localhost:8080")
+
+	cfg := &config.Config{
+		RateLimit: config.RateLimitConfig{
+			ReadRPM: 200, ReadBurst: 50,
+			WriteRPM: 60, WriteBurst: 20,
+			AuthRPM: 100, AuthBurst: 50,
+		},
+		CORS: config.CORSConfig{AllowedOrigins: []string{"*"}},
+	}
+
+	jwtAuth := middleware.NewJWTAuth(authImpl.NodePublicKey(), "open-nucleus-auth")
+	rateLimiter := middleware.NewRateLimiter(cfg.RateLimit)
 	auditLogger := slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelError}))
 
 	mux := router.New(router.Config{
 		AuthHandler:      authHandler,
 		PatientHandler:   patientHandler,
-		ResourceHandler:  handler.NewResourceHandler(patientAdapterSvc),
+		ResourceHandler:  resourceHandler,
 		SyncHandler:      syncHandler,
 		ConflictHandler:  conflictHandler,
 		SentinelHandler:  sentinelHandler,
 		FormularyHandler: formularyHandler,
 		AnchorHandler:    anchorHandler,
 		SupplyHandler:    supplyHandler,
+		FHIRHandler:      fhirHandler,
+		SmartHandler:     smartHandler,
 		JWTAuth:          jwtAuth,
 		RateLimiter:      rateLimiter,
-		CORSOrigins:      gatewayCfg.CORS.AllowedOrigins,
+		CORSOrigins:      cfg.CORS.AllowedOrigins,
 		AuditLogger:      auditLogger,
 	})
 
 	httpServer := httptest.NewServer(mux)
 	t.Cleanup(func() { httpServer.Close() })
 
-	// --- Bootstrap device & authenticate ---
+	// --- Bootstrap device & authenticate (direct Go calls, no gRPC) ---
 	pub, priv, err := auth.GenerateKeypair()
 	require.NoError(t, err)
 
-	// Register device via gRPC (no REST endpoint for bootstrap)
-	authConn, err := grpc.NewClient(authEnv.Addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	device, err := authImpl.RegisterDevice(auth.EncodePublicKey(pub), "dr-e2e", "site-e2e", "e2e-tablet", "physician", bootstrapSecret)
 	require.NoError(t, err)
-	t.Cleanup(func() { authConn.Close() })
 
-	authClient := authv1.NewAuthServiceClient(authConn)
-	regResp, err := authClient.RegisterDevice(context.Background(), &authv1.RegisterDeviceRequest{
-		PublicKey:       auth.EncodePublicKey(pub),
-		PractitionerId: "dr-e2e",
-		SiteId:         "site-e2e",
-		DeviceName:     "e2e-tablet",
-		Role:           "physician",
-		BootstrapSecret: bootstrapSecret,
-	})
-	require.NoError(t, err)
-	deviceID := regResp.Device.DeviceId
-
-	// Challenge-response authentication
-	nonce, _, err := authEnv.GetChallenge(deviceID)
+	nonce, _, err := authImpl.GetChallenge(device.DeviceID)
 	require.NoError(t, err)
 
 	sig := auth.Sign(priv, nonce)
-	accessToken, refreshToken, authErr := authEnv.AuthenticateWithNonce(deviceID, nonce, sig)
+	accessToken, refreshToken, _, _, _, authErr := authImpl.AuthenticateWithNonce(device.DeviceID, nonce, sig)
 	require.NoError(t, authErr)
 
 	return &smokeEnv{
 		httpServer:   httpServer,
 		accessToken:  accessToken,
 		refreshToken: refreshToken,
-		deviceID:     deviceID,
+		deviceID:     device.DeviceID,
 	}
 }
 
@@ -251,7 +304,6 @@ func TestSmoke_ListPatients_Empty(t *testing.T) {
 	body := readBody(t, resp)
 	assert.Equal(t, "success", body["status"])
 
-	// Data should be an empty list (or null for no patients)
 	data := body["data"]
 	if data != nil {
 		if list, ok := data.([]any); ok {
@@ -276,12 +328,10 @@ func TestSmoke_CreatePatient(t *testing.T) {
 	body := readBody(t, resp)
 	assert.Equal(t, "success", body["status"])
 
-	// Should include git metadata
 	if gitInfo, ok := body["git"].(map[string]any); ok {
 		assert.NotEmpty(t, gitInfo["commit"])
 	}
 
-	// Data should include the patient resource
 	data, ok := body["data"].(map[string]any)
 	require.True(t, ok)
 	assert.Equal(t, "Patient", data["resourceType"])
@@ -291,7 +341,6 @@ func TestSmoke_CreatePatient(t *testing.T) {
 func TestSmoke_GetPatient(t *testing.T) {
 	env := setupSmokeEnv(t)
 
-	// Create a patient first
 	fhir := map[string]any{
 		"resourceType": "Patient",
 		"name":         []map[string]any{{"family": "Smith", "given": []string{"Jane"}}},
@@ -306,7 +355,6 @@ func TestSmoke_GetPatient(t *testing.T) {
 	data := createBody["data"].(map[string]any)
 	patientID := data["id"].(string)
 
-	// Get the patient bundle
 	getResp := env.get(t, "/api/v1/patients/"+patientID, true)
 	assert.Equal(t, 200, getResp.StatusCode)
 
@@ -324,7 +372,6 @@ func TestSmoke_GetPatient(t *testing.T) {
 func TestSmoke_CreateEncounter(t *testing.T) {
 	env := setupSmokeEnv(t)
 
-	// Create a patient
 	patientFHIR := map[string]any{
 		"resourceType": "Patient",
 		"name":         []map[string]any{{"family": "Encounter", "given": []string{"Test"}}},
@@ -336,7 +383,6 @@ func TestSmoke_CreateEncounter(t *testing.T) {
 	createBody := readBody(t, createResp)
 	patientID := createBody["data"].(map[string]any)["id"].(string)
 
-	// Create encounter
 	encounterFHIR := map[string]any{
 		"resourceType": "Encounter",
 		"status":       "finished",
@@ -361,12 +407,8 @@ func TestSmoke_SyncStatus(t *testing.T) {
 
 	resp := env.get(t, "/api/v1/sync/status", true)
 
-	// NOTE: The auth service uses "sync:status" permission but the gateway
-	// RBAC requires "sync:read". This naming mismatch means the JWT's
-	// permissions don't include the gateway's expected string.
-	// Accepting 403 here documents the mismatch.
 	if resp.StatusCode == 403 {
-		readBody(t, resp) // drain body
+		readBody(t, resp)
 		t.Log("sync:read vs sync:status permission mismatch (known issue)")
 		return
 	}
