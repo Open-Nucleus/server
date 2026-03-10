@@ -46,7 +46,6 @@ type PatientRow struct {
 	Active      bool   `json:"active"`
 	LastUpdated string `json:"last_updated"`
 	GitBlobHash string `json:"git_blob_hash"`
-	FHIRJson    string `json:"fhir_json"`
 }
 
 // EncounterRow holds indexed fields extracted from an Encounter FHIR resource.
@@ -62,7 +61,6 @@ type EncounterRow struct {
 	ReasonCode  *string `json:"reason_code"`
 	LastUpdated string  `json:"last_updated"`
 	GitBlobHash string  `json:"git_blob_hash"`
-	FHIRJson    string  `json:"fhir_json"`
 }
 
 // ObservationRow holds indexed fields extracted from an Observation FHIR resource.
@@ -82,7 +80,6 @@ type ObservationRow struct {
 	SiteID                string   `json:"site_id"`
 	LastUpdated           string   `json:"last_updated"`
 	GitBlobHash           string   `json:"git_blob_hash"`
-	FHIRJson              string   `json:"fhir_json"`
 }
 
 // ConditionRow holds indexed fields extracted from a Condition FHIR resource.
@@ -97,7 +94,6 @@ type ConditionRow struct {
 	SiteID             string  `json:"site_id"`
 	LastUpdated        string  `json:"last_updated"`
 	GitBlobHash        string  `json:"git_blob_hash"`
-	FHIRJson           string  `json:"fhir_json"`
 }
 
 // MedicationRequestRow holds indexed fields extracted from a MedicationRequest.
@@ -112,7 +108,6 @@ type MedicationRequestRow struct {
 	SiteID            string  `json:"site_id"`
 	LastUpdated       string  `json:"last_updated"`
 	GitBlobHash       string  `json:"git_blob_hash"`
-	FHIRJson          string  `json:"fhir_json"`
 }
 
 // AllergyIntoleranceRow holds indexed fields extracted from an AllergyIntolerance.
@@ -128,7 +123,6 @@ type AllergyIntoleranceRow struct {
 	SiteID             string  `json:"site_id"`
 	LastUpdated        string  `json:"last_updated"`
 	GitBlobHash        string  `json:"git_blob_hash"`
-	FHIRJson           string  `json:"fhir_json"`
 }
 
 // FlagRow holds indexed fields extracted from a Flag FHIR resource.
@@ -144,7 +138,6 @@ type FlagRow struct {
 	SiteID      string  `json:"site_id"`
 	LastUpdated string  `json:"last_updated"`
 	GitBlobHash string  `json:"git_blob_hash"`
-	FHIRJson    string  `json:"fhir_json"`
 }
 
 // TimelineEvent represents a single event in a patient timeline.
@@ -152,7 +145,6 @@ type TimelineEvent struct {
 	EventType  string `json:"event_type"`
 	ResourceID string `json:"resource_id"`
 	Date       string `json:"date"`
-	FHIRJson   string `json:"fhir_json"`
 }
 
 // Pagination holds pagination metadata for list responses.
@@ -181,7 +173,6 @@ type ImmunizationRow struct {
 	SiteID              string  `json:"site_id"`
 	LastUpdated         string  `json:"last_updated"`
 	GitBlobHash         string  `json:"git_blob_hash"`
-	FHIRJson            string  `json:"fhir_json"`
 }
 
 // ProcedureRow holds indexed fields extracted from a Procedure FHIR resource.
@@ -195,7 +186,6 @@ type ProcedureRow struct {
 	SiteID            string  `json:"site_id"`
 	LastUpdated       string  `json:"last_updated"`
 	GitBlobHash       string  `json:"git_blob_hash"`
-	FHIRJson          string  `json:"fhir_json"`
 }
 
 // PractitionerRow holds indexed fields extracted from a Practitioner FHIR resource.
@@ -207,7 +197,6 @@ type PractitionerRow struct {
 	SiteID      string `json:"site_id"`
 	LastUpdated string `json:"last_updated"`
 	GitBlobHash string `json:"git_blob_hash"`
-	FHIRJson    string `json:"fhir_json"`
 }
 
 // OrganizationRow holds indexed fields extracted from an Organization FHIR resource.
@@ -219,7 +208,6 @@ type OrganizationRow struct {
 	SiteID      string  `json:"site_id"`
 	LastUpdated string  `json:"last_updated"`
 	GitBlobHash string  `json:"git_blob_hash"`
-	FHIRJson    string  `json:"fhir_json"`
 }
 
 // LocationRow holds indexed fields extracted from a Location FHIR resource.
@@ -231,7 +219,6 @@ type LocationRow struct {
 	SiteID      string  `json:"site_id"`
 	LastUpdated string  `json:"last_updated"`
 	GitBlobHash string  `json:"git_blob_hash"`
-	FHIRJson    string  `json:"fhir_json"`
 }
 
 // MeasureReportRow holds indexed fields extracted from a MeasureReport FHIR resource.
@@ -245,5 +232,4 @@ type MeasureReportRow struct {
 	SiteID      string  `json:"site_id"`
 	LastUpdated string  `json:"last_updated"`
 	GitBlobHash string  `json:"git_blob_hash"`
-	FHIRJson    string  `json:"fhir_json"`
 }

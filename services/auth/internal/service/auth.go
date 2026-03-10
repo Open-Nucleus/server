@@ -483,6 +483,11 @@ func (s *AuthService) NodePublicKey() ed25519.PublicKey {
 	return s.nodePublicKey
 }
 
+// NodePrivateKey returns this node's private key (used for anchoring/signing).
+func (s *AuthService) NodePrivateKey() ed25519.PrivateKey {
+	return s.nodePrivateKey
+}
+
 // UptimeSeconds returns uptime in seconds.
 func (s *AuthService) UptimeSeconds() int64 {
 	return int64(time.Since(s.startedAt).Seconds())

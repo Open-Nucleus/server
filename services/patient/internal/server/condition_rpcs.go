@@ -24,7 +24,7 @@ func (s *Server) ListConditions(ctx context.Context, req *patientv1.ListConditio
 
 	resp := &patientv1.ListConditionsResponse{Pagination: paginationToProto(pg)}
 	for _, row := range rows {
-		resp.Conditions = append(resp.Conditions, toFHIRResource(fhir.ResourceCondition, row.ID, rowFHIRBytes(row.FHIRJson)))
+		resp.Conditions = append(resp.Conditions, toFHIRResource(fhir.ResourceCondition, row.ID, s.readFHIR(fhir.ResourceCondition, req.PatientId, row.ID)))
 	}
 	return resp, nil
 }
@@ -38,7 +38,7 @@ func (s *Server) GetCondition(ctx context.Context, req *patientv1.GetConditionRe
 		return nil, status.Errorf(codes.NotFound, "condition %s not found", req.ConditionId)
 	}
 	return &patientv1.GetConditionResponse{
-		Condition: toFHIRResource(fhir.ResourceCondition, row.ID, rowFHIRBytes(row.FHIRJson)),
+		Condition: toFHIRResource(fhir.ResourceCondition, row.ID, s.readFHIR(fhir.ResourceCondition, req.PatientId, row.ID)),
 	}, nil
 }
 

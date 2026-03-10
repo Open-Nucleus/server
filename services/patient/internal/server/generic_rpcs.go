@@ -39,7 +39,7 @@ func (s *Server) GetResource(ctx context.Context, req *patientv1.GetResourceRequ
 		return nil, status.Errorf(codes.InvalidArgument, "unsupported resource type: %s", req.ResourceType)
 	}
 
-	var fhirJSON string
+	var patientID string
 	var resourceID string
 
 	switch req.ResourceType {
@@ -51,7 +51,6 @@ func (s *Server) GetResource(ctx context.Context, req *patientv1.GetResourceRequ
 		if row == nil {
 			return nil, status.Errorf(codes.NotFound, "%s %s not found", req.ResourceType, req.ResourceId)
 		}
-		fhirJSON = row.FHIRJson
 		resourceID = row.ID
 	case fhir.ResourceEncounter:
 		row, err := s.idx.GetEncounterByID(req.ResourceId)
@@ -61,7 +60,7 @@ func (s *Server) GetResource(ctx context.Context, req *patientv1.GetResourceRequ
 		if row == nil {
 			return nil, status.Errorf(codes.NotFound, "%s %s not found", req.ResourceType, req.ResourceId)
 		}
-		fhirJSON = row.FHIRJson
+		patientID = row.PatientID
 		resourceID = row.ID
 	case fhir.ResourceObservation:
 		row, err := s.idx.GetObservationByID(req.ResourceId)
@@ -71,7 +70,7 @@ func (s *Server) GetResource(ctx context.Context, req *patientv1.GetResourceRequ
 		if row == nil {
 			return nil, status.Errorf(codes.NotFound, "%s %s not found", req.ResourceType, req.ResourceId)
 		}
-		fhirJSON = row.FHIRJson
+		patientID = row.PatientID
 		resourceID = row.ID
 	case fhir.ResourceCondition:
 		row, err := s.idx.GetConditionByID(req.ResourceId)
@@ -81,7 +80,7 @@ func (s *Server) GetResource(ctx context.Context, req *patientv1.GetResourceRequ
 		if row == nil {
 			return nil, status.Errorf(codes.NotFound, "%s %s not found", req.ResourceType, req.ResourceId)
 		}
-		fhirJSON = row.FHIRJson
+		patientID = row.PatientID
 		resourceID = row.ID
 	case fhir.ResourceMedicationRequest:
 		row, err := s.idx.GetMedicationRequestByID(req.ResourceId)
@@ -91,7 +90,7 @@ func (s *Server) GetResource(ctx context.Context, req *patientv1.GetResourceRequ
 		if row == nil {
 			return nil, status.Errorf(codes.NotFound, "%s %s not found", req.ResourceType, req.ResourceId)
 		}
-		fhirJSON = row.FHIRJson
+		patientID = row.PatientID
 		resourceID = row.ID
 	case fhir.ResourceAllergyIntolerance:
 		row, err := s.idx.GetAllergyIntoleranceByID(req.ResourceId)
@@ -101,7 +100,7 @@ func (s *Server) GetResource(ctx context.Context, req *patientv1.GetResourceRequ
 		if row == nil {
 			return nil, status.Errorf(codes.NotFound, "%s %s not found", req.ResourceType, req.ResourceId)
 		}
-		fhirJSON = row.FHIRJson
+		patientID = row.PatientID
 		resourceID = row.ID
 	case fhir.ResourceImmunization:
 		row, err := s.idx.GetImmunizationByID(req.ResourceId)
@@ -111,7 +110,7 @@ func (s *Server) GetResource(ctx context.Context, req *patientv1.GetResourceRequ
 		if row == nil {
 			return nil, status.Errorf(codes.NotFound, "%s %s not found", req.ResourceType, req.ResourceId)
 		}
-		fhirJSON = row.FHIRJson
+		patientID = row.PatientID
 		resourceID = row.ID
 	case fhir.ResourceProcedure:
 		row, err := s.idx.GetProcedureByID(req.ResourceId)
@@ -121,7 +120,7 @@ func (s *Server) GetResource(ctx context.Context, req *patientv1.GetResourceRequ
 		if row == nil {
 			return nil, status.Errorf(codes.NotFound, "%s %s not found", req.ResourceType, req.ResourceId)
 		}
-		fhirJSON = row.FHIRJson
+		patientID = row.PatientID
 		resourceID = row.ID
 	case fhir.ResourceFlag:
 		row, err := s.idx.GetFlagByID(req.ResourceId)
@@ -131,7 +130,7 @@ func (s *Server) GetResource(ctx context.Context, req *patientv1.GetResourceRequ
 		if row == nil {
 			return nil, status.Errorf(codes.NotFound, "%s %s not found", req.ResourceType, req.ResourceId)
 		}
-		fhirJSON = row.FHIRJson
+		patientID = row.PatientID
 		resourceID = row.ID
 	case fhir.ResourcePractitioner:
 		row, err := s.idx.GetPractitioner(req.ResourceId)
@@ -141,7 +140,6 @@ func (s *Server) GetResource(ctx context.Context, req *patientv1.GetResourceRequ
 		if row == nil {
 			return nil, status.Errorf(codes.NotFound, "%s %s not found", req.ResourceType, req.ResourceId)
 		}
-		fhirJSON = row.FHIRJson
 		resourceID = row.ID
 	case fhir.ResourceOrganization:
 		row, err := s.idx.GetOrganization(req.ResourceId)
@@ -151,7 +149,6 @@ func (s *Server) GetResource(ctx context.Context, req *patientv1.GetResourceRequ
 		if row == nil {
 			return nil, status.Errorf(codes.NotFound, "%s %s not found", req.ResourceType, req.ResourceId)
 		}
-		fhirJSON = row.FHIRJson
 		resourceID = row.ID
 	case fhir.ResourceLocation:
 		row, err := s.idx.GetLocation(req.ResourceId)
@@ -161,7 +158,6 @@ func (s *Server) GetResource(ctx context.Context, req *patientv1.GetResourceRequ
 		if row == nil {
 			return nil, status.Errorf(codes.NotFound, "%s %s not found", req.ResourceType, req.ResourceId)
 		}
-		fhirJSON = row.FHIRJson
 		resourceID = row.ID
 	case fhir.ResourceMeasureReport:
 		row, err := s.idx.GetMeasureReport(req.ResourceId)
@@ -171,14 +167,13 @@ func (s *Server) GetResource(ctx context.Context, req *patientv1.GetResourceRequ
 		if row == nil {
 			return nil, status.Errorf(codes.NotFound, "%s %s not found", req.ResourceType, req.ResourceId)
 		}
-		fhirJSON = row.FHIRJson
 		resourceID = row.ID
 	default:
 		return nil, status.Errorf(codes.InvalidArgument, "unsupported resource type: %s", req.ResourceType)
 	}
 
 	return &patientv1.GetResourceResponse{
-		Resource: toFHIRResource(req.ResourceType, resourceID, rowFHIRBytes(fhirJSON)),
+		Resource: toFHIRResource(req.ResourceType, resourceID, s.readFHIR(req.ResourceType, patientID, resourceID)),
 	}, nil
 }
 
@@ -199,7 +194,7 @@ func (s *Server) ListResources(ctx context.Context, req *patientv1.ListResources
 		}
 		pg = p
 		for _, row := range rows {
-			resources = append(resources, toFHIRResource(fhir.ResourcePractitioner, row.ID, rowFHIRBytes(row.FHIRJson)))
+			resources = append(resources, toFHIRResource(fhir.ResourcePractitioner, row.ID, s.readFHIR(fhir.ResourcePractitioner, "", row.ID)))
 		}
 	case fhir.ResourceOrganization:
 		rows, p, err := s.idx.ListOrganizations(opts)
@@ -208,7 +203,7 @@ func (s *Server) ListResources(ctx context.Context, req *patientv1.ListResources
 		}
 		pg = p
 		for _, row := range rows {
-			resources = append(resources, toFHIRResource(fhir.ResourceOrganization, row.ID, rowFHIRBytes(row.FHIRJson)))
+			resources = append(resources, toFHIRResource(fhir.ResourceOrganization, row.ID, s.readFHIR(fhir.ResourceOrganization, "", row.ID)))
 		}
 	case fhir.ResourceLocation:
 		rows, p, err := s.idx.ListLocations(opts)
@@ -217,7 +212,7 @@ func (s *Server) ListResources(ctx context.Context, req *patientv1.ListResources
 		}
 		pg = p
 		for _, row := range rows {
-			resources = append(resources, toFHIRResource(fhir.ResourceLocation, row.ID, rowFHIRBytes(row.FHIRJson)))
+			resources = append(resources, toFHIRResource(fhir.ResourceLocation, row.ID, s.readFHIR(fhir.ResourceLocation, "", row.ID)))
 		}
 	case fhir.ResourceMeasureReport:
 		rows, p, err := s.idx.ListMeasureReports(opts)
@@ -226,7 +221,7 @@ func (s *Server) ListResources(ctx context.Context, req *patientv1.ListResources
 		}
 		pg = p
 		for _, row := range rows {
-			resources = append(resources, toFHIRResource(fhir.ResourceMeasureReport, row.ID, rowFHIRBytes(row.FHIRJson)))
+			resources = append(resources, toFHIRResource(fhir.ResourceMeasureReport, row.ID, s.readFHIR(fhir.ResourceMeasureReport, "", row.ID)))
 		}
 	default:
 		return nil, status.Errorf(codes.InvalidArgument, "unsupported: %s", req.ResourceType)

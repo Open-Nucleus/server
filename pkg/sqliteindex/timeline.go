@@ -22,14 +22,14 @@ func (idx *sqliteIndex) GetTimeline(patientID string, opts fhir.PaginationOpts) 
 
 	pg := paginate(opts, total)
 
-	query := `SELECT type, id, date, fhir_json FROM (
-		SELECT 'encounter' as type, id, period_start as date, fhir_json FROM encounters WHERE patient_id = ?
+	query := `SELECT type, id, date FROM (
+		SELECT 'encounter' as type, id, period_start as date FROM encounters WHERE patient_id = ?
 		UNION ALL
-		SELECT 'observation' as type, id, effective_datetime as date, fhir_json FROM observations WHERE patient_id = ?
+		SELECT 'observation' as type, id, effective_datetime as date FROM observations WHERE patient_id = ?
 		UNION ALL
-		SELECT 'condition' as type, id, COALESCE(onset_datetime, last_updated) as date, fhir_json FROM conditions WHERE patient_id = ?
+		SELECT 'condition' as type, id, COALESCE(onset_datetime, last_updated) as date FROM conditions WHERE patient_id = ?
 		UNION ALL
-		SELECT 'flag' as type, id, COALESCE(period_start, last_updated) as date, fhir_json FROM flags WHERE patient_id = ?
+		SELECT 'flag' as type, id, COALESCE(period_start, last_updated) as date FROM flags WHERE patient_id = ?
 	) ORDER BY date DESC LIMIT ? OFFSET ?`
 
 	rows, err := idx.db.Query(query, patientID, patientID, patientID, patientID, pg.PerPage, (pg.Page-1)*pg.PerPage)
@@ -41,7 +41,7 @@ func (idx *sqliteIndex) GetTimeline(patientID string, opts fhir.PaginationOpts) 
 	var events []fhir.TimelineEvent
 	for rows.Next() {
 		var e fhir.TimelineEvent
-		if err := rows.Scan(&e.EventType, &e.ResourceID, &e.Date, &e.FHIRJson); err != nil {
+		if err := rows.Scan(&e.EventType, &e.ResourceID, &e.Date); err != nil {
 			return nil, nil, err
 		}
 		events = append(events, e)

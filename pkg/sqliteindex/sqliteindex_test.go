@@ -41,7 +41,6 @@ func TestUpsertPatient_InsertAndUpdate(t *testing.T) {
 		Active:      true,
 		LastUpdated: "2026-03-15T09:42:00Z",
 		GitBlobHash: "abc123",
-		FHIRJson:    `{"resourceType":"Patient","id":"p1"}`,
 	}
 
 	if err := idx.UpsertPatient(row); err != nil {
@@ -74,9 +73,9 @@ func TestListPatients_WithFilters(t *testing.T) {
 	idx := testIndex(t)
 
 	patients := []*fhir.PatientRow{
-		{ID: "p1", FamilyName: "Ibrahim", GivenNames: `["Fatima"]`, Gender: "female", BirthDate: "1990-01-15", SiteID: "site-1", Active: true, LastUpdated: "2026-01-01T00:00:00Z", GitBlobHash: "h1", FHIRJson: `{}`},
-		{ID: "p2", FamilyName: "Okafor", GivenNames: `["Chidi"]`, Gender: "male", BirthDate: "1985-06-20", SiteID: "site-1", Active: true, LastUpdated: "2026-01-02T00:00:00Z", GitBlobHash: "h2", FHIRJson: `{}`},
-		{ID: "p3", FamilyName: "Musa", GivenNames: `["Ahmed"]`, Gender: "male", BirthDate: "2000-03-01", SiteID: "site-2", Active: false, LastUpdated: "2026-01-03T00:00:00Z", GitBlobHash: "h3", FHIRJson: `{}`},
+		{ID: "p1", FamilyName: "Ibrahim", GivenNames: `["Fatima"]`, Gender: "female", BirthDate: "1990-01-15", SiteID: "site-1", Active: true, LastUpdated: "2026-01-01T00:00:00Z", GitBlobHash: "h1"},
+		{ID: "p2", FamilyName: "Okafor", GivenNames: `["Chidi"]`, Gender: "male", BirthDate: "1985-06-20", SiteID: "site-1", Active: true, LastUpdated: "2026-01-02T00:00:00Z", GitBlobHash: "h2"},
+		{ID: "p3", FamilyName: "Musa", GivenNames: `["Ahmed"]`, Gender: "male", BirthDate: "2000-03-01", SiteID: "site-2", Active: false, LastUpdated: "2026-01-03T00:00:00Z", GitBlobHash: "h3"},
 	}
 	for _, p := range patients {
 		if err := idx.UpsertPatient(p); err != nil {
@@ -119,8 +118,8 @@ func TestSearchPatients_FTS5(t *testing.T) {
 	idx := testIndex(t)
 
 	patients := []*fhir.PatientRow{
-		{ID: "p1", FamilyName: "Ibrahim", GivenNames: `["Fatima"]`, Gender: "female", BirthDate: "1990", SiteID: "s1", Active: true, LastUpdated: "2026-01-01T00:00:00Z", GitBlobHash: "h1", FHIRJson: `{}`},
-		{ID: "p2", FamilyName: "Okafor", GivenNames: `["Chidi"]`, Gender: "male", BirthDate: "1985", SiteID: "s1", Active: true, LastUpdated: "2026-01-02T00:00:00Z", GitBlobHash: "h2", FHIRJson: `{}`},
+		{ID: "p1", FamilyName: "Ibrahim", GivenNames: `["Fatima"]`, Gender: "female", BirthDate: "1990", SiteID: "s1", Active: true, LastUpdated: "2026-01-01T00:00:00Z", GitBlobHash: "h1"},
+		{ID: "p2", FamilyName: "Okafor", GivenNames: `["Chidi"]`, Gender: "male", BirthDate: "1985", SiteID: "s1", Active: true, LastUpdated: "2026-01-02T00:00:00Z", GitBlobHash: "h2"},
 	}
 	for _, p := range patients {
 		if err := idx.UpsertPatient(p); err != nil {
@@ -143,10 +142,10 @@ func TestSearchPatients_FTS5(t *testing.T) {
 func TestGetPatientBundle_AllChildResources(t *testing.T) {
 	idx := testIndex(t)
 
-	if err := idx.UpsertPatient(&fhir.PatientRow{ID: "p1", FamilyName: "Test", GivenNames: `["User"]`, Gender: "male", BirthDate: "1990", SiteID: "s1", Active: true, LastUpdated: "2026-01-01T00:00:00Z", GitBlobHash: "h1", FHIRJson: `{}`}); err != nil {
+	if err := idx.UpsertPatient(&fhir.PatientRow{ID: "p1", FamilyName: "Test", GivenNames: `["User"]`, Gender: "male", BirthDate: "1990", SiteID: "s1", Active: true, LastUpdated: "2026-01-01T00:00:00Z", GitBlobHash: "h1"}); err != nil {
 		t.Fatal(err)
 	}
-	if err := idx.UpsertEncounter(&fhir.EncounterRow{ID: "e1", PatientID: "p1", Status: "finished", ClassCode: "AMB", PeriodStart: "2026-01-01", SiteID: "s1", LastUpdated: "2026-01-01T00:00:00Z", GitBlobHash: "h2", FHIRJson: `{}`}); err != nil {
+	if err := idx.UpsertEncounter(&fhir.EncounterRow{ID: "e1", PatientID: "p1", Status: "finished", ClassCode: "AMB", PeriodStart: "2026-01-01", SiteID: "s1", LastUpdated: "2026-01-01T00:00:00Z", GitBlobHash: "h2"}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -168,13 +167,13 @@ func TestGetPatientBundle_AllChildResources(t *testing.T) {
 func TestGetTimeline_SortedByDate(t *testing.T) {
 	idx := testIndex(t)
 
-	if err := idx.UpsertPatient(&fhir.PatientRow{ID: "p1", FamilyName: "Test", GivenNames: `["User"]`, Gender: "male", BirthDate: "1990", SiteID: "s1", Active: true, LastUpdated: "2026-01-01T00:00:00Z", GitBlobHash: "h1", FHIRJson: `{}`}); err != nil {
+	if err := idx.UpsertPatient(&fhir.PatientRow{ID: "p1", FamilyName: "Test", GivenNames: `["User"]`, Gender: "male", BirthDate: "1990", SiteID: "s1", Active: true, LastUpdated: "2026-01-01T00:00:00Z", GitBlobHash: "h1"}); err != nil {
 		t.Fatal(err)
 	}
-	if err := idx.UpsertEncounter(&fhir.EncounterRow{ID: "e1", PatientID: "p1", Status: "finished", ClassCode: "AMB", PeriodStart: "2026-01-10", SiteID: "s1", LastUpdated: "2026-01-10T00:00:00Z", GitBlobHash: "h2", FHIRJson: `{}`}); err != nil {
+	if err := idx.UpsertEncounter(&fhir.EncounterRow{ID: "e1", PatientID: "p1", Status: "finished", ClassCode: "AMB", PeriodStart: "2026-01-10", SiteID: "s1", LastUpdated: "2026-01-10T00:00:00Z", GitBlobHash: "h2"}); err != nil {
 		t.Fatal(err)
 	}
-	if err := idx.UpsertObservation(&fhir.ObservationRow{ID: "o1", PatientID: "p1", Status: "final", Code: "8310-5", EffectiveDatetime: "2026-01-15", SiteID: "s1", LastUpdated: "2026-01-15T00:00:00Z", GitBlobHash: "h3", FHIRJson: `{}`}); err != nil {
+	if err := idx.UpsertObservation(&fhir.ObservationRow{ID: "o1", PatientID: "p1", Status: "final", Code: "8310-5", EffectiveDatetime: "2026-01-15", SiteID: "s1", LastUpdated: "2026-01-15T00:00:00Z", GitBlobHash: "h3"}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -198,9 +197,9 @@ func TestGetMatchCandidates_BroadQuery(t *testing.T) {
 	idx := testIndex(t)
 
 	patients := []*fhir.PatientRow{
-		{ID: "p1", FamilyName: "Ibrahim", GivenNames: `["Fatima"]`, Gender: "female", BirthDate: "1990-01-15", SiteID: "s1", Active: true, LastUpdated: "2026-01-01T00:00:00Z", GitBlobHash: "h1", FHIRJson: `{}`},
-		{ID: "p2", FamilyName: "Ibrahimov", GivenNames: `["Hassan"]`, Gender: "male", BirthDate: "1990-06-20", SiteID: "s1", Active: true, LastUpdated: "2026-01-02T00:00:00Z", GitBlobHash: "h2", FHIRJson: `{}`},
-		{ID: "p3", FamilyName: "Okafor", GivenNames: `["Chidi"]`, Gender: "male", BirthDate: "1985-03-01", SiteID: "s1", Active: true, LastUpdated: "2026-01-03T00:00:00Z", GitBlobHash: "h3", FHIRJson: `{}`},
+		{ID: "p1", FamilyName: "Ibrahim", GivenNames: `["Fatima"]`, Gender: "female", BirthDate: "1990-01-15", SiteID: "s1", Active: true, LastUpdated: "2026-01-01T00:00:00Z", GitBlobHash: "h1"},
+		{ID: "p2", FamilyName: "Ibrahimov", GivenNames: `["Hassan"]`, Gender: "male", BirthDate: "1990-06-20", SiteID: "s1", Active: true, LastUpdated: "2026-01-02T00:00:00Z", GitBlobHash: "h2"},
+		{ID: "p3", FamilyName: "Okafor", GivenNames: `["Chidi"]`, Gender: "male", BirthDate: "1985-03-01", SiteID: "s1", Active: true, LastUpdated: "2026-01-03T00:00:00Z", GitBlobHash: "h3"},
 	}
 	for _, p := range patients {
 		if err := idx.UpsertPatient(p); err != nil {
@@ -221,13 +220,13 @@ func TestGetMatchCandidates_BroadQuery(t *testing.T) {
 func TestUpdateSummary_Counts(t *testing.T) {
 	idx := testIndex(t)
 
-	if err := idx.UpsertPatient(&fhir.PatientRow{ID: "p1", FamilyName: "Test", GivenNames: `["User"]`, Gender: "male", BirthDate: "1990", SiteID: "s1", Active: true, LastUpdated: "2026-01-01T00:00:00Z", GitBlobHash: "h1", FHIRJson: `{}`}); err != nil {
+	if err := idx.UpsertPatient(&fhir.PatientRow{ID: "p1", FamilyName: "Test", GivenNames: `["User"]`, Gender: "male", BirthDate: "1990", SiteID: "s1", Active: true, LastUpdated: "2026-01-01T00:00:00Z", GitBlobHash: "h1"}); err != nil {
 		t.Fatal(err)
 	}
-	if err := idx.UpsertEncounter(&fhir.EncounterRow{ID: "e1", PatientID: "p1", Status: "finished", ClassCode: "AMB", PeriodStart: "2026-01-10", SiteID: "s1", LastUpdated: "2026-01-10T00:00:00Z", GitBlobHash: "h2", FHIRJson: `{}`}); err != nil {
+	if err := idx.UpsertEncounter(&fhir.EncounterRow{ID: "e1", PatientID: "p1", Status: "finished", ClassCode: "AMB", PeriodStart: "2026-01-10", SiteID: "s1", LastUpdated: "2026-01-10T00:00:00Z", GitBlobHash: "h2"}); err != nil {
 		t.Fatal(err)
 	}
-	if err := idx.UpsertCondition(&fhir.ConditionRow{ID: "c1", PatientID: "p1", ClinicalStatus: "active", VerificationStatus: "confirmed", Code: "J06.9", SiteID: "s1", LastUpdated: "2026-01-10T00:00:00Z", GitBlobHash: "h3", FHIRJson: `{}`}); err != nil {
+	if err := idx.UpsertCondition(&fhir.ConditionRow{ID: "c1", PatientID: "p1", ClinicalStatus: "active", VerificationStatus: "confirmed", Code: "J06.9", SiteID: "s1", LastUpdated: "2026-01-10T00:00:00Z", GitBlobHash: "h3"}); err != nil {
 		t.Fatal(err)
 	}
 

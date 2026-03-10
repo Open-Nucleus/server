@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/FibrinLab/open-nucleus/pkg/envelope"
 	"github.com/FibrinLab/open-nucleus/pkg/fhir"
 	"github.com/FibrinLab/open-nucleus/pkg/gitstore"
 	"github.com/FibrinLab/open-nucleus/pkg/sqliteindex"
@@ -55,9 +56,10 @@ type MutationContext struct {
 
 // Writer implements the validate → git commit → sqlite upsert pipeline per spec §3.1.
 type Writer struct {
-	mu       sync.Mutex
-	git      gitstore.Store
-	idx      sqliteindex.Index
+	mu          sync.Mutex
+	git         gitstore.Store
+	idx         sqliteindex.Index
+	keys        envelope.KeyManager // optional; nil = no encryption
 	lockTimeout time.Duration
 }
 
@@ -71,6 +73,47 @@ func NewWriter(git gitstore.Store, idx sqliteindex.Index, lockTimeout time.Durat
 		idx:         idx,
 		lockTimeout: lockTimeout,
 	}
+}
+
+// WithEncryption attaches a KeyManager for per-patient encryption at rest.
+// When set, FHIR JSON is encrypted before writing to Git.
+func (w *Writer) WithEncryption(km envelope.KeyManager) *Writer {
+	w.keys = km
+	return w
+}
+
+// encryptForGit encrypts data if a KeyManager is configured.
+// Patient resources use the patient's key; non-patient resources use the system key.
+func (w *Writer) encryptForGit(patientID string, data []byte) ([]byte, error) {
+	if w.keys == nil {
+		return data, nil
+	}
+	keyID := patientID
+	if keyID == "" {
+		keyID = envelope.SystemKeyID
+	}
+	return w.keys.Encrypt(keyID, data)
+}
+
+// DecryptFromGit decrypts data if a KeyManager is configured.
+func (w *Writer) DecryptFromGit(patientID string, data []byte) ([]byte, error) {
+	if w.keys == nil {
+		return data, nil
+	}
+	keyID := patientID
+	if keyID == "" {
+		keyID = envelope.SystemKeyID
+	}
+	return w.keys.Decrypt(keyID, data)
+}
+
+// DestroyPatientKey destroys the encryption key for a patient, making
+// their data permanently unreadable (crypto-erasure). No-op if encryption is not configured.
+func (w *Writer) DestroyPatientKey(patientID string) error {
+	if w.keys == nil {
+		return nil
+	}
+	return w.keys.DestroyKey(patientID)
 }
 
 // Write performs a single resource write operation.
@@ -116,16 +159,25 @@ func (w *Writer) Write(ctx context.Context, op, resourceType, patientID string, 
 		return nil, fmt.Errorf("set meta: %w", err)
 	}
 
-	// 4. Acquire write lock with timeout
+	// 4. Extract search fields from cleartext BEFORE encryption
+	//    (SQLite index gets extracted fields only, never the full JSON)
+
+	// 5. Encrypt for Git storage (if encryption is configured)
+	gitData, err := w.encryptForGit(patientID, fhirJSON)
+	if err != nil {
+		return nil, fmt.Errorf("encrypt: %w", err)
+	}
+
+	// 6. Acquire write lock with timeout
 	if err := w.acquireLock(ctx); err != nil {
 		return nil, err
 	}
 	defer w.mu.Unlock()
 
-	// 5. Compute git path
+	// 7. Compute git path
 	gitPath := fhir.GitPath(resourceType, patientID, resourceID)
 
-	// 6. Write to git
+	// 8. Write to git (encrypted if KeyManager is set)
 	commitMsg := gitstore.CommitMessage{
 		ResourceType: resourceType,
 		Operation:    op,
@@ -136,14 +188,14 @@ func (w *Writer) Write(ctx context.Context, op, resourceType, patientID string, 
 		Timestamp:    now,
 	}
 
-	commitHash, err := w.git.WriteAndCommit(gitPath, fhirJSON, commitMsg)
+	commitHash, err := w.git.WriteAndCommit(gitPath, gitData, commitMsg)
 	if err != nil {
 		// Rollback on git failure
 		w.git.Rollback()
 		return nil, fmt.Errorf("git write failed: %w", err)
 	}
 
-	// 7. Extract fields + upsert SQLite
+	// 9. Extract fields from cleartext + upsert SQLite (fhir_json not stored)
 	if sqErr := w.upsertIndex(resourceType, patientID, mutCtx.SiteID, commitHash, fhirJSON); sqErr != nil {
 		// Git succeeded but SQLite failed — return success with warning
 		// Data is safe in Git per spec §11.3
@@ -200,11 +252,17 @@ func (w *Writer) Write(ctx context.Context, op, resourceType, patientID string, 
 
 // Delete performs a soft-delete per spec §3.4.
 func (w *Writer) Delete(ctx context.Context, resourceType, patientID, resourceID string, mutCtx MutationContext) (*WriteResult, error) {
-	// Read existing resource from git
+	// Read existing resource from git (may be encrypted)
 	gitPath := fhir.GitPath(resourceType, patientID, resourceID)
-	existing, err := w.git.Read(gitPath)
+	raw, err := w.git.Read(gitPath)
 	if err != nil {
 		return nil, fmt.Errorf("resource not found: %w", err)
+	}
+
+	// Decrypt if needed
+	existing, err := w.DecryptFromGit(patientID, raw)
+	if err != nil {
+		return nil, fmt.Errorf("decrypt: %w", err)
 	}
 
 	// Apply soft delete mutations
@@ -308,6 +366,16 @@ func (w *Writer) WriteBatch(ctx context.Context, patientID string, items []Batch
 	// Write all files and create a single commit
 	var lastCommitHash string
 	for _, p := range preparedItems {
+		// Encrypt for Git storage
+		pid := patientID
+		if p.resourceType == fhir.ResourcePatient {
+			pid = p.resourceID
+		}
+		gitData, encErr := w.encryptForGit(pid, p.fhirJSON)
+		if encErr != nil {
+			return nil, fmt.Errorf("encrypt batch item: %w", encErr)
+		}
+
 		commitMsg := gitstore.CommitMessage{
 			ResourceType: p.resourceType,
 			Operation:    fhir.OpCreate,
@@ -318,17 +386,13 @@ func (w *Writer) WriteBatch(ctx context.Context, patientID string, items []Batch
 			Timestamp:    now,
 		}
 
-		hash, err := w.git.WriteAndCommit(p.gitPath, p.fhirJSON, commitMsg)
+		hash, err := w.git.WriteAndCommit(p.gitPath, gitData, commitMsg)
 		if err != nil {
 			w.git.Rollback()
 			return nil, fmt.Errorf("git write failed: %w", err)
 		}
 		lastCommitHash = hash
 
-		pid := patientID
-		if p.resourceType == fhir.ResourcePatient {
-			pid = p.resourceID
-		}
 		if sqErr := w.upsertIndex(p.resourceType, pid, mutCtx.SiteID, hash, p.fhirJSON); sqErr != nil {
 			fmt.Printf("WARNING: batch SQLite upsert failed: %v\n", sqErr)
 		}
@@ -367,14 +431,21 @@ func (w *Writer) RebuildIndex() (int, string, error) {
 
 	count := 0
 	err = w.git.TreeWalk(func(path string, data []byte) error {
-		rt, err := fhir.GetResourceType(data)
+		// Decrypt if encryption is configured
+		patientID := extractPatientIDFromPath(path)
+		cleartext, decErr := w.DecryptFromGit(patientID, data)
+		if decErr != nil {
+			// Key destroyed (crypto-erasure) or corrupted — skip silently
+			return nil
+		}
+
+		rt, err := fhir.GetResourceType(cleartext)
 		if err != nil {
 			return nil // skip non-FHIR files
 		}
 
-		patientID := extractPatientIDFromPath(path)
 		siteID := "" // Will be extracted from meta if available
-		if sqErr := w.upsertIndex(rt, patientID, siteID, head, data); sqErr != nil {
+		if sqErr := w.upsertIndex(rt, patientID, siteID, head, cleartext); sqErr != nil {
 			return fmt.Errorf("upsert %s: %w", path, sqErr)
 		}
 		count++

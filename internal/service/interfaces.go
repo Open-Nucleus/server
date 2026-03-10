@@ -69,6 +69,9 @@ type PatientService interface {
 	GetResource(ctx context.Context, resourceType, resourceID string) (any, error)
 	CreateResource(ctx context.Context, resourceType string, body json.RawMessage) (*WriteResponse, error)
 	UpdateResource(ctx context.Context, resourceType, resourceID string, body json.RawMessage) (*WriteResponse, error)
+
+	// Crypto-erasure (GDPR Art 17, POPIA, Kenya DPA, Nigeria NDPA)
+	ErasePatient(ctx context.Context, patientID string) (*EraseResponse, error)
 }
 
 // SyncService defines the interface for sync operations.
@@ -246,6 +249,12 @@ type WriteResponse struct {
 type GitMeta struct {
 	Commit  string `json:"commit"`
 	Message string `json:"message"`
+}
+
+// EraseResponse is returned by the crypto-erasure endpoint.
+type EraseResponse struct {
+	Erased    bool   `json:"erased"`
+	PatientID string `json:"patient_id"`
 }
 
 // --- Patient-specific DTOs ---

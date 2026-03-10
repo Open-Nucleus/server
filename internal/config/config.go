@@ -9,14 +9,39 @@ import (
 )
 
 type Config struct {
-	Server    ServerConfig    `koanf:"server"`
-	Auth      AuthConfig      `koanf:"auth"`
-	GRPC      GRPCConfig      `koanf:"grpc"`
-	RateLimit RateLimitConfig `koanf:"rate_limit"`
-	CORS      CORSConfig      `koanf:"cors"`
-	WebSocket WebSocketConfig `koanf:"websocket"`
-	Logging   LoggingConfig   `koanf:"logging"`
-	Smart     SmartConfig     `koanf:"smart"`
+	Server     ServerConfig     `koanf:"server"`
+	Auth       AuthConfig       `koanf:"auth"`
+	GRPC       GRPCConfig       `koanf:"grpc"`
+	RateLimit  RateLimitConfig  `koanf:"rate_limit"`
+	CORS       CORSConfig       `koanf:"cors"`
+	WebSocket  WebSocketConfig  `koanf:"websocket"`
+	Logging    LoggingConfig    `koanf:"logging"`
+	Smart      SmartConfig      `koanf:"smart"`
+	Data       DataConfig       `koanf:"data"`
+	Encryption EncryptionConfig `koanf:"encryption"`
+	TLS        TLSConfig        `koanf:"tls"`
+}
+
+// DataConfig specifies where the monolith stores its data.
+type DataConfig struct {
+	RepoPath    string `koanf:"repo_path"`    // Git repository path
+	DBPath      string `koanf:"db_path"`      // SQLite database path
+	AuthorName  string `koanf:"author_name"`  // Git author name
+	AuthorEmail string `koanf:"author_email"` // Git author email
+}
+
+// EncryptionConfig controls per-patient envelope encryption.
+type EncryptionConfig struct {
+	Enabled       bool   `koanf:"enabled"`
+	MasterKeyFile string `koanf:"master_key_file"` // path to master key file (alternative to env var)
+}
+
+// TLSConfig controls TLS for the HTTP server.
+type TLSConfig struct {
+	Mode     string `koanf:"mode"`      // "auto", "provided", "off"
+	CertFile string `koanf:"cert_file"` // PEM cert path (mode=provided)
+	KeyFile  string `koanf:"key_file"`  // PEM key path (mode=provided)
+	CertDir  string `koanf:"cert_dir"`  // auto-generated cert storage (mode=auto)
 }
 
 type SmartConfig struct {
@@ -136,5 +161,20 @@ func setDefaults(cfg *Config) {
 	}
 	if cfg.Logging.Format == "" {
 		cfg.Logging.Format = "json"
+	}
+	if cfg.Data.RepoPath == "" {
+		cfg.Data.RepoPath = "data/repo"
+	}
+	if cfg.Data.DBPath == "" {
+		cfg.Data.DBPath = "data/nucleus.db"
+	}
+	if cfg.Data.AuthorName == "" {
+		cfg.Data.AuthorName = "nucleus-node"
+	}
+	if cfg.Data.AuthorEmail == "" {
+		cfg.Data.AuthorEmail = "node@open-nucleus.local"
+	}
+	if cfg.TLS.CertDir == "" {
+		cfg.TLS.CertDir = "data/certs"
 	}
 }

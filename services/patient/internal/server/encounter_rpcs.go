@@ -18,7 +18,7 @@ func (s *Server) ListEncounters(ctx context.Context, req *patientv1.ListEncounte
 
 	resp := &patientv1.ListEncountersResponse{Pagination: paginationToProto(pg)}
 	for _, row := range rows {
-		resp.Encounters = append(resp.Encounters, toFHIRResource(fhir.ResourceEncounter, row.ID, rowFHIRBytes(row.FHIRJson)))
+		resp.Encounters = append(resp.Encounters, toFHIRResource(fhir.ResourceEncounter, row.ID, s.readFHIR(fhir.ResourceEncounter, req.PatientId, row.ID)))
 	}
 	return resp, nil
 }
@@ -32,7 +32,7 @@ func (s *Server) GetEncounter(ctx context.Context, req *patientv1.GetEncounterRe
 		return nil, status.Errorf(codes.NotFound, "encounter %s not found", req.EncounterId)
 	}
 	return &patientv1.GetEncounterResponse{
-		Encounter: toFHIRResource(fhir.ResourceEncounter, row.ID, rowFHIRBytes(row.FHIRJson)),
+		Encounter: toFHIRResource(fhir.ResourceEncounter, row.ID, s.readFHIR(fhir.ResourceEncounter, req.PatientId, row.ID)),
 	}, nil
 }
 

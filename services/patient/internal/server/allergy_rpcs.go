@@ -18,7 +18,7 @@ func (s *Server) ListAllergyIntolerances(ctx context.Context, req *patientv1.Lis
 
 	resp := &patientv1.ListAllergyIntolerancesResponse{Pagination: paginationToProto(pg)}
 	for _, row := range rows {
-		resp.AllergyIntolerances = append(resp.AllergyIntolerances, toFHIRResource(fhir.ResourceAllergyIntolerance, row.ID, rowFHIRBytes(row.FHIRJson)))
+		resp.AllergyIntolerances = append(resp.AllergyIntolerances, toFHIRResource(fhir.ResourceAllergyIntolerance, row.ID, s.readFHIR(fhir.ResourceAllergyIntolerance, req.PatientId, row.ID)))
 	}
 	return resp, nil
 }
@@ -32,7 +32,7 @@ func (s *Server) GetAllergyIntolerance(ctx context.Context, req *patientv1.GetAl
 		return nil, status.Errorf(codes.NotFound, "allergy intolerance %s not found", req.AllergyIntoleranceId)
 	}
 	return &patientv1.GetAllergyIntoleranceResponse{
-		AllergyIntolerance: toFHIRResource(fhir.ResourceAllergyIntolerance, row.ID, rowFHIRBytes(row.FHIRJson)),
+		AllergyIntolerance: toFHIRResource(fhir.ResourceAllergyIntolerance, row.ID, s.readFHIR(fhir.ResourceAllergyIntolerance, req.PatientId, row.ID)),
 	}, nil
 }
 

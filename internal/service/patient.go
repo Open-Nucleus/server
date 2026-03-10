@@ -1005,3 +1005,7 @@ func fhirResourcesToSlice(resources []*commonv1.FHIRResource) []any {
 	}
 	return result
 }
+
+func (p *patientAdapter) ErasePatient(_ context.Context, _ string) (*EraseResponse, error) {
+	return nil, fmt.Errorf("crypto-erasure not available via gRPC adapter")
+}

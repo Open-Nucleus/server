@@ -26,7 +26,7 @@ func (s *Server) ListObservations(ctx context.Context, req *patientv1.ListObserv
 
 	resp := &patientv1.ListObservationsResponse{Pagination: paginationToProto(pg)}
 	for _, row := range rows {
-		resp.Observations = append(resp.Observations, toFHIRResource(fhir.ResourceObservation, row.ID, rowFHIRBytes(row.FHIRJson)))
+		resp.Observations = append(resp.Observations, toFHIRResource(fhir.ResourceObservation, row.ID, s.readFHIR(fhir.ResourceObservation, req.PatientId, row.ID)))
 	}
 	return resp, nil
 }
@@ -40,7 +40,7 @@ func (s *Server) GetObservation(ctx context.Context, req *patientv1.GetObservati
 		return nil, status.Errorf(codes.NotFound, "observation %s not found", req.ObservationId)
 	}
 	return &patientv1.GetObservationResponse{
-		Observation: toFHIRResource(fhir.ResourceObservation, row.ID, rowFHIRBytes(row.FHIRJson)),
+		Observation: toFHIRResource(fhir.ResourceObservation, row.ID, s.readFHIR(fhir.ResourceObservation, req.PatientId, row.ID)),
 	}, nil
 }
 

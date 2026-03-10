@@ -14,6 +14,143 @@ func DropAll(db *sql.DB) error {
 	return err
 }
 
+// InitUnifiedSchema creates all tables for the monolith: patient index +
+// auth deny list + sync state + formulary stock + anchor queue.
+// Table names across services don't collide — verified during Phase 1 design.
+func InitUnifiedSchema(db *sql.DB) error {
+	if err := InitSchema(db); err != nil {
+		return err
+	}
+	_, err := db.Exec(unifiedExtraDDL)
+	return err
+}
+
+// unifiedExtraDDL contains tables from auth, sync, formulary, and anchor services.
+const unifiedExtraDDL = `
+-- Auth: deny list & revocations
+CREATE TABLE IF NOT EXISTS deny_list (
+    jti TEXT PRIMARY KEY,
+    device_id TEXT NOT NULL,
+    added_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_deny_list_device ON deny_list(device_id);
+
+CREATE TABLE IF NOT EXISTS revocations (
+    device_id TEXT PRIMARY KEY,
+    public_key TEXT NOT NULL,
+    revoked_at TEXT NOT NULL DEFAULT (datetime('now')),
+    revoked_by TEXT NOT NULL,
+    reason TEXT NOT NULL DEFAULT ''
+);
+
+CREATE TABLE IF NOT EXISTS node_info (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+);
+
+-- Auth: SMART clients
+CREATE TABLE IF NOT EXISTS smart_clients (
+    client_id TEXT PRIMARY KEY,
+    client_name TEXT NOT NULL DEFAULT '',
+    redirect_uris TEXT NOT NULL DEFAULT '[]',
+    scope TEXT NOT NULL DEFAULT '',
+    launch_modes TEXT NOT NULL DEFAULT '[]',
+    status TEXT NOT NULL DEFAULT 'active',
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Sync: conflicts, history, peer state
+CREATE TABLE IF NOT EXISTS conflicts (
+    id TEXT PRIMARY KEY,
+    resource_type TEXT NOT NULL,
+    resource_id TEXT NOT NULL,
+    patient_id TEXT NOT NULL DEFAULT '',
+    level TEXT NOT NULL DEFAULT 'review',
+    status TEXT NOT NULL DEFAULT 'pending',
+    detected_at TEXT NOT NULL DEFAULT (datetime('now')),
+    local_version BLOB,
+    remote_version BLOB,
+    merged_version BLOB,
+    changed_fields TEXT NOT NULL DEFAULT '[]',
+    reason TEXT NOT NULL DEFAULT '',
+    local_node TEXT NOT NULL DEFAULT '',
+    remote_node TEXT NOT NULL DEFAULT '',
+    peer_site_id TEXT NOT NULL DEFAULT '',
+    resolved_at TEXT,
+    resolved_by TEXT,
+    resolution TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_conflicts_status ON conflicts(status);
+CREATE INDEX IF NOT EXISTS idx_conflicts_level ON conflicts(level);
+CREATE INDEX IF NOT EXISTS idx_conflicts_patient ON conflicts(patient_id);
+
+CREATE TABLE IF NOT EXISTS sync_history (
+    id TEXT PRIMARY KEY,
+    peer_node TEXT NOT NULL,
+    transport TEXT NOT NULL DEFAULT '',
+    direction TEXT NOT NULL DEFAULT 'bidirectional',
+    state TEXT NOT NULL DEFAULT 'completed',
+    started_at TEXT NOT NULL DEFAULT (datetime('now')),
+    completed_at TEXT,
+    resources_sent INTEGER NOT NULL DEFAULT 0,
+    resources_received INTEGER NOT NULL DEFAULT 0,
+    conflicts_detected INTEGER NOT NULL DEFAULT 0,
+    local_head_before TEXT NOT NULL DEFAULT '',
+    local_head_after TEXT NOT NULL DEFAULT '',
+    error_message TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS idx_sync_history_peer ON sync_history(peer_node);
+CREATE INDEX IF NOT EXISTS idx_sync_history_state ON sync_history(state);
+
+CREATE TABLE IF NOT EXISTS peer_state (
+    node_id TEXT PRIMARY KEY,
+    site_id TEXT NOT NULL DEFAULT '',
+    public_key BLOB,
+    trusted INTEGER NOT NULL DEFAULT 0,
+    last_seen TEXT NOT NULL DEFAULT (datetime('now')),
+    their_head TEXT NOT NULL DEFAULT '',
+    transport TEXT NOT NULL DEFAULT '',
+    revoked INTEGER NOT NULL DEFAULT 0
+);
+
+-- Formulary: stock levels & deliveries
+CREATE TABLE IF NOT EXISTS stock_levels (
+    site_id            TEXT NOT NULL,
+    medication_code    TEXT NOT NULL,
+    quantity           INTEGER NOT NULL DEFAULT 0,
+    unit               TEXT NOT NULL DEFAULT 'units',
+    last_updated       TEXT NOT NULL DEFAULT '',
+    earliest_expiry    TEXT NOT NULL DEFAULT '',
+    daily_consumption_rate REAL NOT NULL DEFAULT 0.0,
+    PRIMARY KEY (site_id, medication_code)
+);
+CREATE INDEX IF NOT EXISTS idx_stock_site ON stock_levels(site_id);
+CREATE INDEX IF NOT EXISTS idx_stock_medication ON stock_levels(medication_code);
+
+CREATE TABLE IF NOT EXISTS deliveries (
+    id              TEXT PRIMARY KEY,
+    site_id         TEXT NOT NULL,
+    received_by     TEXT NOT NULL,
+    delivery_date   TEXT NOT NULL,
+    items_recorded  INTEGER NOT NULL DEFAULT 0,
+    created_at      TEXT NOT NULL DEFAULT ''
+);
+
+-- Anchor: queue
+CREATE TABLE IF NOT EXISTS anchor_queue (
+    anchor_id    TEXT PRIMARY KEY,
+    merkle_root  TEXT NOT NULL,
+    git_head     TEXT NOT NULL,
+    node_did     TEXT NOT NULL,
+    state        TEXT NOT NULL DEFAULT 'pending',
+    enqueued_at  TEXT NOT NULL,
+    processed_at TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_queue_state ON anchor_queue(state);
+CREATE INDEX IF NOT EXISTS idx_queue_enqueued ON anchor_queue(enqueued_at);
+`
+
 const dropDDL = `
 DROP TABLE IF EXISTS patient_summaries;
 DROP TABLE IF EXISTS flags;
@@ -46,8 +183,7 @@ CREATE TABLE IF NOT EXISTS patients (
     site_id TEXT NOT NULL,
     active INTEGER DEFAULT 1,
     last_updated TEXT NOT NULL,
-    git_blob_hash TEXT NOT NULL,
-    fhir_json TEXT NOT NULL
+    git_blob_hash TEXT NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_patients_name ON patients(family_name, given_names);
@@ -89,8 +225,7 @@ CREATE TABLE IF NOT EXISTS encounters (
     site_id TEXT NOT NULL,
     reason_code TEXT,
     last_updated TEXT NOT NULL,
-    git_blob_hash TEXT NOT NULL,
-    fhir_json TEXT NOT NULL
+    git_blob_hash TEXT NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_enc_patient ON encounters(patient_id);
@@ -113,8 +248,7 @@ CREATE TABLE IF NOT EXISTS observations (
     value_codeable_concept TEXT,
     site_id TEXT NOT NULL,
     last_updated TEXT NOT NULL,
-    git_blob_hash TEXT NOT NULL,
-    fhir_json TEXT NOT NULL
+    git_blob_hash TEXT NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_obs_patient ON observations(patient_id);
@@ -133,8 +267,7 @@ CREATE TABLE IF NOT EXISTS conditions (
     onset_datetime TEXT,
     site_id TEXT NOT NULL,
     last_updated TEXT NOT NULL,
-    git_blob_hash TEXT NOT NULL,
-    fhir_json TEXT NOT NULL
+    git_blob_hash TEXT NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_cond_patient ON conditions(patient_id);
@@ -151,8 +284,7 @@ CREATE TABLE IF NOT EXISTS medication_requests (
     authored_on TEXT,
     site_id TEXT NOT NULL,
     last_updated TEXT NOT NULL,
-    git_blob_hash TEXT NOT NULL,
-    fhir_json TEXT NOT NULL
+    git_blob_hash TEXT NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_medrq_patient ON medication_requests(patient_id);
@@ -170,8 +302,7 @@ CREATE TABLE IF NOT EXISTS allergy_intolerances (
     criticality TEXT,
     site_id TEXT NOT NULL,
     last_updated TEXT NOT NULL,
-    git_blob_hash TEXT NOT NULL,
-    fhir_json TEXT NOT NULL
+    git_blob_hash TEXT NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_allergy_patient ON allergy_intolerances(patient_id);
@@ -189,8 +320,7 @@ CREATE TABLE IF NOT EXISTS flags (
     generated_by TEXT,
     site_id TEXT NOT NULL,
     last_updated TEXT NOT NULL,
-    git_blob_hash TEXT NOT NULL,
-    fhir_json TEXT NOT NULL
+    git_blob_hash TEXT NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_flag_patient ON flags(patient_id);
@@ -206,8 +336,7 @@ CREATE TABLE IF NOT EXISTS immunizations (
     occurrence_datetime TEXT NOT NULL,
     site_id TEXT NOT NULL,
     last_updated TEXT NOT NULL,
-    git_blob_hash TEXT NOT NULL,
-    fhir_json TEXT NOT NULL
+    git_blob_hash TEXT NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_imm_patient ON immunizations(patient_id);
@@ -224,8 +353,7 @@ CREATE TABLE IF NOT EXISTS procedures (
     performed_datetime TEXT,
     site_id TEXT NOT NULL,
     last_updated TEXT NOT NULL,
-    git_blob_hash TEXT NOT NULL,
-    fhir_json TEXT NOT NULL
+    git_blob_hash TEXT NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_proc_patient ON procedures(patient_id);
@@ -240,8 +368,7 @@ CREATE TABLE IF NOT EXISTS practitioners (
     active INTEGER DEFAULT 1,
     site_id TEXT NOT NULL,
     last_updated TEXT NOT NULL,
-    git_blob_hash TEXT NOT NULL,
-    fhir_json TEXT NOT NULL
+    git_blob_hash TEXT NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_pract_name ON practitioners(family_name);
@@ -254,8 +381,7 @@ CREATE TABLE IF NOT EXISTS organizations (
     active INTEGER DEFAULT 1,
     site_id TEXT NOT NULL,
     last_updated TEXT NOT NULL,
-    git_blob_hash TEXT NOT NULL,
-    fhir_json TEXT NOT NULL
+    git_blob_hash TEXT NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_org_name ON organizations(name);
@@ -268,8 +394,7 @@ CREATE TABLE IF NOT EXISTS locations (
     status TEXT NOT NULL,
     site_id TEXT NOT NULL,
     last_updated TEXT NOT NULL,
-    git_blob_hash TEXT NOT NULL,
-    fhir_json TEXT NOT NULL
+    git_blob_hash TEXT NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_loc_name ON locations(name);
@@ -284,8 +409,7 @@ CREATE TABLE IF NOT EXISTS measure_reports (
     reporter TEXT,
     site_id TEXT NOT NULL,
     last_updated TEXT NOT NULL,
-    git_blob_hash TEXT NOT NULL,
-    fhir_json TEXT NOT NULL
+    git_blob_hash TEXT NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_mr_status ON measure_reports(status);
@@ -303,8 +427,7 @@ CREATE TABLE IF NOT EXISTS detected_issues (
     implicated_patients TEXT,
     generated_by TEXT,
     last_updated TEXT NOT NULL,
-    git_blob_hash TEXT NOT NULL,
-    fhir_json TEXT NOT NULL
+    git_blob_hash TEXT NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_di_severity ON detected_issues(severity);

@@ -18,7 +18,7 @@ func (s *Server) ListImmunizations(ctx context.Context, req *patientv1.ListImmun
 
 	resp := &patientv1.ListImmunizationsResponse{Pagination: paginationToProto(pg)}
 	for _, row := range rows {
-		resp.Immunizations = append(resp.Immunizations, toFHIRResource(fhir.ResourceImmunization, row.ID, rowFHIRBytes(row.FHIRJson)))
+		resp.Immunizations = append(resp.Immunizations, toFHIRResource(fhir.ResourceImmunization, row.ID, s.readFHIR(fhir.ResourceImmunization, req.PatientId, row.ID)))
 	}
 	return resp, nil
 }
@@ -32,7 +32,7 @@ func (s *Server) GetImmunization(ctx context.Context, req *patientv1.GetImmuniza
 		return nil, status.Errorf(codes.NotFound, "immunization %s not found", req.ImmunizationId)
 	}
 	return &patientv1.GetImmunizationResponse{
-		Immunization: toFHIRResource(fhir.ResourceImmunization, row.ID, rowFHIRBytes(row.FHIRJson)),
+		Immunization: toFHIRResource(fhir.ResourceImmunization, row.ID, s.readFHIR(fhir.ResourceImmunization, req.PatientId, row.ID)),
 	}, nil
 }
 

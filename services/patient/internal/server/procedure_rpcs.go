@@ -18,7 +18,7 @@ func (s *Server) ListProcedures(ctx context.Context, req *patientv1.ListProcedur
 
 	resp := &patientv1.ListProceduresResponse{Pagination: paginationToProto(pg)}
 	for _, row := range rows {
-		resp.Procedures = append(resp.Procedures, toFHIRResource(fhir.ResourceProcedure, row.ID, rowFHIRBytes(row.FHIRJson)))
+		resp.Procedures = append(resp.Procedures, toFHIRResource(fhir.ResourceProcedure, row.ID, s.readFHIR(fhir.ResourceProcedure, req.PatientId, row.ID)))
 	}
 	return resp, nil
 }
@@ -32,7 +32,7 @@ func (s *Server) GetProcedure(ctx context.Context, req *patientv1.GetProcedureRe
 		return nil, status.Errorf(codes.NotFound, "procedure %s not found", req.ProcedureId)
 	}
 	return &patientv1.GetProcedureResponse{
-		Procedure: toFHIRResource(fhir.ResourceProcedure, row.ID, rowFHIRBytes(row.FHIRJson)),
+		Procedure: toFHIRResource(fhir.ResourceProcedure, row.ID, s.readFHIR(fhir.ResourceProcedure, req.PatientId, row.ID)),
 	}, nil
 }
 

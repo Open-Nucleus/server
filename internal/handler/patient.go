@@ -186,6 +186,23 @@ func (h *PatientHandler) Match(w http.ResponseWriter, r *http.Request) {
 	model.Success(w, http.StatusOK, resp)
 }
 
+// Erase handles DELETE /api/v1/patients/{id}/erase — crypto-erasure for privacy compliance.
+func (h *PatientHandler) Erase(w http.ResponseWriter, r *http.Request) {
+	patientID := chi.URLParam(r, "id")
+	if patientID == "" {
+		model.WriteError(w, model.ErrValidation, "Patient ID is required", nil)
+		return
+	}
+
+	resp, err := h.svc.ErasePatient(r.Context(), patientID)
+	if err != nil {
+		model.WriteError(w, model.ErrServiceUnavailable, err.Error(), nil)
+		return
+	}
+
+	model.Success(w, http.StatusOK, resp)
+}
+
 // writeResponseWithGit writes a write response including git metadata in the envelope.
 func writeResponseWithGit(w http.ResponseWriter, status int, resp *service.WriteResponse) {
 	env := model.Envelope{Status: "success", Data: resp.Resource}

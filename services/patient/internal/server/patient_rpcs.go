@@ -32,7 +32,7 @@ func (s *Server) ListPatients(ctx context.Context, req *patientv1.ListPatientsRe
 		Pagination: paginationToProto(pg),
 	}
 	for _, row := range rows {
-		resp.Patients = append(resp.Patients, patientRowToProto(row))
+		resp.Patients = append(resp.Patients, s.patientRowToProto(row))
 	}
 	return resp, nil
 }
@@ -46,26 +46,27 @@ func (s *Server) GetPatient(ctx context.Context, req *patientv1.GetPatientReques
 		return nil, status.Errorf(codes.NotFound, "patient %s not found", req.PatientId)
 	}
 
+	pid := req.PatientId
 	resp := &patientv1.GetPatientResponse{
-		Patient: patientRowToProto(bundle.Patient),
+		Patient: s.patientRowToProto(bundle.Patient),
 	}
 	for _, e := range bundle.Encounters {
-		resp.Encounters = append(resp.Encounters, &commonv1.FHIRResource{ResourceType: fhir.ResourceEncounter, Id: e.ID, JsonPayload: rowFHIRBytes(e.FHIRJson)})
+		resp.Encounters = append(resp.Encounters, &commonv1.FHIRResource{ResourceType: fhir.ResourceEncounter, Id: e.ID, JsonPayload: s.readFHIR(fhir.ResourceEncounter, pid, e.ID)})
 	}
 	for _, o := range bundle.Observations {
-		resp.Observations = append(resp.Observations, &commonv1.FHIRResource{ResourceType: fhir.ResourceObservation, Id: o.ID, JsonPayload: rowFHIRBytes(o.FHIRJson)})
+		resp.Observations = append(resp.Observations, &commonv1.FHIRResource{ResourceType: fhir.ResourceObservation, Id: o.ID, JsonPayload: s.readFHIR(fhir.ResourceObservation, pid, o.ID)})
 	}
 	for _, c := range bundle.Conditions {
-		resp.Conditions = append(resp.Conditions, &commonv1.FHIRResource{ResourceType: fhir.ResourceCondition, Id: c.ID, JsonPayload: rowFHIRBytes(c.FHIRJson)})
+		resp.Conditions = append(resp.Conditions, &commonv1.FHIRResource{ResourceType: fhir.ResourceCondition, Id: c.ID, JsonPayload: s.readFHIR(fhir.ResourceCondition, pid, c.ID)})
 	}
 	for _, m := range bundle.MedicationRequests {
-		resp.MedicationRequests = append(resp.MedicationRequests, &commonv1.FHIRResource{ResourceType: fhir.ResourceMedicationRequest, Id: m.ID, JsonPayload: rowFHIRBytes(m.FHIRJson)})
+		resp.MedicationRequests = append(resp.MedicationRequests, &commonv1.FHIRResource{ResourceType: fhir.ResourceMedicationRequest, Id: m.ID, JsonPayload: s.readFHIR(fhir.ResourceMedicationRequest, pid, m.ID)})
 	}
 	for _, a := range bundle.AllergyIntolerances {
-		resp.AllergyIntolerances = append(resp.AllergyIntolerances, &commonv1.FHIRResource{ResourceType: fhir.ResourceAllergyIntolerance, Id: a.ID, JsonPayload: rowFHIRBytes(a.FHIRJson)})
+		resp.AllergyIntolerances = append(resp.AllergyIntolerances, &commonv1.FHIRResource{ResourceType: fhir.ResourceAllergyIntolerance, Id: a.ID, JsonPayload: s.readFHIR(fhir.ResourceAllergyIntolerance, pid, a.ID)})
 	}
 	for _, f := range bundle.Flags {
-		resp.Flags = append(resp.Flags, &commonv1.FHIRResource{ResourceType: fhir.ResourceFlag, Id: f.ID, JsonPayload: rowFHIRBytes(f.FHIRJson)})
+		resp.Flags = append(resp.Flags, &commonv1.FHIRResource{ResourceType: fhir.ResourceFlag, Id: f.ID, JsonPayload: s.readFHIR(fhir.ResourceFlag, pid, f.ID)})
 	}
 	return resp, nil
 }
@@ -79,26 +80,27 @@ func (s *Server) GetPatientBundle(ctx context.Context, req *patientv1.GetPatient
 		return nil, status.Errorf(codes.NotFound, "patient %s not found", req.PatientId)
 	}
 
+	pid := req.PatientId
 	resp := &patientv1.GetPatientBundleResponse{
-		Patient: patientRowToProto(bundle.Patient),
+		Patient: s.patientRowToProto(bundle.Patient),
 	}
 	for _, e := range bundle.Encounters {
-		resp.Encounters = append(resp.Encounters, &commonv1.FHIRResource{ResourceType: fhir.ResourceEncounter, Id: e.ID, JsonPayload: rowFHIRBytes(e.FHIRJson)})
+		resp.Encounters = append(resp.Encounters, &commonv1.FHIRResource{ResourceType: fhir.ResourceEncounter, Id: e.ID, JsonPayload: s.readFHIR(fhir.ResourceEncounter, pid, e.ID)})
 	}
 	for _, o := range bundle.Observations {
-		resp.Observations = append(resp.Observations, &commonv1.FHIRResource{ResourceType: fhir.ResourceObservation, Id: o.ID, JsonPayload: rowFHIRBytes(o.FHIRJson)})
+		resp.Observations = append(resp.Observations, &commonv1.FHIRResource{ResourceType: fhir.ResourceObservation, Id: o.ID, JsonPayload: s.readFHIR(fhir.ResourceObservation, pid, o.ID)})
 	}
 	for _, c := range bundle.Conditions {
-		resp.Conditions = append(resp.Conditions, &commonv1.FHIRResource{ResourceType: fhir.ResourceCondition, Id: c.ID, JsonPayload: rowFHIRBytes(c.FHIRJson)})
+		resp.Conditions = append(resp.Conditions, &commonv1.FHIRResource{ResourceType: fhir.ResourceCondition, Id: c.ID, JsonPayload: s.readFHIR(fhir.ResourceCondition, pid, c.ID)})
 	}
 	for _, m := range bundle.MedicationRequests {
-		resp.MedicationRequests = append(resp.MedicationRequests, &commonv1.FHIRResource{ResourceType: fhir.ResourceMedicationRequest, Id: m.ID, JsonPayload: rowFHIRBytes(m.FHIRJson)})
+		resp.MedicationRequests = append(resp.MedicationRequests, &commonv1.FHIRResource{ResourceType: fhir.ResourceMedicationRequest, Id: m.ID, JsonPayload: s.readFHIR(fhir.ResourceMedicationRequest, pid, m.ID)})
 	}
 	for _, a := range bundle.AllergyIntolerances {
-		resp.AllergyIntolerances = append(resp.AllergyIntolerances, &commonv1.FHIRResource{ResourceType: fhir.ResourceAllergyIntolerance, Id: a.ID, JsonPayload: rowFHIRBytes(a.FHIRJson)})
+		resp.AllergyIntolerances = append(resp.AllergyIntolerances, &commonv1.FHIRResource{ResourceType: fhir.ResourceAllergyIntolerance, Id: a.ID, JsonPayload: s.readFHIR(fhir.ResourceAllergyIntolerance, pid, a.ID)})
 	}
 	for _, f := range bundle.Flags {
-		resp.Flags = append(resp.Flags, &commonv1.FHIRResource{ResourceType: fhir.ResourceFlag, Id: f.ID, JsonPayload: rowFHIRBytes(f.FHIRJson)})
+		resp.Flags = append(resp.Flags, &commonv1.FHIRResource{ResourceType: fhir.ResourceFlag, Id: f.ID, JsonPayload: s.readFHIR(fhir.ResourceFlag, pid, f.ID)})
 	}
 	return resp, nil
 }
@@ -146,7 +148,7 @@ func (s *Server) SearchPatients(ctx context.Context, req *patientv1.SearchPatien
 		Pagination: paginationToProto(pg),
 	}
 	for _, row := range rows {
-		resp.Patients = append(resp.Patients, patientRowToProto(row))
+		resp.Patients = append(resp.Patients, s.patientRowToProto(row))
 	}
 	return resp, nil
 }
@@ -225,8 +227,8 @@ func (s *Server) MatchPatients(ctx context.Context, req *patientv1.MatchPatients
 			factors = append(factors, "birth_year")
 		}
 
-		// District (0.05) — would need address data from FHIR JSON; skip for now
-		if req.District != "" && strings.Contains(cand.FHIRJson, req.District) {
+		// District (0.05) — reads address data from Git
+		if candJSON, _ := s.git.Read(fhir.GitPath(fhir.ResourcePatient, "", cand.ID)); req.District != "" && strings.Contains(string(candJSON), req.District) {
 			score += 0.05
 			factors = append(factors, "district")
 		}
@@ -297,7 +299,7 @@ func (s *Server) GetPatientTimeline(ctx context.Context, req *patientv1.GetPatie
 			EventType:  e.EventType,
 			ResourceId: e.ResourceID,
 			Date:       e.Date,
-			FhirJson:   []byte(e.FHIRJson),
+			FhirJson:   s.readFHIR(timelineEventToResourceType(e.EventType), req.PatientId, e.ResourceID),
 		})
 	}
 	return resp, nil

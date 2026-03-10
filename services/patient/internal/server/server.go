@@ -101,13 +101,20 @@ func toFHIRResource(resourceType, id string, fhirJSON []byte) *commonv1.FHIRReso
 	}
 }
 
-// Helper: convert PatientRow to FHIRResource proto
-func patientRowToProto(row *fhir.PatientRow) *commonv1.FHIRResource {
+// Helper: convert PatientRow to FHIRResource proto (reads JSON from Git)
+func (s *Server) patientRowToProto(row *fhir.PatientRow) *commonv1.FHIRResource {
+	data, _ := s.git.Read(fhir.GitPath(fhir.ResourcePatient, "", row.ID))
 	return &commonv1.FHIRResource{
 		ResourceType: fhir.ResourcePatient,
 		Id:           row.ID,
-		JsonPayload:  []byte(row.FHIRJson),
+		JsonPayload:  data,
 	}
+}
+
+// readFHIR reads FHIR JSON from Git for a given resource.
+func (s *Server) readFHIR(resourceType, patientID, resourceID string) []byte {
+	data, _ := s.git.Read(fhir.GitPath(resourceType, patientID, resourceID))
+	return data
 }
 
 // Helper: convert PaginationOpts from proto
@@ -138,9 +145,20 @@ func paginationToProto(pg *fhir.Pagination) *commonv1.PaginationResponse {
 	}
 }
 
-// Helper: convert row fhir_json to bytes
-func rowFHIRBytes(fhirJSON string) []byte {
-	return []byte(fhirJSON)
+// timelineEventToResourceType maps timeline event type strings to FHIR resource type constants.
+func timelineEventToResourceType(eventType string) string {
+	switch eventType {
+	case "encounter":
+		return fhir.ResourceEncounter
+	case "observation":
+		return fhir.ResourceObservation
+	case "condition":
+		return fhir.ResourceCondition
+	case "flag":
+		return fhir.ResourceFlag
+	default:
+		return eventType
+	}
 }
 
 // levenshtein computes the Levenshtein distance between two strings.

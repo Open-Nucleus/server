@@ -19,7 +19,6 @@ func ExtractPatientFields(fhirJSON []byte, siteID, gitBlobHash string) (*Patient
 		SiteID:      siteID,
 		Active:      true,
 		GitBlobHash: gitBlobHash,
-		FHIRJson:    string(fhirJSON),
 	}
 
 	// active field
@@ -59,7 +58,6 @@ func ExtractEncounterFields(fhirJSON []byte, patientID, siteID, gitBlobHash stri
 		Status:      getStr(r, "status"),
 		SiteID:      siteID,
 		GitBlobHash: gitBlobHash,
-		FHIRJson:    string(fhirJSON),
 	}
 
 	if classObj, ok := r["class"].(map[string]any); ok {
@@ -116,7 +114,6 @@ func ExtractObservationFields(fhirJSON []byte, patientID, siteID, gitBlobHash st
 		EffectiveDatetime: getStr(r, "effectiveDateTime"),
 		SiteID:            siteID,
 		GitBlobHash:       gitBlobHash,
-		FHIRJson:          string(fhirJSON),
 	}
 
 	// encounter reference
@@ -194,7 +191,6 @@ func ExtractConditionFields(fhirJSON []byte, patientID, siteID, gitBlobHash stri
 		PatientID: patientID,
 		SiteID:    siteID,
 		GitBlobHash: gitBlobHash,
-		FHIRJson:    string(fhirJSON),
 	}
 
 	row.ClinicalStatus = extractCodeFromCodeableConcept(r, "clinicalStatus")
@@ -237,7 +233,6 @@ func ExtractMedicationRequestFields(fhirJSON []byte, patientID, siteID, gitBlobH
 		Intent:    getStr(r, "intent"),
 		SiteID:    siteID,
 		GitBlobHash: gitBlobHash,
-		FHIRJson:    string(fhirJSON),
 	}
 
 	if medCC, ok := r["medicationCodeableConcept"].(map[string]any); ok {
@@ -275,7 +270,6 @@ func ExtractAllergyIntoleranceFields(fhirJSON []byte, patientID, siteID, gitBlob
 		PatientID: patientID,
 		SiteID:    siteID,
 		GitBlobHash: gitBlobHash,
-		FHIRJson:    string(fhirJSON),
 	}
 
 	row.ClinicalStatus = extractCodeFromCodeableConcept(r, "clinicalStatus")
@@ -321,7 +315,6 @@ func ExtractFlagFields(fhirJSON []byte, patientID, siteID, gitBlobHash string) (
 		Status:      getStr(r, "status"),
 		SiteID:      siteID,
 		GitBlobHash: gitBlobHash,
-		FHIRJson:    string(fhirJSON),
 	}
 
 	if cats, ok := getArray(r, "category"); ok && len(cats) > 0 {
@@ -386,7 +379,6 @@ func ExtractImmunizationFields(fhirJSON []byte, patientID, siteID, gitBlobHash s
 		OccurrenceDatetime: getStr(r, "occurrenceDateTime"),
 		SiteID:             siteID,
 		GitBlobHash:        gitBlobHash,
-		FHIRJson:           string(fhirJSON),
 	}
 
 	if vc, ok := r["vaccineCode"].(map[string]any); ok {
@@ -421,7 +413,6 @@ func ExtractProcedureFields(fhirJSON []byte, patientID, siteID, gitBlobHash stri
 		Status:      getStr(r, "status"),
 		SiteID:      siteID,
 		GitBlobHash: gitBlobHash,
-		FHIRJson:    string(fhirJSON),
 	}
 
 	if code, ok := r["code"].(map[string]any); ok {
@@ -459,7 +450,6 @@ func ExtractPractitionerFields(fhirJSON []byte, siteID, gitBlobHash string) (*Pr
 		Active:      true,
 		SiteID:      siteID,
 		GitBlobHash: gitBlobHash,
-		FHIRJson:    string(fhirJSON),
 	}
 
 	if active, ok := r["active"].(bool); ok {
@@ -496,7 +486,6 @@ func ExtractOrganizationFields(fhirJSON []byte, siteID, gitBlobHash string) (*Or
 		Active:      true,
 		SiteID:      siteID,
 		GitBlobHash: gitBlobHash,
-		FHIRJson:    string(fhirJSON),
 	}
 
 	if active, ok := r["active"].(bool); ok {
@@ -534,7 +523,6 @@ func ExtractLocationFields(fhirJSON []byte, siteID, gitBlobHash string) (*Locati
 		Status:      getStr(r, "status"),
 		SiteID:      siteID,
 		GitBlobHash: gitBlobHash,
-		FHIRJson:    string(fhirJSON),
 	}
 
 	if types, ok := getArray(r, "type"); ok && len(types) > 0 {
@@ -568,7 +556,6 @@ func ExtractMeasureReportFields(fhirJSON []byte, siteID, gitBlobHash string) (*M
 		Type:        getStr(r, "type"),
 		SiteID:      siteID,
 		GitBlobHash: gitBlobHash,
-		FHIRJson:    string(fhirJSON),
 	}
 
 	if period, ok := r["period"].(map[string]any); ok {

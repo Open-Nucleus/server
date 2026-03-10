@@ -17,7 +17,7 @@ func (idx *sqliteIndex) SearchPatients(query string, opts fhir.PaginationOpts) (
 
 	pg := paginate(opts, total)
 
-	sqlQuery := `SELECT p.id, p.family_name, p.given_names, p.gender, p.birth_date, p.site_id, p.active, p.last_updated, p.git_blob_hash, p.fhir_json
+	sqlQuery := `SELECT p.id, p.family_name, p.given_names, p.gender, p.birth_date, p.site_id, p.active, p.last_updated, p.git_blob_hash
 		FROM patients_fts fts
 		JOIN patients p ON p.id = fts.id
 		WHERE patients_fts MATCH ? AND p.active = 1
@@ -34,7 +34,7 @@ func (idx *sqliteIndex) SearchPatients(query string, opts fhir.PaginationOpts) (
 	for rows.Next() {
 		p := &fhir.PatientRow{}
 		var active int
-		if err := rows.Scan(&p.ID, &p.FamilyName, &p.GivenNames, &p.Gender, &p.BirthDate, &p.SiteID, &active, &p.LastUpdated, &p.GitBlobHash, &p.FHIRJson); err != nil {
+		if err := rows.Scan(&p.ID, &p.FamilyName, &p.GivenNames, &p.Gender, &p.BirthDate, &p.SiteID, &active, &p.LastUpdated, &p.GitBlobHash); err != nil {
 			return nil, nil, err
 		}
 		p.Active = active == 1

@@ -36,14 +36,14 @@ func (idx *sqliteIndex) GetPatientBundle(patientID string) (*BundleResult, error
 	bundle := &BundleResult{Patient: patient}
 
 	// Encounters
-	rows, err := idx.db.Query("SELECT id, patient_id, status, class_code, type_code, period_start, period_end, site_id, reason_code, last_updated, git_blob_hash, fhir_json FROM encounters WHERE patient_id = ? ORDER BY period_start DESC", patientID)
+	rows, err := idx.db.Query("SELECT id, patient_id, status, class_code, type_code, period_start, period_end, site_id, reason_code, last_updated, git_blob_hash FROM encounters WHERE patient_id = ? ORDER BY period_start DESC", patientID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 	for rows.Next() {
 		e := &fhir.EncounterRow{}
-		if err := rows.Scan(&e.ID, &e.PatientID, &e.Status, &e.ClassCode, &e.TypeCode, &e.PeriodStart, &e.PeriodEnd, &e.SiteID, &e.ReasonCode, &e.LastUpdated, &e.GitBlobHash, &e.FHIRJson); err != nil {
+		if err := rows.Scan(&e.ID, &e.PatientID, &e.Status, &e.ClassCode, &e.TypeCode, &e.PeriodStart, &e.PeriodEnd, &e.SiteID, &e.ReasonCode, &e.LastUpdated, &e.GitBlobHash); err != nil {
 			return nil, err
 		}
 		bundle.Encounters = append(bundle.Encounters, e)
@@ -53,14 +53,14 @@ func (idx *sqliteIndex) GetPatientBundle(patientID string) (*BundleResult, error
 	}
 
 	// Observations
-	obsRows, err := idx.db.Query("SELECT id, patient_id, encounter_id, status, category, code, code_display, effective_datetime, value_quantity_value, value_quantity_unit, value_string, value_codeable_concept, site_id, last_updated, git_blob_hash, fhir_json FROM observations WHERE patient_id = ? ORDER BY effective_datetime DESC", patientID)
+	obsRows, err := idx.db.Query("SELECT id, patient_id, encounter_id, status, category, code, code_display, effective_datetime, value_quantity_value, value_quantity_unit, value_string, value_codeable_concept, site_id, last_updated, git_blob_hash FROM observations WHERE patient_id = ? ORDER BY effective_datetime DESC", patientID)
 	if err != nil {
 		return nil, err
 	}
 	defer obsRows.Close()
 	for obsRows.Next() {
 		o := &fhir.ObservationRow{}
-		if err := obsRows.Scan(&o.ID, &o.PatientID, &o.EncounterID, &o.Status, &o.Category, &o.Code, &o.CodeDisplay, &o.EffectiveDatetime, &o.ValueQuantityValue, &o.ValueQuantityUnit, &o.ValueString, &o.ValueCodeableConcept, &o.SiteID, &o.LastUpdated, &o.GitBlobHash, &o.FHIRJson); err != nil {
+		if err := obsRows.Scan(&o.ID, &o.PatientID, &o.EncounterID, &o.Status, &o.Category, &o.Code, &o.CodeDisplay, &o.EffectiveDatetime, &o.ValueQuantityValue, &o.ValueQuantityUnit, &o.ValueString, &o.ValueCodeableConcept, &o.SiteID, &o.LastUpdated, &o.GitBlobHash); err != nil {
 			return nil, err
 		}
 		bundle.Observations = append(bundle.Observations, o)
@@ -70,14 +70,14 @@ func (idx *sqliteIndex) GetPatientBundle(patientID string) (*BundleResult, error
 	}
 
 	// Conditions (active only)
-	condRows, err := idx.db.Query("SELECT id, patient_id, clinical_status, verification_status, code, code_display, onset_datetime, site_id, last_updated, git_blob_hash, fhir_json FROM conditions WHERE patient_id = ? AND clinical_status = 'active'", patientID)
+	condRows, err := idx.db.Query("SELECT id, patient_id, clinical_status, verification_status, code, code_display, onset_datetime, site_id, last_updated, git_blob_hash FROM conditions WHERE patient_id = ? AND clinical_status = 'active'", patientID)
 	if err != nil {
 		return nil, err
 	}
 	defer condRows.Close()
 	for condRows.Next() {
 		c := &fhir.ConditionRow{}
-		if err := condRows.Scan(&c.ID, &c.PatientID, &c.ClinicalStatus, &c.VerificationStatus, &c.Code, &c.CodeDisplay, &c.OnsetDatetime, &c.SiteID, &c.LastUpdated, &c.GitBlobHash, &c.FHIRJson); err != nil {
+		if err := condRows.Scan(&c.ID, &c.PatientID, &c.ClinicalStatus, &c.VerificationStatus, &c.Code, &c.CodeDisplay, &c.OnsetDatetime, &c.SiteID, &c.LastUpdated, &c.GitBlobHash); err != nil {
 			return nil, err
 		}
 		bundle.Conditions = append(bundle.Conditions, c)
@@ -87,14 +87,14 @@ func (idx *sqliteIndex) GetPatientBundle(patientID string) (*BundleResult, error
 	}
 
 	// MedicationRequests (active only)
-	medRows, err := idx.db.Query("SELECT id, patient_id, status, intent, medication_code, medication_display, authored_on, site_id, last_updated, git_blob_hash, fhir_json FROM medication_requests WHERE patient_id = ? AND status = 'active'", patientID)
+	medRows, err := idx.db.Query("SELECT id, patient_id, status, intent, medication_code, medication_display, authored_on, site_id, last_updated, git_blob_hash FROM medication_requests WHERE patient_id = ? AND status = 'active'", patientID)
 	if err != nil {
 		return nil, err
 	}
 	defer medRows.Close()
 	for medRows.Next() {
 		m := &fhir.MedicationRequestRow{}
-		if err := medRows.Scan(&m.ID, &m.PatientID, &m.Status, &m.Intent, &m.MedicationCode, &m.MedicationDisplay, &m.AuthoredOn, &m.SiteID, &m.LastUpdated, &m.GitBlobHash, &m.FHIRJson); err != nil {
+		if err := medRows.Scan(&m.ID, &m.PatientID, &m.Status, &m.Intent, &m.MedicationCode, &m.MedicationDisplay, &m.AuthoredOn, &m.SiteID, &m.LastUpdated, &m.GitBlobHash); err != nil {
 			return nil, err
 		}
 		bundle.MedicationRequests = append(bundle.MedicationRequests, m)
@@ -104,14 +104,14 @@ func (idx *sqliteIndex) GetPatientBundle(patientID string) (*BundleResult, error
 	}
 
 	// AllergyIntolerances (active only)
-	allergyRows, err := idx.db.Query("SELECT id, patient_id, clinical_status, verification_status, type, substance_code, substance_display, criticality, site_id, last_updated, git_blob_hash, fhir_json FROM allergy_intolerances WHERE patient_id = ? AND clinical_status = 'active'", patientID)
+	allergyRows, err := idx.db.Query("SELECT id, patient_id, clinical_status, verification_status, type, substance_code, substance_display, criticality, site_id, last_updated, git_blob_hash FROM allergy_intolerances WHERE patient_id = ? AND clinical_status = 'active'", patientID)
 	if err != nil {
 		return nil, err
 	}
 	defer allergyRows.Close()
 	for allergyRows.Next() {
 		a := &fhir.AllergyIntoleranceRow{}
-		if err := allergyRows.Scan(&a.ID, &a.PatientID, &a.ClinicalStatus, &a.VerificationStatus, &a.Type, &a.SubstanceCode, &a.SubstanceDisplay, &a.Criticality, &a.SiteID, &a.LastUpdated, &a.GitBlobHash, &a.FHIRJson); err != nil {
+		if err := allergyRows.Scan(&a.ID, &a.PatientID, &a.ClinicalStatus, &a.VerificationStatus, &a.Type, &a.SubstanceCode, &a.SubstanceDisplay, &a.Criticality, &a.SiteID, &a.LastUpdated, &a.GitBlobHash); err != nil {
 			return nil, err
 		}
 		bundle.AllergyIntolerances = append(bundle.AllergyIntolerances, a)
@@ -121,14 +121,14 @@ func (idx *sqliteIndex) GetPatientBundle(patientID string) (*BundleResult, error
 	}
 
 	// Flags (active only)
-	flagRows, err := idx.db.Query("SELECT id, patient_id, status, category, code, period_start, period_end, generated_by, site_id, last_updated, git_blob_hash, fhir_json FROM flags WHERE patient_id = ? AND status = 'active'", patientID)
+	flagRows, err := idx.db.Query("SELECT id, patient_id, status, category, code, period_start, period_end, generated_by, site_id, last_updated, git_blob_hash FROM flags WHERE patient_id = ? AND status = 'active'", patientID)
 	if err != nil {
 		return nil, err
 	}
 	defer flagRows.Close()
 	for flagRows.Next() {
 		f := &fhir.FlagRow{}
-		if err := flagRows.Scan(&f.ID, &f.PatientID, &f.Status, &f.Category, &f.Code, &f.PeriodStart, &f.PeriodEnd, &f.GeneratedBy, &f.SiteID, &f.LastUpdated, &f.GitBlobHash, &f.FHIRJson); err != nil {
+		if err := flagRows.Scan(&f.ID, &f.PatientID, &f.Status, &f.Category, &f.Code, &f.PeriodStart, &f.PeriodEnd, &f.GeneratedBy, &f.SiteID, &f.LastUpdated, &f.GitBlobHash); err != nil {
 			return nil, err
 		}
 		bundle.Flags = append(bundle.Flags, f)

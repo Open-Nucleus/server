@@ -136,6 +136,12 @@ func New(cfg Config) http.Handler {
 						middleware.RequirePermission(model.PermPatientRead),
 					).Get("/timeline", cfg.PatientHandler.Timeline)
 
+					// Crypto-erasure (GDPR/POPIA compliance)
+					r.With(
+						cfg.RateLimiter.Middleware(middleware.CategoryWrite),
+						middleware.RequirePermission(model.PermPatientWrite),
+					).Delete("/erase", cfg.PatientHandler.Erase)
+
 					// Encounters
 					r.Route("/encounters", func(r chi.Router) {
 						r.With(

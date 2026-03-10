@@ -18,7 +18,7 @@ func (s *Server) ListMedicationRequests(ctx context.Context, req *patientv1.List
 
 	resp := &patientv1.ListMedicationRequestsResponse{Pagination: paginationToProto(pg)}
 	for _, row := range rows {
-		resp.MedicationRequests = append(resp.MedicationRequests, toFHIRResource(fhir.ResourceMedicationRequest, row.ID, rowFHIRBytes(row.FHIRJson)))
+		resp.MedicationRequests = append(resp.MedicationRequests, toFHIRResource(fhir.ResourceMedicationRequest, row.ID, s.readFHIR(fhir.ResourceMedicationRequest, req.PatientId, row.ID)))
 	}
 	return resp, nil
 }
@@ -32,7 +32,7 @@ func (s *Server) GetMedicationRequest(ctx context.Context, req *patientv1.GetMed
 		return nil, status.Errorf(codes.NotFound, "medication request %s not found", req.MedicationRequestId)
 	}
 	return &patientv1.GetMedicationRequestResponse{
-		MedicationRequest: toFHIRResource(fhir.ResourceMedicationRequest, row.ID, rowFHIRBytes(row.FHIRJson)),
+		MedicationRequest: toFHIRResource(fhir.ResourceMedicationRequest, row.ID, s.readFHIR(fhir.ResourceMedicationRequest, req.PatientId, row.ID)),
 	}, nil
 }
 
