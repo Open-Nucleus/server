@@ -1,7 +1,7 @@
 # Open Nucleus — Architectural Memory
 
 > Living document. Updated after every major feature or structural change.
-> Last updated: Overhaul Phase 3 — Sync Crypto Fix (2026-03-09)
+> Last updated: Overhaul Phases 0–2 — Monolith, Encryption, Crypto-Erasure (2026-03-10)
 
 ---
 
@@ -11,90 +11,102 @@
 Open Nucleus is an open-source, offline-first electronic health record (EHR) system designed for military forward operating bases, disaster relief zones, and small clinics in sub-Saharan Africa. It assumes zero connectivity as the default and treats network access as a bonus.
 
 ### Core Architecture
-Microservices in Go (Patient, Sync, Auth, Formulary, Anchor services) plus a **Python Sentinel Agent** on port :50056 (gRPC) / :8090 (HTTP), fronted by a Go API Gateway on port 8080 (REST/JSON). The Flutter frontend lives in a separate repo (open-nucleus-app) and consumes the gateway as a pure REST client.
-Dual-layer data model: FHIR R4 resources are stored as JSON files in a Git repository (source of truth) with a SQLite database as a rebuildable query index. Every clinical write commits to Git first, then upserts SQLite. If SQLite is lost, it rebuilds from Git.
-Git-based sync: Nodes discover each other via Wi-Fi Direct, Bluetooth, or local network and sync using Git fetch/merge/push. A FHIR-aware merge driver classifies conflicts into auto-merge (safe), review (flag for clinician), or block (clinical safety risk). Transport is pluggable and automatic.
-Sentinel Agent: A "sleeper" AI agent that wakes on sync events, crawls the merged dataset for epidemiological outbreak signals, cross-site medication conflicts, missed referral follow-ups, and supply stockout predictions. V1 is rule-based using WHO IDSR thresholds.
-IOTA Tangle anchoring: Git Merkle roots are periodically anchored to the IOTA Tangle (feeless), providing cryptographic proof of data integrity for regulatory compliance, humanitarian accountability, and supply chain provenance.
+**Single Go binary** (`cmd/nucleus/main.go`) with all services running in-process. The Python Sentinel Agent runs as a separate process on :50056 (gRPC) / :8090 (HTTP). The Flutter frontend lives in a separate repo (open-nucleus-app) and consumes the HTTP API as a pure REST client.
 
-The API Gateway is a stateless Go HTTP server that sits between the Flutter frontend and 6 backend gRPC microservices. It owns no business logic beyond auth, authorization, validation, rate limiting, and response formatting. All clinical data passes through as opaque FHIR R4 JSON.
+**Dual-layer data model:** FHIR R4 resources are stored as **encrypted** JSON files in a Git repository (source of truth) with SQLite as a rebuildable search index containing extracted fields only (no full FHIR JSON). Every clinical write validates, extracts search fields, encrypts, commits to Git, then upserts SQLite.
+
+**Per-patient encryption:** AES-256-GCM envelope encryption with master key wrapping per-patient DEKs. Destroying a patient's key renders their Git data permanently unreadable (crypto-erasure).
+
+**Git-based sync:** Nodes sync using Git fetch/merge/push over ECDH-encrypted channels. A FHIR-aware merge driver classifies conflicts into auto-merge (safe), review (flag for clinician), or block (clinical safety risk).
+
+**Sentinel Agent:** Rule-based V1 using WHO IDSR thresholds for outbreak detection. Not AI/LLM-powered. Ollama sidecar is future infrastructure.
+
+**Merkle anchoring:** Git Merkle roots queued for anchoring. V1 uses a stub backend; real blockchain integration planned.
 
 ```
-Flutter App (HTTP REST/JSON)
+Flutter App (HTTPS REST/JSON)
         │
         ▼
-   ┌─────────┐
-   │ Gateway  │  ← this repo
-   └────┬─────┘
-        │ gRPC
+  ┌─────────────────────────────┐
+  │  nucleus (single binary)     │  HTTP :8080 (TLS)
+  │  Patient, Auth, Sync,       │
+  │  Formulary, Anchor          │
+  │  ┌─────────┐  ┌──────────┐ │
+  │  │ Git repo │  │ SQLite   │ │
+  │  │(encrypted│  │(index    │ │
+  │  │ FHIR)   │  │ only)    │ │
+  │  └─────────┘  └──────────┘ │
+  └─────────────────────────────┘
+        │ gRPC (optional)
         ▼
-  ┌──────────────────────────────────────────────┐
-  │ Auth :50053  │ Patient :50051  │ Sync :50052  │
-  │ Formulary :50054 │ Anchor :50055 │ Sentinel :50056 │
-  └──────────────────────────────────────────────┘
+  ┌─────────────────────┐
+  │ Sentinel :50056     │  Python (separate process)
+  └─────────────────────┘
 ```
 
 ---
 
 ## Dependency Wiring (main.go)
 
-`cmd/gateway/main.go` is the composition root. It wires everything together in this order:
+`cmd/nucleus/main.go` is the composition root. It constructs all services in-process:
 
 ```
 config.Load(path)
     │
     ▼
-grpcclient.NewPool(cfg.GRPC)          ← dials 6 backend services (non-blocking)
+gitstore.NewStore(cfg.Data.RepoPath)   ← shared Git repository
+sql.Open("sqlite", cfg.Data.DBPath)    ← shared unified SQLite DB
+sqliteindex.InitUnifiedSchema(db)      ← all tables in one schema
     │
-    ├─► service.NewAuthService(pool)   ← implements service.AuthService interface
-    │       │
+    ├─► pipeline.NewWriter(git, idx)   ← FHIR write pipeline (validate→encrypt→git→sqlite)
+    │       ▼
+    │   local.NewPatientService(pw, idx, git)
+    │       ▼
+    │   handler.NewPatientHandler(patientSvc)
+    │
+    ├─► authservice.NewAuthService(cfg, git, keystore, denyList)
+    │       ▼
+    │   local.NewAuthService(authImpl)
     │       ▼
     │   handler.NewAuthHandler(authSvc)
     │
-    ├─► service.NewPatientService(pool) ← implements service.PatientService interface
-    │       │
+    ├─► authservice.NewSmartService(authImpl, clientStore)
     │       ▼
-    │   handler.NewPatientHandler(patientSvc)   ← also handles clinical sub-resources
-    │
-    ├─► service.NewSyncService(pool)
+    │   local.NewSmartService(smartImpl)
     │       ▼
-    │   handler.NewSyncHandler(syncSvc)
+    │   handler.NewSmartHandler(smartSvc)
     │
-    ├─► service.NewConflictService(pool)
+    ├─► syncservice.NewSyncEngine(cfg, git, conflicts, history, peers, mergeDriver, eventBus)
     │       ▼
-    │   handler.NewConflictHandler(conflictSvc)
-    │
-    ├─► service.NewSentinelService(pool)
+    │   local.NewSyncService(syncEngine, historyStore, peerStore)
+    │   local.NewConflictService(conflictStore, eventBus)
     │       ▼
-    │   handler.NewSentinelHandler(sentinelSvc)
+    │   handler.NewSyncHandler(syncSvc) + handler.NewConflictHandler(conflictSvc)
     │
-    ├─► service.NewFormularyService(pool)
+    ├─► formularyservice.New(drugDB, interactions, stockStore, dosingEngine)
+    │       ▼
+    │   local.NewFormularyService(formularyImpl)
     │       ▼
     │   handler.NewFormularyHandler(formularySvc)
     │
-    ├─► service.NewAnchorService(pool)
+    ├─► anchorservice.New(git, backend, identity, queue, store, creds, dids, nodeKey)
+    │       ▼
+    │   local.NewAnchorService(anchorImpl)
     │       ▼
     │   handler.NewAnchorHandler(anchorSvc)
     │
-    ├─► service.NewSupplyService(pool)
-    │       ▼
-    │   handler.NewSupplyHandler(supplySvc)
+    ├─► local.NewStubSentinelService()   ← stubs when Sentinel not running
+    │   local.NewStubSupplyService()
     │
-    ├─► service.NewSmartService(pool)    ← uses auth pool connection
-    │       ▼
-    │   handler.NewSmartHandler(smartSvc, cfg.Smart.BaseURL)
-    │
-    ├─► middleware.NewSchemaValidator() + load 6 JSON schemas from schemas/
-    │
+    ├─► middleware.NewSchemaValidator() + load 8 JSON schemas
     ├─► middleware.NewJWTAuth(pubKey, issuer)
-    │
     ├─► middleware.NewRateLimiter(cfg.RateLimit)
     │
     ▼
 router.New(Config{all handlers, middleware, schemaValidator, auditLogger, corsOrigins})
     │
     ▼
-server.New(cfg, mux, logger).Run()    ← graceful shutdown on SIGINT/SIGTERM
+server.New(cfg, mux, logger).WithTLS(tlsCfg).Run()
 ```
 
 ---
@@ -104,18 +116,26 @@ server.New(cfg, mux, logger).Run()    ← graceful shutdown on SIGINT/SIGTERM
 Arrows mean "imports / depends on". No circular dependencies exist.
 
 ```
-cmd/gateway/main
+cmd/nucleus/main (monolith)
     ├── internal/config
-    ├── internal/grpcclient  ── internal/config
-    ├── internal/service     ── internal/grpcclient
-    ├── internal/handler     ── internal/service
-    │                        ── internal/model
-    ├── internal/middleware   ── internal/config  (ratelimit only)
-    │                        ── internal/model    (all middleware)
-    ├── internal/router      ── internal/handler
-    │                        ── internal/middleware
-    │                        ── internal/model
-    └── internal/server      ── internal/config
+    ├── internal/service/local   ── services/*/   (direct business logic)
+    │                            ── pkg/envelope   (encryption)
+    ├── internal/handler         ── internal/service (interfaces only)
+    │                            ── internal/model
+    ├── internal/middleware       ── internal/config  (ratelimit only)
+    │                            ── internal/model    (all middleware)
+    ├── internal/router          ── internal/handler
+    │                            ── internal/middleware
+    │                            ── internal/model
+    ├── internal/server          ── internal/config
+    │                            ── pkg/tls
+    ├── pkg/gitstore             ── (go-git/v5)
+    ├── pkg/sqliteindex          ── pkg/fhir
+    └── pkg/envelope             ── (crypto/aes, crypto/cipher)
+
+cmd/gateway/main (legacy, still builds)
+    ├── internal/grpcclient      ── internal/config
+    └── internal/service         ── internal/grpcclient (gRPC adapters)
 ```
 
 **internal/model** is the leaf package — imported by nearly everything, imports nothing internal.
@@ -169,17 +189,22 @@ CORS → RequestID → AuditLog → JWTAuth → [per-route: RateLimiter → Requ
 - Consumed by: service adapters call `pool.Conn("auth")`, `pool.Conn("patient")`, etc.
 
 ### internal/service
-- **interfaces.go** — 8 service interfaces (`AuthService`, `PatientService`, `SyncService`, `ConflictService`, `SentinelService`, `FormularyService`, `AnchorService`, `SupplyService`) + all DTOs. Handlers depend only on these interfaces, enabling mock-based testing.
-- **auth.go** — `authAdapter` implements `AuthService` via `pool.Conn("auth")`.
-- **patient.go** — `patientAdapter` implements `PatientService` (34+ methods: list/get/search/create/update/delete + match/history/timeline + 15 clinical sub-resource methods + immunization/procedure CRUD + generic top-level resource CRUD) via `pool.Conn("patient")`.
-- **sync.go** — `syncAdapter` implements `SyncService` (6 methods) via `pool.Conn("sync")`.
-- **conflict.go** — `conflictAdapter` implements `ConflictService` (4 methods) via `pool.Conn("sync")` (conflicts are a sync sub-domain).
-- **sentinel.go** — `sentinelAdapter` implements `SentinelService` (5 methods) via `pool.Conn("sentinel")` with full proto→DTO conversion (real gRPC calls to Python Sentinel Agent :50056).
-- **formulary.go** — `formularyAdapter` implements `FormularyService` (16 methods: drug lookup, interactions, allergy checks, dosing stub, stock management, formulary info) via `pool.Conn("formulary")` with full proto→DTO conversion.
-- **anchor.go** — `anchorAdapter` implements `AnchorService` (14 methods: anchor status/trigger/verify/history, DID node/device/resolve, credentials issue/verify/list, backends list/status, queue status, health) via `pool.Conn("anchor")` with full proto→DTO conversion.
-- **supply.go** — `supplyAdapter` implements `SupplyService` (5 methods) via `pool.Conn("sentinel")` with full proto→DTO conversion (real gRPC calls to Python Sentinel Agent :50056).
+- **interfaces.go** — 9 service interfaces (`AuthService`, `PatientService`, `SyncService`, `ConflictService`, `SentinelService`, `FormularyService`, `AnchorService`, `SupplyService`, `SmartService`) + all DTOs including `EraseResponse`. Handlers depend only on these interfaces.
 
-**Key pattern:** Handlers never touch gRPC directly. The service layer translates between HTTP DTOs and gRPC request/response types. This is where multi-service orchestration will live (e.g., MedRequest → Formulary check).
+#### internal/service/local/ (monolith — recommended)
+In-process adapters that call business logic directly without gRPC:
+- **patient.go** — `patientService` wraps `pipeline.Writer` + `sqliteindex.Index` + `gitstore.Store`. Reads FHIR JSON from Git and decrypts via `pw.DecryptFromGit()`. Implements `ErasePatient()` for crypto-erasure.
+- **auth.go** — `authService` wraps `authservice.AuthService` directly.
+- **smart.go** — `smartService` wraps `authservice.SmartService` directly.
+- **sync.go** — `syncService` wraps `syncservice.SyncEngine` + history/peer stores. Also `conflictService` wraps conflict store + event bus.
+- **formulary.go** — `formularyService` wraps `formularyservice.FormularyService` directly.
+- **anchor.go** — `anchorService` wraps `anchorservice.AnchorService` directly.
+- **stubs.go** — `stubSentinelService` + `stubSupplyService` return 503 when Sentinel is not running.
+
+#### internal/service/*.go (legacy gRPC adapters — still builds)
+- **auth.go**, **patient.go**, **sync.go**, etc. — gRPC adapters via `pool.Conn(name)`. Used by `cmd/gateway/main.go` when running in distributed microservice mode.
+
+**Key pattern:** Handlers never touch business logic or gRPC directly. The service interface layer enables both monolith (local adapters) and distributed (gRPC adapters) deployment from the same handler code.
 
 ### internal/handler
 - **auth.go** — `AuthHandler` holds `service.AuthService`. Methods: `Login`, `Refresh`, `Logout`, `Whoami`. Whoami short-circuits from JWT claims in context if available.
@@ -250,29 +275,38 @@ Generated Go code lives in `gen/proto/` (protoc with go + go-grpc plugins).
 
 ## Shared Libraries (pkg/)
 
+### pkg/envelope — Per-Patient Encryption
+AES-256-GCM envelope encryption with master key wrapping.
+- **envelope.go** — `KeyManager` interface: `GetOrCreateKey()`, `DestroyKey()`, `Encrypt()`, `Decrypt()`, `IsKeyDestroyed()`. `FileKeyManager` impl stores wrapped DEKs in Git at `.nucleus/keys/`. In-memory cache with `sync.RWMutex`.
+
+### pkg/tls — TLS Certificate Management
+Auto-generate or load TLS certificates.
+- **certs.go** — `Config{Mode, CertFile, KeyFile, CertDir}`. `LoadOrGenerate()` returns `*tls.Config`. Modes: "auto" (self-signed Ed25519), "provided" (user PEM), "off" (nil).
+
 ### pkg/fhir — FHIR R4 Utilities
 Pure functions for working with FHIR resources. No I/O.
-- **types.go** — Resource type constants for 13 types (`ResourcePatient`, `ResourceImmunization`, `ResourceProcedure`, `ResourcePractitioner`, `ResourceOrganization`, `ResourceLocation`, `ResourceProvenance`, etc.), operation constants (`OpCreate`, etc.), row structs for 12 indexed types (`PatientRow`, `EncounterRow`, `ImmunizationRow`, `ProcedureRow`, `PractitionerRow`, `OrganizationRow`, `LocationRow`, etc.), `FieldError`, `Pagination`, `PaginationOpts`, `TimelineEvent`.
-- **path.go** — `GitPath(resourceType, patientID, resourceID)` returns Git file path. Patient-scoped: `patients/{pid}/immunizations/{id}.json`, etc. Top-level: `practitioners/{id}.json`, `organizations/{id}.json`, `locations/{id}.json`. Provenance: patient-scoped if patientID set, else `provenance/{id}.json`.
-- **meta.go** — `SetMeta()` writes `meta.lastUpdated/versionId/source`. `AssignID()` assigns UUID if absent. `GetResourceType()`, `GetID()`.
-- **validate.go** — `Validate(resourceType, json)` performs Layer 1 structural validation for 12 resource types. New validators: Immunization (status, vaccineCode, patient, occurrenceDateTime), Procedure (status 8-enum, code, subject), Practitioner (name with family), Organization (name), Location (name, optional status 3-enum).
-- **extract.go** — Extract functions for all 12 indexed types. New: `ExtractImmunizationFields()`, `ExtractProcedureFields()`, `ExtractPractitionerFields()`, `ExtractOrganizationFields()`, `ExtractLocationFields()`. Top-level resources omit patientID parameter.
-- **softdelete.go** — `ApplySoftDelete()` for all types. New: Immunization/Procedure→`status:"entered-in-error"`, Practitioner/Organization→`active:false`, Location→`status:"inactive"`. Provenance is never deleted.
-- **registry.go** — Central resource registry: `ResourceDef` with type, scope (PatientScoped/TopLevel/AutoGenerated/SystemScoped), interactions, search params. `GetResourceDef()`, `AllResourceDefs()`, `IsKnownResource()`, `ResourcesByScope()`. Pre-populated for 15 types.
-- **outcome.go** — FHIR R4 OperationOutcome builder: `NewOperationOutcome()`, `FromFieldErrors()`, `FromError()`. Maps validation rules to FHIR issue-type codes.
-- **bundle.go** — FHIR R4 Bundle builder: `NewSearchBundle()` (searchset), `PaginationToLinks()` (self/next/previous).
-- **capability.go** — `GenerateCapabilityStatement()` auto-generates FHIR R4 CapabilityStatement from registry (fhirVersion 4.0.1, interactions, searchParams, sorted alphabetically).
-- **provenance.go** — `GenerateProvenance()` creates FHIR R4 Provenance with target ref, HL7 v3-DataOperation activity coding, author/custodian agents.
+- **types.go** — Resource type constants for 17 types, operation constants (`OpCreate`, etc.), row structs for 14 indexed types. **No `FHIRJson` field** — row structs contain only extracted search fields.
+- **path.go** — `GitPath(resourceType, patientID, resourceID)` returns Git file path. Patient-scoped: `patients/{pid}/immunizations/{id}.json`, etc. Top-level: `practitioners/{id}.json`.
+- **meta.go** — `SetMeta()` writes `meta.lastUpdated/versionId/source`. `AssignID()` assigns UUID if absent.
+- **validate.go** — `Validate(resourceType, json)` structural validation for 12 resource types.
+- **extract.go** — Extract functions for all 14 indexed types. Returns row structs with search fields only (no full FHIR JSON).
+- **softdelete.go** — `ApplySoftDelete()` for all types.
+- **registry.go** — Central resource registry: 17 resource types with scope, interactions, search params.
+- **outcome.go** — FHIR R4 OperationOutcome builder.
+- **bundle.go** — FHIR R4 Bundle builder.
+- **capability.go** — Auto-generates CapabilityStatement from registry.
+- **provenance.go** — Auto-generates Provenance with HL7 v3-DataOperation coding.
 
 ### pkg/gitstore — Git Operations
 Wraps `go-git/v5` for clinical data Git repository management.
 - **store.go** — `Store` interface: `WriteAndCommit()`, `Read()`, `LogPath()`, `Head()`, `TreeWalk()`, `Rollback()`. `NewStore(repoPath)` opens or inits repo.
 - **commit.go** — `CommitMessage` struct with `Format()` and `ParseCommitMessage()` for structured commit messages per spec §3.3.
 
-### pkg/sqliteindex — SQLite Query Index
-Uses `modernc.org/sqlite` (pure Go, no CGO) for Raspberry Pi 4 deployment.
-- **schema.go** — `InitSchema()` creates 14 tables (patients, encounters, observations, conditions, medication_requests, allergy_intolerances, flags, detected_issues, immunizations, procedures, practitioners, organizations, locations, patient_summaries) + index_meta + FTS5 + triggers. `DropAll()` for rebuild.
-- **index.go** — `Index` interface: Upsert/Get/List methods for all 12 resource types + bundle + search + timeline + match + meta + summary. New: 15 methods for Immunization, Procedure (patient-scoped with patientID), Practitioner, Organization, Location (top-level without patientID). `NewIndex(dbPath)` opens DB with WAL mode.
+### pkg/sqliteindex — SQLite Search Index
+Uses `modernc.org/sqlite` (pure Go, no CGO) for Raspberry Pi 4 deployment. **Pure search index** — no full FHIR JSON stored. All `fhir_json` columns have been removed.
+- **schema.go** — `InitSchema()` creates 14 resource tables + index_meta + FTS5 + triggers. `InitUnifiedSchema()` additionally creates auth (deny_list, revocations), sync (conflicts, sync_history, peers), formulary (stock_levels), and anchor (anchor_queue) tables. `DropAll()` for rebuild.
+- **index.go** — `Index` interface: Upsert/Get/List methods for all 14 resource types + `DeletePatientData()` for crypto-erasure + bundle + search + timeline + match + meta + summary. `NewIndex(dbPath)` opens DB with WAL mode. `NewIndexFromDB(*sql.DB)` for shared DB in monolith.
+- **erase.go** — `DeletePatientData(patientID)` deletes from 10 tables in a transaction for crypto-erasure.
 - **search.go** — FTS5 patient search via `patients_fts` virtual table.
 - **timeline.go** — `GetTimeline()` UNION ALL query across encounters, observations, conditions, flags.
 - **match.go** — `GetMatchCandidates()` broad SQL query for patient identity matching.
@@ -280,7 +314,7 @@ Uses `modernc.org/sqlite` (pure Go, no CGO) for Raspberry Pi 4 deployment.
 
 ## Patient Service (services/patient/)
 
-The first real backend microservice. Single writer for all clinical FHIR data: validate → Git commit → SQLite upsert → return resource + commit metadata.
+The clinical data write pipeline. Single writer for all FHIR data: validate → extract search fields → encrypt → Git commit → SQLite upsert (fields only) → return resource + commit metadata. Supports optional per-patient envelope encryption via `WithEncryption(keys)` and crypto-erasure via `DestroyPatientKey(patientID)`.
 
 ```
 services/patient/
