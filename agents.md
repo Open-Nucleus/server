@@ -1,7 +1,7 @@
 # Open Nucleus — Architectural Memory
 
 > Living document. Updated after every major feature or structural change.
-> Last updated: IPEHR-Inspired Access Control & Encrypted Indexes — Consent, Key Wrapping, Blind Indexes (2026-03-10)
+> Last updated: Flutter Patient Detail Screen — 10-tab clinical dashboard with providers (2026-03-17)
 
 ---
 
@@ -846,6 +846,8 @@ internal/
 | IPEHR Phase B — Per-Provider Key Wrapping | ECDH key grants via Ed25519→X25519 conversion, per-provider wrapped DEKs. `pkg/envelope/grants.go`, `pkg/crypto/convert.go`, shared crypto utilities extracted from sync. | COMPLETE |
 | IPEHR Phase C — Blind Indexes | HMAC-SHA256 blind indexing for PII, n-gram sliding window for substring search, blinded date prefixes. `pkg/blindindex/`, `patients_ngrams` table, write pipeline integration. | COMPLETE |
 | Flutter App — Dio + Auth | Dio HTTP client (4 interceptors), Ed25519 utils, auth feature (API, repository, notifiers, login screen), Riverpod providers. | COMPLETE |
+| Flutter App — App Shell + Navigation | AppScaffold, sidebar nav, top bar, GoRouter (8 routes), 8 shared widgets, 12 shared models, dashboard/patients/formulary/sync/alerts/anchor/settings screens (placeholders). | COMPLETE |
+| Flutter App — Patient Detail Screen | Full patient detail screen: demographics panel (280px), 10 tabbed views (Overview, Encounters, Vitals, Conditions, Medications, Allergies, Immunizations, Procedures, Consent, History), 10 Riverpod FutureProvider.family providers, FHIR value extraction helpers, timeline view for git history. | COMPLETE |
 | 6 — WebSocket + Hardening | Real-time events, production config, TLS, metrics | Not started |
 
 ---
@@ -873,8 +875,23 @@ lib/
 │   │   └── dio_provider.dart           ← Dio instance + 4 interceptors (Auth, Error, Logging, Retry)
 │   ├── utils/
 │   │   └── ed25519_utils.dart          ← generateKeypair, sign, getPublicKeyBase64, getFingerprint, serialize/deserialize
-│   └── widgets/                        ← (empty, for shared components)
+│   └── widgets/                        ← LoadingSkeleton, ErrorState, EmptyState, ConfirmDialog, DataTableCard, PaginationControls, SeverityBadge, StatusIndicator, SearchField, RoleBadge, JsonViewer
 └── features/
+    ├── shell/
+    │   ├── providers/                  ← ConnectionProvider, ShellProviders
+    │   └── presentation/              ← AppScaffold, SidebarNav, TopBar
+    ├── dashboard/                     ← DashboardScreen + providers
+    ├── patients/
+    │   └── presentation/
+    │       ├── patient_list_screen.dart      ← Patient list (placeholder)
+    │       ├── patient_detail_screen.dart    ← Full detail: demographics panel + 10 tabs (Overview, Encounters, Vitals, Conditions, Medications, Allergies, Immunizations, Procedures, Consent, History)
+    │       ├── patient_detail_providers.dart ← 10 Riverpod FutureProvider.family (detail, encounters, observations, conditions, medications, allergies, immunizations, procedures, consents, history)
+    │       └── patient_form_screen.dart     ← Patient create/edit form
+    ├── formulary/                     ← FormularyScreen (placeholder)
+    ├── sync/                          ← SyncScreen (placeholder)
+    ├── alerts/                        ← AlertsScreen (placeholder)
+    ├── anchor/                        ← AnchorScreen (placeholder)
+    ├── settings/                      ← SettingsScreen (placeholder)
     └── auth/
         ├── data/
         │   ├── auth_api.dart           ← AuthApi: login, refresh, logout, whoami (uses Dio)
@@ -906,9 +923,47 @@ Uses `cryptography` package (Ed25519 algorithm). Keypairs serialized as JSON `{"
 
 **Keypair persistence:** `DeviceNotifier` on init reads from `flutter_secure_storage` key `device_ed25519_keypair`. If missing, generates new keypair and writes. "Generate New Keypair" button creates fresh keypair (device re-registration required).
 
+### Patient Detail Screen (`features/patients/presentation/patient_detail_screen.dart`)
+
+Most complex screen in the app. Layout: fixed-width left panel (280px) + right tabbed content panel.
+
+**Left Panel — Demographics:**
+- Patient name, gender icon, DOB + age, copyable patient ID (monospace), active status badge, site ID
+- Quick actions: Edit, History, Erase (destructive with ConfirmDialog → DELETE /patients/{id}/erase → navigate to /patients)
+
+**Right Panel — 10 Tabs** (TabBar + TabBarView):
+1. **Overview** — 4 summary cards: Active Conditions, Current Medications, Active Allergies, Recent Encounters (from PatientBundle)
+2. **Encounters** — DataTable (Date, Status, Class, Duration) + "New Encounter" + pagination
+3. **Vitals** — DataTable (Date, Code/Display, Value+Unit, Status) + "Record Vital" + pagination
+4. **Conditions** — DataTable (Code/Display, Clinical Status badge, Verification, Onset) + "Add Condition"
+5. **Medications** — DataTable (Medication, Status, Intent, Dosage) + "Prescribe"
+6. **Allergies** — DataTable (Substance, Type, Clinical Status, Criticality badge) + "Add Allergy"
+7. **Immunizations** — DataTable (Vaccine, Date, Status) + "Record Immunization"
+8. **Procedures** — DataTable (Procedure, Date, Status) + "Record Procedure"
+9. **Consent** — DataTable (Scope, Performer, Status, Period, Category, Actions) + "Grant Consent" + per-row "Revoke"
+10. **History** — Timeline view with coloured dots, operation badges, commit hashes, author info
+
+**Providers** (`patient_detail_providers.dart`): 10 `FutureProvider.family<T, String>` keyed by patientId:
+- `patientDetailProvider` → PatientBundle (full bundle from GET /patients/{id})
+- `patientEncountersProvider` → ClinicalListResponse
+- `patientObservationsProvider`, `patientConditionsProvider`, `patientMedicationsProvider`, `patientAllergiesProvider`, `patientImmunizationsProvider`, `patientProceduresProvider` → ClinicalListResponse
+- `patientConsentsProvider` → ConsentListResponse
+- `patientHistoryProvider` → PatientHistoryResponse
+
+**FHIR Extraction Helpers** (top-level functions):
+- `_extractName(Map patient)` — HumanName → "Given Family"
+- `_extractGender(Map patient)` — capitalised gender
+- `_extractBirthDateAndAge(Map patient)` — (formatted date, "X years")
+- `_extractCodeDisplay(Map resource)` — code.coding[0].display from CodeableConcept
+- `_extractObservationValue(Map obs)` — valueQuantity, valueString, valueCodeableConcept, valueBoolean, component
+- `_extractDosageText(Map med)` — dosageInstruction text or structured dose+route+timing
+- `_extractStatus(Map resource)` — resource.status string
+
 ### Key Design Decisions
 - **No code generation**: Uses manual StateNotifier/StateNotifierProvider (not riverpod_generator or freezed)
 - **Dio interceptor order**: Auth → Retry → Logging → Error (requests run top-down, errors run bottom-up)
 - **Self-signed TLS**: `AppConfig.acceptSelfSignedCerts = true` for dev (talks to local backend with auto-generated TLS)
 - **Secure storage keys**: Prefixed with `auth_` for tokens/role, `device_` for keypair
 - **Connection test**: Uses separate Dio instance (no auth interceptor) to hit `/health`
+- **Patient Detail**: All clinical data extracted from raw `Map<String, dynamic>` FHIR resources; no typed models for clinical resources
+- **Tab-per-resource**: Each tab has its own provider and loading/error state; overview tab uses the bundle data directly
