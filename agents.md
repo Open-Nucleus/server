@@ -1,7 +1,7 @@
 # Open Nucleus — Architectural Memory
 
 > Living document. Updated after every major feature or structural change.
-> Last updated: Flutter Patient Detail Screen — 10-tab clinical dashboard with providers (2026-03-17)
+> Last updated: Flutter Dashboard + Patient List screens with full API layers (2026-03-17)
 
 ---
 
@@ -880,10 +880,20 @@ lib/
     ├── shell/
     │   ├── providers/                  ← ConnectionProvider, ShellProviders
     │   └── presentation/              ← AppScaffold, SidebarNav, TopBar
-    ├── dashboard/                     ← DashboardScreen + providers
-    ├── patients/
+    ├── dashboard/
+    │   ├── data/
+    │   │   ├── dashboard_api.dart           ← DashboardApi: parallel fetch (health, alerts summary, sync status, anchor status, patient count)
+    │   │   └── dashboard_models.dart        ← DashboardData (composite model with nullable sub-status fields)
     │   └── presentation/
-    │       ├── patient_list_screen.dart      ← Patient list (placeholder)
+    │       ├── dashboard_screen.dart        ← Full dashboard: responsive grid (2-3 col), 7 cards (Node Identity, Patient Stats, Alert Summary, Sync Status, Anchor Status, Quick Actions, Recent Activity)
+    │       └── dashboard_providers.dart     ← dashboardApiProvider, dashboardDataProvider (FutureProvider.autoDispose)
+    ├── patients/
+    │   ├── data/
+    │   │   ├── patient_api.dart             ← PatientApi: list, search, match, get, create, update, delete, erase, history, timeline
+    │   │   └── clinical_api.dart            ← ClinicalApi: full CRUD for Encounters, Observations, Conditions, MedRequests, AllergyIntolerances, Immunizations, Procedures + X-Break-Glass header
+    │   └── presentation/
+    │       ├── patient_list_screen.dart      ← Full patient list: search bar (debounced), expandable filter panel (gender, DOB range, site, status, alerts), DataTable, pagination, Ctrl+N shortcut
+    │       ├── patient_list_providers.dart   ← patientApiProvider, clinicalApiProvider, PatientListNotifier (StateNotifier), patientSearchProvider (debounced FutureProvider)
     │       ├── patient_detail_screen.dart    ← Full detail: demographics panel + 10 tabs (Overview, Encounters, Vitals, Conditions, Medications, Allergies, Immunizations, Procedures, Consent, History)
     │       ├── patient_detail_providers.dart ← 10 Riverpod FutureProvider.family (detail, encounters, observations, conditions, medications, allergies, immunizations, procedures, consents, history)
     │       └── patient_form_screen.dart     ← Patient create/edit form
@@ -959,6 +969,63 @@ Most complex screen in the app. Layout: fixed-width left panel (280px) + right t
 - `_extractDosageText(Map med)` — dosageInstruction text or structured dose+route+timing
 - `_extractStatus(Map resource)` — resource.status string
 
+### Dashboard Screen (`features/dashboard/`)
+
+**DashboardApi** (`data/dashboard_api.dart`): Fetches 5 endpoints in parallel via `Future.wait`:
+1. `GET /health` → healthy bool, nodeId, siteId
+2. `GET /api/v1/alerts/summary` → AlertSummaryResponse (total, critical, warning, info, unacknowledged)
+3. `GET /api/v1/sync/status` → SyncStatusResponse (state, lastSync, pendingChanges)
+4. `GET /api/v1/anchor/status` → AnchorStatusResponse (merkleRoot, lastAnchorTime, queueDepth)
+5. `GET /api/v1/patients?per_page=1` → patient count from pagination.total
+
+Each sub-request swallows errors independently — partial dashboard data is displayed.
+
+**DashboardData** (`data/dashboard_models.dart`): Composite model with nullable fields for each sub-status.
+
+**Dashboard Screen** (`presentation/dashboard_screen.dart`): ConsumerWidget with responsive grid (3 cols >1200px, 2 cols otherwise). 7 cards:
+- **Node Identity** — nodeId, siteId, role, online/offline status
+- **Patient Stats** — large count number + "View All" link to /patients
+- **Alert Summary** — critical (red), warning (amber), info (blue) counts with colored dots + unacknowledged count
+- **Sync Status** — state indicator (idle/syncing/error/complete), last sync (timeAgo), pending changes
+- **Anchor Status** — truncated merkle root (monospace), last anchor time, queue depth
+- **Quick Actions** — FilledButton "New Patient" + OutlinedButtons "Trigger Sync", "View Alerts"
+- **Recent Activity** — placeholder "No recent activity" (full-width card below grid)
+
+Loading state: shimmer skeleton grid. Error state: ErrorState widget with retry.
+
+### Patient List Screen (`features/patients/presentation/`)
+
+**PatientApi** (`data/patient_api.dart`): Full CRUD client — 10 methods:
+- `listPatients(page, perPage, sort, gender, birthDateFrom, birthDateTo, siteId, status, hasAlerts)`
+- `searchPatients(query, page, perPage)` — blind-index search
+- `matchPatients(MatchPatientsRequest)` — probabilistic matching
+- `getPatient(id)`, `createPatient(body)`, `updatePatient(id, body)`, `deletePatient(id)`, `erasePatient(id)`
+- `getHistory(id)`, `getTimeline(id)`
+
+**ClinicalApi** (`data/clinical_api.dart`): Full CRUD for 7 FHIR sub-resources with optional `breakGlass` header:
+- Encounters: list, get, create, update
+- Observations: list (with ObservationFilters), get, create
+- Conditions: list (with ConditionFilters), create, update
+- MedicationRequests: list, create, update
+- AllergyIntolerances: list, create, update
+- Immunizations: list, get, create
+- Procedures: list, get, create
+
+**PatientListNotifier** (`patient_list_providers.dart`): StateNotifier managing `PatientListState` (patients, page, perPage, totalItems, totalPages, filters, isLoading, error). Methods: fetch, goToPage, setPerPage, applyFilters, clearFilters.
+
+**PatientListFilters**: gender, birthDateFrom, birthDateTo, siteId, status, hasAlerts, sort — with `hasActiveFilters` getter.
+
+**Patient search**: debounced (300ms) via `patientSearchQueryProvider` (StateProvider) → `patientSearchProvider` (FutureProvider.autoDispose) → calls `PatientApi.searchPatients`.
+
+**Patient List Screen** (`patient_list_screen.dart`): ConsumerStatefulWidget with:
+- **Header row**: "Patients" title + SearchField (debounced) + "New Patient" FilledButton
+- **Expandable filter panel**: Gender dropdown, Status dropdown, DOB From/To date pickers, Site ID text field, Has Alerts checkbox, Apply/Clear buttons
+- **DataTable**: Name, DOB, Gender, Site (monospace), Last Updated (timeAgo), Alert badge. Row click → /patients/{id}
+- **Pagination**: PaginationControls with rows-per-page selector
+- **Search mode**: when search query non-empty, shows search results instead of paginated list
+- **Keyboard shortcut**: Ctrl+N → navigate to /patients/new
+- **States**: LoadingSkeleton.table during fetch, ErrorState on failure, EmptyState when no patients
+
 ### Key Design Decisions
 - **No code generation**: Uses manual StateNotifier/StateNotifierProvider (not riverpod_generator or freezed)
 - **Dio interceptor order**: Auth → Retry → Logging → Error (requests run top-down, errors run bottom-up)
@@ -967,3 +1034,6 @@ Most complex screen in the app. Layout: fixed-width left panel (280px) + right t
 - **Connection test**: Uses separate Dio instance (no auth interceptor) to hit `/health`
 - **Patient Detail**: All clinical data extracted from raw `Map<String, dynamic>` FHIR resources; no typed models for clinical resources
 - **Tab-per-resource**: Each tab has its own provider and loading/error state; overview tab uses the bundle data directly
+- **Dashboard parallel fetch**: All 5 dashboard API calls run concurrently; individual failures don't block the whole dashboard
+- **ClinicalApi break-glass**: All write methods accept `breakGlass: bool` → adds `X-Break-Glass: true` header for emergency consent bypass
+- **Patient list dual mode**: Normal paginated list vs debounced search — switching is automatic based on search query presence
