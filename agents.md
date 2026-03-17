@@ -1,7 +1,7 @@
 # Open Nucleus — Architectural Memory
 
 > Living document. Updated after every major feature or structural change.
-> Last updated: Flutter Dashboard + Patient List screens with full API layers (2026-03-17)
+> Last updated: Flutter Patient Forms + Clinical Dialogs + Formulary 3-pane screen (2026-03-17)
 
 ---
 
@@ -848,6 +848,8 @@ internal/
 | Flutter App — Dio + Auth | Dio HTTP client (4 interceptors), Ed25519 utils, auth feature (API, repository, notifiers, login screen), Riverpod providers. | COMPLETE |
 | Flutter App — App Shell + Navigation | AppScaffold, sidebar nav, top bar, GoRouter (8 routes), 8 shared widgets, 12 shared models, dashboard/patients/formulary/sync/alerts/anchor/settings screens (placeholders). | COMPLETE |
 | Flutter App — Patient Detail Screen | Full patient detail screen: demographics panel (280px), 10 tabbed views (Overview, Encounters, Vitals, Conditions, Medications, Allergies, Immunizations, Procedures, Consent, History), 10 Riverpod FutureProvider.family providers, FHIR value extraction helpers, timeline view for git history. | COMPLETE |
+| Flutter App — Patient Forms + Clinical Dialogs | Patient create/edit form (card-based, max 800px, FHIR Patient JSON builder, duplicate detection via /match). 7 clinical form dialogs (Encounter, Observation, Condition, MedicationRequest, Allergy, Immunization, Procedure). Crypto-erase confirmation dialog (type DELETE to confirm). GoRouter edit route. | COMPLETE |
+| Flutter App — Formulary Feature | 3-pane formulary screen: left (search+category filter+pagination), center (medication detail + interaction checker toggle), right (stock level+prediction+redistribution). FormularyApi (9 methods), 6 Riverpod providers (search StateNotifier, interaction checker StateNotifier, selected medication, stock info, formulary info). | COMPLETE |
 | 6 — WebSocket + Hardening | Real-time events, production config, TLS, metrics | Not started |
 
 ---
@@ -896,8 +898,15 @@ lib/
     │       ├── patient_list_providers.dart   ← patientApiProvider, clinicalApiProvider, PatientListNotifier (StateNotifier), patientSearchProvider (debounced FutureProvider)
     │       ├── patient_detail_screen.dart    ← Full detail: demographics panel + 10 tabs (Overview, Encounters, Vitals, Conditions, Medications, Allergies, Immunizations, Procedures, Consent, History)
     │       ├── patient_detail_providers.dart ← 10 Riverpod FutureProvider.family (detail, encounters, observations, conditions, medications, allergies, immunizations, procedures, consents, history)
-    │       └── patient_form_screen.dart     ← Patient create/edit form
-    ├── formulary/                     ← FormularyScreen (placeholder)
+    │       ├── patient_form_screen.dart      ← Patient create/edit form (card layout, FHIR builder, duplicate detection)
+    │       ├── clinical_form_dialogs.dart  ← 7 StatefulWidget dialogs: Encounter, Observation, Condition, MedRequest, Allergy, Immunization, Procedure
+    │       └── erase_dialog.dart           ← Crypto-erase confirmation dialog (type DELETE, red/destructive)
+    ├── formulary/
+    │   ├── data/
+    │   │   └── formulary_api.dart         ← FormularyApi: searchMedications, getMedication, listByCategory, checkInteractions, checkAllergyConflicts, getStockLevel, getStockPrediction, getFormularyInfo, getRedistributionSuggestions
+    │   └── presentation/
+    │       ├── formulary_screen.dart      ← 3-pane layout: left (search+results), center (detail/interactions), right (stock)
+    │       └── formulary_providers.dart   ← formularyApiProvider, medicationSearchProvider (StateNotifier), selectedMedicationProvider, interactionCheckerProvider (StateNotifier), stockInfoProvider, formularyInfoProvider
     ├── sync/                          ← SyncScreen (placeholder)
     ├── alerts/                        ← AlertsScreen (placeholder)
     ├── anchor/                        ← AnchorScreen (placeholder)

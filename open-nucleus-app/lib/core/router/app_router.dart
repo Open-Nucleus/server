@@ -76,6 +76,17 @@ abstract final class AppRouter {
                       child: PatientDetailScreen(patientId: id),
                     );
                   },
+                  routes: [
+                    GoRoute(
+                      path: 'edit',
+                      pageBuilder: (context, state) {
+                        final id = state.pathParameters['id']!;
+                        return NoTransitionPage(
+                          child: PatientFormScreen(patientId: id),
+                        );
+                      },
+                    ),
+                  ],
                 ),
               ],
             ),
