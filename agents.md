@@ -845,4 +845,70 @@ internal/
 | IPEHR Phase A — Consent Management | FHIR Consent resource type (18th), ConsentManager with VC support, consent middleware (break-glass), HTTP endpoints (4 routes), ConsentService interface. `pkg/consent/`, `pkg/fhir/consent.go`, `internal/middleware/consent.go`, `internal/handler/consent.go`. | COMPLETE |
 | IPEHR Phase B — Per-Provider Key Wrapping | ECDH key grants via Ed25519→X25519 conversion, per-provider wrapped DEKs. `pkg/envelope/grants.go`, `pkg/crypto/convert.go`, shared crypto utilities extracted from sync. | COMPLETE |
 | IPEHR Phase C — Blind Indexes | HMAC-SHA256 blind indexing for PII, n-gram sliding window for substring search, blinded date prefixes. `pkg/blindindex/`, `patients_ngrams` table, write pipeline integration. | COMPLETE |
+| Flutter App — Dio + Auth | Dio HTTP client (4 interceptors), Ed25519 utils, auth feature (API, repository, notifiers, login screen), Riverpod providers. | COMPLETE |
 | 6 — WebSocket + Hardening | Real-time events, production config, TLS, metrics | Not started |
+
+---
+
+## Flutter Desktop App (open-nucleus-app)
+
+### Architecture
+
+```
+lib/
+├── main.dart                           ← Window manager init, ProviderScope
+├── app.dart                            ← MaterialApp.router with AppTheme
+├── core/
+│   ├── config/app_config.dart          ← Server URL, TLS, polling intervals
+│   ├── router/app_router.dart          ← GoRouter (initial: /login)
+│   ├── theme/                          ← AppColors, AppTheme, AppTypography, AppSpacing
+│   ├── constants/                      ← ApiPaths (all REST endpoints), FhirCodes, Permissions (5 roles × 37 perms)
+│   └── extensions/                     ← BuildContext helpers, String, Date
+├── shared/
+│   ├── models/
+│   │   ├── api_envelope.dart           ← ApiEnvelope<T>, ErrorBody, Warning, GitInfo, Meta, Pagination
+│   │   ├── auth_models.dart            ← LoginRequest, LoginResponse, RefreshResponse, WhoamiResponse, RoleDTO
+│   │   └── app_exception.dart          ← AppException (code, message, statusCode, details)
+│   ├── providers/
+│   │   └── dio_provider.dart           ← Dio instance + 4 interceptors (Auth, Error, Logging, Retry)
+│   ├── utils/
+│   │   └── ed25519_utils.dart          ← generateKeypair, sign, getPublicKeyBase64, getFingerprint, serialize/deserialize
+│   └── widgets/                        ← (empty, for shared components)
+└── features/
+    └── auth/
+        ├── data/
+        │   ├── auth_api.dart           ← AuthApi: login, refresh, logout, whoami (uses Dio)
+        │   └── auth_repository.dart    ← AuthRepository: API + FlutterSecureStorage persistence
+        └── presentation/
+            ├── auth_providers.dart     ← Riverpod: authNotifier, deviceNotifier, authApi, authRepository, secureStorage
+            ├── auth_notifier.dart      ← StateNotifier<AuthState> (initial, loading, authenticated, error)
+            ├── device_notifier.dart    ← StateNotifier<DeviceState> (loading, ready, error) — Ed25519 keypair lifecycle
+            └── login_screen.dart       ← Login card: server URL + test connection, keypair fingerprint, practitioner ID, Ed25519 challenge-response
+```
+
+### Dio HTTP Client (`shared/providers/dio_provider.dart`)
+
+Four interceptors in execution order:
+1. **AuthInterceptor** — injects `Authorization: Bearer $token` from `AuthNotifier.accessToken`, auto-refreshes on 401 and retries
+2. **RetryInterceptor** — retries connection timeouts up to 2 times
+3. **LoggingInterceptor** — prints `[HTTP] --> METHOD /path` and `[HTTP] <-- STATUS METHOD /path`
+4. **ErrorInterceptor** — maps `DioException` to `AppException`, extracts backend error envelope when available
+
+### Ed25519 Utils (`shared/utils/ed25519_utils.dart`)
+
+Uses `cryptography` package (Ed25519 algorithm). Keypairs serialized as JSON `{"private": base64url, "public": base64url}` for `flutter_secure_storage`. Fingerprint is first 8 hex chars of public key bytes.
+
+### Auth Feature
+
+**Login flow:** User enters server URL → tests connection (GET /health) → device keypair loaded or generated → user enters practitioner ID → click Login → generate nonce (`login:<ISO8601>`) → sign nonce with Ed25519 → POST /auth/login with `{device_id, public_key, challenge_response: {nonce, signature, timestamp}, practitioner_id}` → receive JWT tokens + role + site info → persist to secure storage → AuthState.authenticated.
+
+**Token refresh:** AuthInterceptor catches 401 → calls `AuthNotifier.refreshToken()` → `AuthRepository.refreshToken()` → POST /auth/refresh → updates tokens in memory + secure storage → retries original request with new token.
+
+**Keypair persistence:** `DeviceNotifier` on init reads from `flutter_secure_storage` key `device_ed25519_keypair`. If missing, generates new keypair and writes. "Generate New Keypair" button creates fresh keypair (device re-registration required).
+
+### Key Design Decisions
+- **No code generation**: Uses manual StateNotifier/StateNotifierProvider (not riverpod_generator or freezed)
+- **Dio interceptor order**: Auth → Retry → Logging → Error (requests run top-down, errors run bottom-up)
+- **Self-signed TLS**: `AppConfig.acceptSelfSignedCerts = true` for dev (talks to local backend with auto-generated TLS)
+- **Secure storage keys**: Prefixed with `auth_` for tokens/role, `device_` for keypair
+- **Connection test**: Uses separate Dio instance (no auth interceptor) to hit `/health`
