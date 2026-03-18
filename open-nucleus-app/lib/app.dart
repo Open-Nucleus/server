@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'features/settings/presentation/settings_providers.dart';
 
 class OpenNucleusApp extends ConsumerStatefulWidget {
   const OpenNucleusApp({super.key});
@@ -30,12 +31,15 @@ class _OpenNucleusAppState extends ConsumerState<OpenNucleusApp> {
 
   @override
   Widget build(BuildContext context) {
+    // Watch themeMode from settings so the app re-renders on theme change.
+    final themeMode = ref.watch(themeModePr);
+
     return MaterialApp.router(
       title: 'Open Nucleus',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
-      themeMode: ThemeMode.system,
+      themeMode: themeMode,
       routerConfig: _router,
     );
   }
