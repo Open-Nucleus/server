@@ -1,7 +1,7 @@
 # Open Nucleus — Architectural Memory
 
 > Living document. Updated after every major feature or structural change.
-> Last updated: Flutter Patient Forms + Clinical Dialogs + Formulary 3-pane screen (2026-03-17)
+> Last updated: Flutter Sync/Conflicts + Alerts screens (2026-03-18)
 
 ---
 
@@ -907,8 +907,19 @@ lib/
     │   └── presentation/
     │       ├── formulary_screen.dart      ← 3-pane layout: left (search+results), center (detail/interactions), right (stock)
     │       └── formulary_providers.dart   ← formularyApiProvider, medicationSearchProvider (StateNotifier), selectedMedicationProvider, interactionCheckerProvider (StateNotifier), stockInfoProvider, formularyInfoProvider
-    ├── sync/                          ← SyncScreen (placeholder)
-    ├── alerts/                        ← AlertsScreen (placeholder)
+    ├── sync/
+    │   ├── data/
+    │   │   ├── sync_api.dart              ← SyncApi: getStatus, listPeers, triggerSync, getHistory, exportBundle, importBundle
+    │   │   └── conflict_api.dart          ← ConflictApi: listConflicts, getConflict, resolveConflict, deferConflict
+    │   └── presentation/
+    │       ├── sync_screen.dart           ← Full sync screen: status card, peer table, history timeline, conflict master-detail with JSON diff
+    │       └── sync_providers.dart        ← syncApiProvider, conflictApiProvider, syncStatusProvider (5s refresh), syncPeersProvider, syncHistoryProvider, conflictListProvider, selectedConflictProvider, conflictDetailProvider
+    ├── alerts/
+    │   ├── data/
+    │   │   └── alert_api.dart             ← AlertApi: listAlerts, getSummary, getAlert, acknowledgeAlert, dismissAlert
+    │   └── presentation/
+    │       ├── alerts_screen.dart          ← Full alerts screen: 5 summary cards, filterable DataTable, detail panel with acknowledge/dismiss
+    │       └── alerts_providers.dart       ← alertApiProvider, AlertListNotifier (StateNotifier with severity/status filters), alertSummaryProvider (30s refresh), selectedAlertProvider, alertDetailProvider
     ├── anchor/                        ← AnchorScreen (placeholder)
     ├── settings/                      ← SettingsScreen (placeholder)
     └── auth/
@@ -1034,6 +1045,68 @@ Loading state: shimmer skeleton grid. Error state: ErrorState widget with retry.
 - **Search mode**: when search query non-empty, shows search results instead of paginated list
 - **Keyboard shortcut**: Ctrl+N → navigate to /patients/new
 - **States**: LoadingSkeleton.table during fetch, ErrorState on failure, EmptyState when no patients
+
+### Sync & Conflicts Screen (`features/sync/`)
+
+**SyncApi** (`data/sync_api.dart`): 6 methods:
+- `getStatus()` → SyncStatusResponse (state, lastSync, pendingChanges, nodeId, siteId)
+- `listPeers()` → SyncPeersResponse (list of PeerInfo with nodeId, siteId, lastSeen, state, latencyMs)
+- `triggerSync(targetNode)` → SyncTriggerResponse
+- `getHistory(page, perPage)` → SyncHistoryResponse (list of SyncEvent with timestamp, direction, peerNode, state, resourcesTransferred)
+- `exportBundle(resourceTypes, since)` → BundleExportResponse
+- `importBundle(bundleData, format, author, nodeId, siteId)` → BundleImportResponse
+
+**ConflictApi** (`data/conflict_api.dart`): 4 methods:
+- `listConflicts(page, perPage)` → ConflictListResponse
+- `getConflict(conflictId)` → ConflictDetail (includes localVersion/remoteVersion raw JSON, localNode/remoteNode)
+- `resolveConflict(ResolveConflictRequest)` → ResolveConflictResponse
+- `deferConflict(DeferConflictRequest)` → DeferConflictResponse
+
+**Providers** (`sync_providers.dart`):
+- `syncStatusProvider` — FutureProvider.autoDispose with Timer.periodic(5s) auto-refresh via invalidateSelf
+- `syncPeersProvider`, `syncHistoryProvider`, `conflictListProvider` — FutureProvider.autoDispose
+- `selectedConflictProvider` — StateProvider<String?> for conflict ID selection
+- `conflictDetailProvider` — FutureProvider.autoDispose.family<ConflictDetail, String>
+
+**Sync Screen** (`sync_screen.dart`): ConsumerStatefulWidget with two sections:
+- **Top Section — Sync Status & Peers:**
+  - Status card: SyncStateBadge (idle=grey, syncing=blue, complete=green, error=red) + last sync (timeAgo) + pending changes + node/site IDs
+  - Action buttons: "Trigger Sync" (opens dialog with peer dropdown), "Export Bundle" (dialog with resource types + since date), "Import Bundle" (dialog with author + JSON textarea)
+  - Peer table: DataTable with Node ID, Site ID, Last Seen (timeAgo), State (SeverityBadge), Latency (visual LinearProgressIndicator bar 0-500ms + ms label)
+  - Sync History: expandable section with timeline rows showing direction arrow (in=down/blue, out=up/teal), timestamp, peer node, state badge, resources count
+- **Bottom Section — Conflicts:**
+  - Header with conflict count badge (amber when > 0)
+  - Master-detail layout (2:3 flex ratio):
+    - Left: DataTable (Resource Type, Resource ID, Status badge, Detected At) with row selection highlighting
+    - Right: Selected conflict detail — side-by-side JSON viewers (local in blue label, remote in teal label) using JsonViewer widgets
+    - Resolution buttons: "Accept Local" (tonal), "Accept Remote" (filled), "Defer" (outlined, opens reason dialog)
+
+### Alerts Screen (`features/alerts/`)
+
+**AlertApi** (`data/alert_api.dart`): 5 methods:
+- `listAlerts(page, perPage, severity?, status?)` → AlertListResponse
+- `getSummary()` → AlertSummaryResponse (total, critical, warning, info, unacknowledged)
+- `getAlert(alertId)` → AlertDetail
+- `acknowledgeAlert(alertId)` → AlertDetail
+- `dismissAlert(alertId, reason)` → AlertDetail
+
+**AlertListNotifier** (`alerts_providers.dart`): StateNotifier managing `AlertListState` (alerts, page, perPage, totalItems, totalPages, severityFilter, statusFilter, isLoading, error). Methods: fetch, goToPage, setPerPage, setSeverityFilter, setStatusFilter, clearFilters.
+
+**Providers** (`alerts_providers.dart`):
+- `alertApiProvider` — Provider<AlertApi>
+- `alertListProvider` — StateNotifierProvider.autoDispose<AlertListNotifier, AlertListState>
+- `alertSummaryProvider` — FutureProvider.autoDispose with Timer.periodic(30s) auto-refresh
+- `selectedAlertProvider` — StateProvider<String?> for alert ID selection
+- `alertDetailProvider` — FutureProvider.autoDispose.family<AlertDetail, String>
+
+**Alerts Screen** (`alerts_screen.dart`): ConsumerWidget with:
+- **Summary cards row**: 5 cards (Total, Critical/red, Warning/amber, Info/blue, Unacknowledged/pending) with icon + large count + label
+- **Filter row**: Severity dropdown (all/critical/warning/info), Status dropdown (all/active/acknowledged/dismissed), Clear button
+- **Alert table + detail panel**: Row layout (3:2 flex when detail open, full width otherwise):
+  - Left: DataTable with Severity (SeverityBadge), Type, Title, Patient ID (monospace), Status (custom badge), Created At
+  - Right: Detail panel with severity badge + title header, metadata fields (Type, Patient ID, Status, Created At, Acknowledged At/By), description box, action buttons (Acknowledge filled, Dismiss outlined with reason dialog)
+- **Pagination**: PaginationControls with rows-per-page selector
+- **States**: LoadingSkeleton.table during fetch, ErrorState on failure, EmptyState when no alerts match filters
 
 ### Key Design Decisions
 - **No code generation**: Uses manual StateNotifier/StateNotifierProvider (not riverpod_generator or freezed)
