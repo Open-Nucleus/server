@@ -1,7 +1,7 @@
 # Open Nucleus — Architectural Memory
 
 > Living document. Updated after every major feature or structural change.
-> Last updated: Flutter Sync/Conflicts + Alerts screens (2026-03-18)
+> Last updated: Flutter Polish + Tests (Phase 17/18) (2026-03-18)
 
 ---
 
@@ -850,6 +850,7 @@ internal/
 | Flutter App — Patient Detail Screen | Full patient detail screen: demographics panel (280px), 10 tabbed views (Overview, Encounters, Vitals, Conditions, Medications, Allergies, Immunizations, Procedures, Consent, History), 10 Riverpod FutureProvider.family providers, FHIR value extraction helpers, timeline view for git history. | COMPLETE |
 | Flutter App — Patient Forms + Clinical Dialogs | Patient create/edit form (card-based, max 800px, FHIR Patient JSON builder, duplicate detection via /match). 7 clinical form dialogs (Encounter, Observation, Condition, MedicationRequest, Allergy, Immunization, Procedure). Crypto-erase confirmation dialog (type DELETE to confirm). GoRouter edit route. | COMPLETE |
 | Flutter App — Formulary Feature | 3-pane formulary screen: left (search+category filter+pagination), center (medication detail + interaction checker toggle), right (stock level+prediction+redistribution). FormularyApi (9 methods), 6 Riverpod providers (search StateNotifier, interaction checker StateNotifier, selected medication, stock info, formulary info). | COMPLETE |
+| Flutter App — Polish + Tests | app.dart wired to themeModePr, barrel exports (models.dart, widgets.dart), 5 unit test files (Ed25519, ApiEnvelope, AuthModels, PatientModels, FhirPrimitives), 2 widget test files (LoginScreen, PatientListScreen). | COMPLETE |
 | 6 — WebSocket + Hardening | Real-time events, production config, TLS, metrics | Not started |
 
 ---
@@ -861,7 +862,7 @@ internal/
 ```
 lib/
 ├── main.dart                           ← Window manager init, ProviderScope
-├── app.dart                            ← MaterialApp.router with AppTheme
+├── app.dart                            ← MaterialApp.router with AppTheme, watches themeModePr
 ├── core/
 │   ├── config/app_config.dart          ← Server URL, TLS, polling intervals
 │   ├── router/app_router.dart          ← GoRouter (initial: /login)
@@ -872,12 +873,13 @@ lib/
 │   ├── models/
 │   │   ├── api_envelope.dart           ← ApiEnvelope<T>, ErrorBody, Warning, GitInfo, Meta, Pagination
 │   │   ├── auth_models.dart            ← LoginRequest, LoginResponse, RefreshResponse, WhoamiResponse, RoleDTO
-│   │   └── app_exception.dart          ← AppException (code, message, statusCode, details)
+│   │   ├── app_exception.dart          ← AppException (code, message, statusCode, details)
+│   │   └── models.dart                ← Barrel export for all 14 model files
 │   ├── providers/
 │   │   └── dio_provider.dart           ← Dio instance + 4 interceptors (Auth, Error, Logging, Retry)
 │   ├── utils/
 │   │   └── ed25519_utils.dart          ← generateKeypair, sign, getPublicKeyBase64, getFingerprint, serialize/deserialize
-│   └── widgets/                        ← LoadingSkeleton, ErrorState, EmptyState, ConfirmDialog, DataTableCard, PaginationControls, SeverityBadge, StatusIndicator, SearchField, RoleBadge, JsonViewer
+│   └── widgets/                        ← LoadingSkeleton, ErrorState, EmptyState, ConfirmDialog, DataTableCard, PaginationControls, SeverityBadge, StatusIndicator, SearchField, RoleBadge, JsonViewer + widgets.dart barrel export
 └── features/
     ├── shell/
     │   ├── providers/                  ← ConnectionProvider, ShellProviders
@@ -1119,3 +1121,22 @@ Loading state: shimmer skeleton grid. Error state: ErrorState widget with retry.
 - **Dashboard parallel fetch**: All 5 dashboard API calls run concurrently; individual failures don't block the whole dashboard
 - **ClinicalApi break-glass**: All write methods accept `breakGlass: bool` → adds `X-Break-Glass: true` header for emergency consent bypass
 - **Patient list dual mode**: Normal paginated list vs debounced search — switching is automatic based on search query presence
+- **Barrel exports**: `shared/models/models.dart` and `shared/widgets/widgets.dart` re-export all files for convenient single-import usage
+- **Theme wiring**: `app.dart` watches `themeModePr` from settings providers, so theme mode changes from SettingsScreen take effect immediately
+
+### Tests (`test/`)
+
+```
+test/
+├── unit/
+│   ├── ed25519_utils_test.dart           ← 5 tests: generateKeypair, sign, getPublicKeyBase64, getFingerprint, serialize/deserialize roundtrip
+│   ├── api_envelope_test.dart            ← 6 tests: success, error, pagination, warnings, null data, git+meta
+│   ├── auth_models_test.dart             ← 4 tests: LoginRequest.toJson, LoginResponse.fromJson, RoleDTO roundtrip, WhoamiResponse.fromJson
+│   ├── patient_models_test.dart          ← 6 tests: PatientSummary.fromFhirMap, missing name, PatientBundle.fromJson, WriteResponse with git, null fields, HistoryEntry roundtrip
+│   └── fhir_primitives_test.dart         ← 10 tests: CodeableConcept roundtrip, null coding, HumanName with given, minimal fields, toJson omits nulls, Quantity roundtrip/int/nulls, FhirAddress roundtrip/minimal/nulls, Coding, FhirReference, FhirPeriod
+└── widget/
+    ├── login_screen_test.dart            ← 8 tests: title, subtitle, server URL field, practitioner ID field, login button present, login disabled when empty, test connection button, device keypair section, default URL
+    └── patient_list_screen_test.dart     ← 5 tests: "Patients" title, "New Patient" button, search field, add icon, filters section
+```
+
+All tests use `flutter_test`. Widget tests wrap screens in `ProviderScope` + `MaterialApp`. Patient list widget tests override `dioProvider` with a mock Dio instance to avoid network dependencies.
