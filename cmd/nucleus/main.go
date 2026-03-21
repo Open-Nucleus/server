@@ -16,6 +16,7 @@ import (
 	"github.com/FibrinLab/open-nucleus/internal/server"
 	"github.com/FibrinLab/open-nucleus/internal/service/local"
 	"github.com/FibrinLab/open-nucleus/pkg/auth"
+	"github.com/FibrinLab/open-nucleus/pkg/consent"
 	"github.com/FibrinLab/open-nucleus/pkg/gitstore"
 	"github.com/FibrinLab/open-nucleus/pkg/merge"
 	"github.com/FibrinLab/open-nucleus/pkg/merge/openanchor"
@@ -96,9 +97,10 @@ func main() {
 			Path: ".nucleus/devices",
 		},
 		Security: authservice.SecurityConfig{
-			NonceTTL:      60 * time.Second,
-			MaxFailures:   10,
-			FailureWindow: 60 * time.Second,
+			NonceTTL:        60 * time.Second,
+			MaxFailures:     10,
+			FailureWindow:   60 * time.Second,
+			BootstrapSecret: os.Getenv("NUCLEUS_BOOTSTRAP_SECRET"),
 		},
 		KeyStore: authservice.KeyStoreConfig{
 			Type: "memory",
@@ -151,7 +153,7 @@ func main() {
 	drugDB := formularyservice.NewDrugDB()
 	interactions := formularyservice.NewInteractionIndex()
 	stockStore := formularyservice.NewStockStore(db)
-	dosingEngine := formularyservice.NewStubDosingEngine()
+	dosingEngine := formularyservice.DosingEngine(formularyservice.NewPharmDosingEngine())
 
 	formularyImpl := formularyservice.New(drugDB, interactions, stockStore, dosingEngine)
 	formularySvc := local.NewFormularyService(formularyImpl)
@@ -175,6 +177,12 @@ func main() {
 		nodePrivKey,
 	)
 	anchorSvc := local.NewAnchorService(anchorImpl)
+
+	// --- Consent service ---
+	consentMgr := consent.NewManager(idx, git, logger)
+	consentSvc := local.NewLocalConsentService(consentMgr, anchorImpl.NodeDIDString(), nodePrivKey)
+	consentHandler := handler.NewConsentHandler(consentSvc)
+	consentMiddleware := middleware.ConsentCheck(consentMgr, logger)
 
 	// --- Sentinel + Supply remain gRPC stubs (Python process) ---
 	// For now, use nil-safe stubs. When Sentinel is running, connect via gRPC.
@@ -230,22 +238,24 @@ func main() {
 
 	// Router (identical to gateway)
 	mux := router.New(router.Config{
-		AuthHandler:      authHandler,
-		PatientHandler:   patientHandler,
-		ResourceHandler:  resourceHandler,
-		SyncHandler:      syncHandler,
-		ConflictHandler:  conflictHandler,
-		SentinelHandler:  sentinelHandler,
-		FormularyHandler: formularyHandler,
-		AnchorHandler:    anchorHandler,
-		SupplyHandler:    supplyHandler,
-		FHIRHandler:      fhirHandler,
-		SmartHandler:     smartHandler,
-		SchemaValidator:  sv,
-		JWTAuth:          jwtAuth,
-		RateLimiter:      rateLimiter,
-		CORSOrigins:      cfg.CORS.AllowedOrigins,
-		AuditLogger:      auditLogger,
+		AuthHandler:       authHandler,
+		PatientHandler:    patientHandler,
+		ResourceHandler:   resourceHandler,
+		SyncHandler:       syncHandler,
+		ConflictHandler:   conflictHandler,
+		SentinelHandler:   sentinelHandler,
+		FormularyHandler:  formularyHandler,
+		AnchorHandler:     anchorHandler,
+		SupplyHandler:     supplyHandler,
+		ConsentHandler:    consentHandler,
+		FHIRHandler:       fhirHandler,
+		SmartHandler:      smartHandler,
+		SchemaValidator:   sv,
+		JWTAuth:           jwtAuth,
+		RateLimiter:       rateLimiter,
+		ConsentMiddleware: consentMiddleware,
+		CORSOrigins:       cfg.CORS.AllowedOrigins,
+		AuditLogger:       auditLogger,
 	})
 
 	// TLS

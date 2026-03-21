@@ -9,16 +9,6 @@ auth:
   token_lifetime: 24h
   refresh_window: 2h
 
-grpc:
-  patient_service: localhost:50051
-  sync_service: localhost:50052
-  auth_service: localhost:50053
-  formulary_service: localhost:50054
-  anchor_service: localhost:50055
-  sentinel_agent: localhost:50056
-  dial_timeout: 5s
-  request_timeout: 30s
-
 rate_limit:
   read_rpm: 200
   read_burst: 50
@@ -30,7 +20,9 @@ rate_limit:
 cors:
   allowed_origins:
     - "http://localhost:*"
+    - "https://localhost:*"
     - "http://127.0.0.1:*"
+    - "https://127.0.0.1:*"
 
 websocket:
   ping_interval: 30s
@@ -38,9 +30,21 @@ websocket:
 
 logging:
   level: info
-  audit_file: /var/log/open-nucleus/audit.log
+  audit_file: data/audit.log
   format: json
 
 smart:
   enabled: true
   base_url: http://localhost:8080
+
+data:
+  repo_path: data/repo
+  db_path: data/nucleus.db
+  author_name: nucleus-node
+  author_email: node@open-nucleus.local
+
+encryption:
+  enabled: false
+
+tls:
+  mode: "off"

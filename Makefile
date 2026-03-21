@@ -1,4 +1,4 @@
-.PHONY: build build-nucleus build-sentinel run test test-patient test-auth test-sync test-formulary test-anchor test-fhir test-sentinel test-e2e test-all smoke proto-gen proto-gen-python run-sentinel lint clean
+.PHONY: build build-nucleus build-sentinel run test test-patient test-auth test-sync test-formulary test-anchor test-fhir test-sentinel test-e2e test-all smoke proto-gen proto-gen-python run-sentinel lint clean seed demo
 
 BUILD_DIR := bin
 
@@ -59,5 +59,11 @@ proto-gen:
 lint:
 	golangci-lint run ./...
 
+seed:
+	go run ./cmd/seed
+
+demo: build-nucleus seed
+	NUCLEUS_BOOTSTRAP_SECRET=demo ./$(BUILD_DIR)/nucleus
+
 clean:
-	rm -rf $(BUILD_DIR)
+	rm -rf $(BUILD_DIR) data/

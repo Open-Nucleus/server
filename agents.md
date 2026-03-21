@@ -1,7 +1,7 @@
 # Open Nucleus — Architectural Memory
 
 > Living document. Updated after every major feature or structural change.
-> Last updated: Flutter Polish + Tests (Phase 17/18) (2026-03-18)
+> Last updated: Demo Readiness — open-anchor + open-pharm-dosing integration (2026-03-21)
 
 ---
 
@@ -592,20 +592,21 @@ services/formulary/
 - **CheckInteractions**: pair lookup → class lookup → allergy check → stock check → classify overall risk.
 - **Stock prediction**: `daysRemaining = quantity / dailyRate`, risk classification (critical/high/moderate/low).
 - **Redistribution**: surplus (>90 days supply) vs shortage (<14 days), suggests transfers.
-- **Dosing**: `Engine` interface with `StubEngine` that returns `configured=false`. 3 dosing RPCs cleanly signal "not configured" without gRPC errors.
+- **Dosing**: `Engine` interface with `PharmEngine` (backed by external `github.com/Open-Nucleus/open-pharm-dosing`) providing 33 frequency codes with parsing, FHIR Timing conversion, schedule generation, and validation. `StubEngine` kept as fallback.
 
 ## pkg/merge/openanchor — Anchor Cryptography Library
 
-Interfaces + local implementations for Merkle trees, DID:key, and Verifiable Credentials. No external dependencies beyond Go stdlib. Designed to be replaced by the real `open-anchor` library later.
+Adapter layer wrapping the external `github.com/Open-Nucleus/open-anchor/go` library. Keeps the same package path (`pkg/merge/openanchor`) and type contracts so all consumers are unaffected. The external library provides DID:key, Verifiable Credentials (with VP support + revocation lists), Merkle trees with proof generation, and pluggable anchor backends (IOTA planned).
 
-- **interfaces.go** — `AnchorEngine`, `IdentityEngine`, `MerkleTree` interfaces + all types (`DIDDocument`, `VerifiableCredential`, `CredentialProof`, `AnchorReceipt`, `CredentialClaims`, `VerificationResult`, `AnchorResult`, `FileEntry`) + sentinel errors
-- **merkle.go** — SHA-256 Merkle tree: sort by path, `H(path||fileHash)` per leaf, binary tree bottom-up, duplicate odd leaf
-- **base58.go** — Base58btc encoder/decoder (Bitcoin alphabet, ~60 lines)
-- **didkey.go** — `did:key` from Ed25519: multicodec prefix `0xed01` + pubkey → base58btc → `did:key:z...`. `ResolveDIDKey()` parses back to `DIDDocument`
-- **credential.go** — `IssueCredentialLocal()` — build VC, sign canonicalized payload with Ed25519. `VerifyCredentialLocal()` — resolve issuer DID, verify signature
+- **interfaces.go** — `AnchorEngine`, `IdentityEngine`, `MerkleTree` interfaces + all types (`DIDDocument`, `VerifiableCredential`, `CredentialProof`, `AnchorReceipt`, `CredentialClaims`, `VerificationResult`, `AnchorResult`, `FileEntry`) + sentinel errors — unchanged API contract
+- **convert.go** — Type conversion functions between in-repo types and external `anchor.*` types
+- **merkle.go** — `SHA256Merkle` delegates to external `anchor.NewMerkleTree()` + `GetRoot()`
+- **base58.go** — Standalone Base58btc encoder/decoder (kept for compatibility)
+- **didkey.go** — `DIDKeyFromEd25519()`, `ResolveDIDKey()`, `ExtractPublicKey()` delegate to external `didkey.Backend`
+- **credential.go** — `IssueCredentialLocal()`, `VerifyCredentialLocal()` delegate to external `anchor.IdentityEngine`
 - **stub_backend.go** — `StubBackend`: `Anchor()` returns `ErrBackendNotConfigured`, `Available()` returns false, `Name()` returns "none"
-- **local_identity.go** — `LocalIdentityEngine`: delegates to DIDKeyFromEd25519, ResolveDIDKey, IssueCredentialLocal, VerifyCredentialLocal
-- **openanchor_test.go** — 13 unit tests (Merkle, base58, DID:key, VC, stub backend)
+- **local_identity.go** — `LocalIdentityEngine`: wraps external `anchor.IdentityEngine` + `didkey.Backend`
+- **openanchor_test.go** — 13 unit tests (all passing with external library backend)
 
 ## Anchor Service (services/anchor/)
 

@@ -4,9 +4,11 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"sort"
+
+	anchor "github.com/Open-Nucleus/open-anchor/go"
 )
 
-// SHA256Merkle implements MerkleTree using SHA-256.
+// SHA256Merkle implements MerkleTree using the external open-anchor library.
 type SHA256Merkle struct{}
 
 // NewMerkleTree returns a new SHA-256 Merkle tree implementation.
@@ -15,8 +17,6 @@ func NewMerkleTree() MerkleTree {
 }
 
 // ComputeRoot computes the SHA-256 Merkle root from sorted file entries.
-// Each leaf is H(path || fileHash). The tree is built bottom-up, duplicating
-// the last node when the level has an odd count.
 func (m *SHA256Merkle) ComputeRoot(entries []FileEntry) ([]byte, error) {
 	if len(entries) == 0 {
 		return nil, fmt.Errorf("no entries to hash")
@@ -29,34 +29,23 @@ func (m *SHA256Merkle) ComputeRoot(entries []FileEntry) ([]byte, error) {
 		return sorted[i].Path < sorted[j].Path
 	})
 
-	// Build leaf nodes: H(path || fileHash)
-	leaves := make([][]byte, len(sorted))
+	// Convert to external MerkleLeaf format.
+	// The external library hashes leaves differently (prefix-based), so we
+	// pre-compute leaf hashes matching our format: H(path || fileHash).
+	leaves := make([]anchor.MerkleLeaf, len(sorted))
 	for i, entry := range sorted {
 		h := sha256.New()
 		h.Write([]byte(entry.Path))
 		h.Write(entry.Hash)
-		leaves[i] = h.Sum(nil)
-	}
-
-	// Build tree bottom-up.
-	level := leaves
-	for len(level) > 1 {
-		var next [][]byte
-		for i := 0; i < len(level); i += 2 {
-			left := level[i]
-			var right []byte
-			if i+1 < len(level) {
-				right = level[i+1]
-			} else {
-				right = left // duplicate last node
-			}
-			h := sha256.New()
-			h.Write(left)
-			h.Write(right)
-			next = append(next, h.Sum(nil))
+		leaves[i] = anchor.MerkleLeaf{
+			Path: entry.Path,
+			Hash: h.Sum(nil),
 		}
-		level = next
 	}
 
-	return level[0], nil
+	tree, err := anchor.NewMerkleTree(leaves)
+	if err != nil {
+		return nil, err
+	}
+	return tree.GetRoot(), nil
 }

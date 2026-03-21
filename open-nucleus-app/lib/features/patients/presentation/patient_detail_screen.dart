@@ -16,6 +16,10 @@ import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/error_state.dart';
 import '../../../shared/widgets/loading_skeleton.dart';
 import '../../../shared/widgets/pagination_controls.dart';
+import '../../consent/data/consent_api.dart';
+import '../../consent/presentation/consent_dialogs.dart';
+import '../../consent/presentation/consent_providers.dart';
+import 'clinical_form_dialogs.dart';
 import 'patient_detail_providers.dart';
 
 /// Full patient detail screen with demographics panel and tabbed clinical data.
@@ -273,17 +277,13 @@ class _DemographicsPanel extends StatelessWidget {
           const SizedBox(height: AppSpacing.sm),
 
           OutlinedButton.icon(
-            onPressed: () {
-              // TODO: navigate to patient edit form
-            },
+            onPressed: () => context.go('/patients/${widget.patientId}/edit'),
             icon: const Icon(Icons.edit_outlined, size: 18),
             label: const Text('Edit'),
           ),
           const SizedBox(height: AppSpacing.xs),
           OutlinedButton.icon(
-            onPressed: () {
-              // TODO: navigate to full history
-            },
+            onPressed: () => _tabController.animateTo(9),
             icon: const Icon(Icons.history, size: 18),
             label: const Text('History'),
           ),
@@ -620,8 +620,9 @@ class _EncountersTab extends ConsumerWidget {
               title: 'Encounters',
               actions: [
                 FilledButton.icon(
-                  onPressed: () {
-                    // TODO: open new encounter form
+                  onPressed: () async {
+                    final result = await EncounterFormDialog.show(context, widget.patientId);
+                    if (result != null) ref.invalidate(patientDetailProvider(widget.patientId));
                   },
                   icon: const Icon(Icons.add, size: 18),
                   label: const Text('New Encounter'),
@@ -710,7 +711,8 @@ class _VitalsTab extends ConsumerWidget {
               actions: [
                 FilledButton.icon(
                   onPressed: () {
-                    // TODO: open record vital form
+                    final result = await ObservationFormDialog.show(context, widget.patientId);
+                    if (result != null) ref.invalidate(patientDetailProvider(widget.patientId));
                   },
                   icon: const Icon(Icons.add, size: 18),
                   label: const Text('Record Vital'),
@@ -793,7 +795,8 @@ class _ConditionsTab extends ConsumerWidget {
               actions: [
                 FilledButton.icon(
                   onPressed: () {
-                    // TODO: open add condition form
+                    final result = await ConditionFormDialog.show(context, widget.patientId);
+                    if (result != null) ref.invalidate(patientDetailProvider(widget.patientId));
                   },
                   icon: const Icon(Icons.add, size: 18),
                   label: const Text('Add Condition'),
@@ -879,7 +882,8 @@ class _MedicationsTab extends ConsumerWidget {
               actions: [
                 FilledButton.icon(
                   onPressed: () {
-                    // TODO: open prescribe form
+                    final result = await MedicationRequestFormDialog.show(context, widget.patientId);
+                    if (result != null) ref.invalidate(patientDetailProvider(widget.patientId));
                   },
                   icon: const Icon(Icons.add, size: 18),
                   label: const Text('Prescribe'),
@@ -968,7 +972,8 @@ class _AllergiesTab extends ConsumerWidget {
               actions: [
                 FilledButton.icon(
                   onPressed: () {
-                    // TODO: open add allergy form
+                    final result = await AllergyFormDialog.show(context, widget.patientId);
+                    if (result != null) ref.invalidate(patientDetailProvider(widget.patientId));
                   },
                   icon: const Icon(Icons.add, size: 18),
                   label: const Text('Add Allergy'),
@@ -1052,7 +1057,8 @@ class _ImmunizationsTab extends ConsumerWidget {
               actions: [
                 FilledButton.icon(
                   onPressed: () {
-                    // TODO: open record immunization form
+                    final result = await ImmunizationFormDialog.show(context, widget.patientId);
+                    if (result != null) ref.invalidate(patientDetailProvider(widget.patientId));
                   },
                   icon: const Icon(Icons.add, size: 18),
                   label: const Text('Record Immunization'),
@@ -1135,7 +1141,8 @@ class _ProceduresTab extends ConsumerWidget {
               actions: [
                 FilledButton.icon(
                   onPressed: () {
-                    // TODO: open record procedure form
+                    final result = await ProcedureFormDialog.show(context, widget.patientId);
+                    if (result != null) ref.invalidate(patientDetailProvider(widget.patientId));
                   },
                   icon: const Icon(Icons.add, size: 18),
                   label: const Text('Record Procedure'),
@@ -1216,8 +1223,12 @@ class _ConsentTab extends ConsumerWidget {
               title: 'Consent Records',
               actions: [
                 FilledButton.icon(
-                  onPressed: () {
-                    // TODO: open grant consent form
+                  onPressed: () async {
+                    final result = await GrantConsentDialog.show(
+                      context: context,
+                      patientId: widget.patientId,
+                    );
+                    if (result != null) ref.invalidate(patientDetailProvider(widget.patientId));
                   },
                   icon: const Icon(Icons.add, size: 18),
                   label: const Text('Grant Consent'),
@@ -1266,7 +1277,9 @@ class _ConsentTab extends ConsumerWidget {
                                 destructive: true,
                               );
                               if (confirmed) {
-                                // TODO: call revoke endpoint
+                                final api = ref.read(consentApiProvider);
+                                await api.revokeConsent(c.id);
+                                ref.invalidate(patientDetailProvider(widget.patientId));
                               }
                             },
                             child: Text(

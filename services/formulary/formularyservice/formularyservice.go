@@ -12,6 +12,7 @@ type DosingEngine = dosing.Engine
 type StubDosingEngine = dosing.StubEngine
 
 var NewStubDosingEngine = dosing.NewStubEngine
+var NewPharmDosingEngine = dosing.NewPharmEngine
 
 type FormularyService = svc.FormularyService
 
