@@ -264,12 +264,71 @@ func main() {
 		pw.Write(ctx, "CREATE", "MedicationRequest", pid, data, mutCtx)
 	}
 
+	// --- Seed cholera outbreak scenario (for Sentinel IDSR detection) ---
+	// Create cholera Conditions (ICD-10 A00) at 3 patients from the same site.
+	// This triggers the idsr-cholera skill's zero-to-cluster critical alert.
+	choleraCount := 0
+	for _, pid := range patientIDs[:3] {
+		cholera := map[string]any{
+			"resourceType": "Condition",
+			"clinicalStatus": map[string]any{
+				"coding": []map[string]any{{
+					"system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+					"code":   "active",
+				}},
+			},
+			"verificationStatus": map[string]any{
+				"coding": []map[string]any{{
+					"system": "http://terminology.hl7.org/CodeSystem/condition-ver-status",
+					"code":   "confirmed",
+				}},
+			},
+			"code": map[string]any{
+				"coding": []map[string]any{{
+					"system":  "http://hl7.org/fhir/sid/icd-10",
+					"code":    "A00.9",
+					"display": "Cholera, unspecified",
+				}},
+			},
+			"subject":      map[string]any{"reference": "Patient/" + pid},
+			"recordedDate": time.Now().Format("2006-01-02"),
+			"note": []map[string]any{{
+				"text": "Acute watery diarrhoea with dehydration. Rice-water stool. Rapid test positive.",
+			}},
+		}
+		data, _ := json.Marshal(cholera)
+		pw.Write(ctx, "CREATE", "Condition", pid, data, mutCtx)
+		choleraCount++
+	}
+
+	// Add a measles case for multi-skill demo
+	measles := map[string]any{
+		"resourceType": "Condition",
+		"clinicalStatus": map[string]any{
+			"coding": []map[string]any{{
+				"system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+				"code":   "active",
+			}},
+		},
+		"code": map[string]any{
+			"coding": []map[string]any{{
+				"system":  "http://hl7.org/fhir/sid/icd-10",
+				"code":    "B05.9",
+				"display": "Measles without complication",
+			}},
+		},
+		"subject":      map[string]any{"reference": "Patient/" + patientIDs[3]},
+		"recordedDate": time.Now().Format("2006-01-02"),
+	}
+	mData, _ := json.Marshal(measles)
+	pw.Write(ctx, "CREATE", "Condition", patientIDs[3], mData, mutCtx)
+
 	fmt.Println()
 	fmt.Println("=== Demo Data Seeded ===")
 	fmt.Printf("  Patients:     %d\n", len(patientIDs))
 	fmt.Printf("  Encounters:   %d\n", len(patientIDs)*2)
 	fmt.Printf("  Observations: %d\n", len(patientIDs)*3)
-	fmt.Printf("  Conditions:   %d\n", len(patientIDs))
+	fmt.Printf("  Conditions:   %d (+ %d cholera, 1 measles)\n", len(patientIDs), choleraCount)
 	fmt.Printf("  MedRequests:  %d\n", len(patientIDs))
 	fmt.Println()
 	fmt.Printf("  Device ID:    %s\n", device.DeviceID)
