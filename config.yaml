@@ -48,3 +48,12 @@ encryption:
 
 tls:
   mode: "off"
+
+anchor:
+  backend: hedera        # "hedera" or "stub"
+  network: testnet
+  operator_id: ""        # e.g. "0.0.12345" — set before running
+  operator_key: ""       # hex Ed25519 key, or set NUCLEUS_HEDERA_KEY env var
+  topic_id: ""           # HCS topic for anchoring, e.g. "0.0.67890"
+  # did_topic_id: ""     # optional, defaults to topic_id
+  # mirror_url: ""       # optional, auto-detected from network

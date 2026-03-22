@@ -20,6 +20,18 @@ type Config struct {
 	Data       DataConfig       `koanf:"data"`
 	Encryption EncryptionConfig `koanf:"encryption"`
 	TLS        TLSConfig        `koanf:"tls"`
+	Anchor     AnchorConfig     `koanf:"anchor"`
+}
+
+// AnchorConfig controls the blockchain anchoring backend.
+type AnchorConfig struct {
+	Backend     string `koanf:"backend"`      // "stub" or "hedera"
+	Network     string `koanf:"network"`      // "testnet" or "mainnet"
+	OperatorID  string `koanf:"operator_id"`  // Hedera account ID (e.g. "0.0.12345")
+	OperatorKey string `koanf:"operator_key"` // Hex Ed25519 private key (or env NUCLEUS_HEDERA_KEY)
+	TopicID     string `koanf:"topic_id"`     // HCS topic for anchoring
+	DIDTopicID  string `koanf:"did_topic_id"` // HCS topic for DIDs (defaults to topic_id)
+	MirrorURL   string `koanf:"mirror_url"`   // Mirror Node URL (auto-detected from network)
 }
 
 // DataConfig specifies where the monolith stores its data.

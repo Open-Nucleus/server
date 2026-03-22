@@ -165,14 +165,40 @@ func main() {
 	credStore := anchorservice.NewCredentialStore(git)
 	didStore := anchorservice.NewDIDStore(git)
 
-	stubBackend := openanchor.NewStubBackend()
 	identityEngine := openanchor.NewLocalIdentityEngine()
 
 	// Use the auth service's node key for anchoring
 	nodePrivKey := authImpl.NodePrivateKey()
 
+	// Select anchor backend based on config.
+	var anchorBackend openanchor.AnchorEngine
+	if cfg.Anchor.Backend == "hedera" {
+		operatorKey := cfg.Anchor.OperatorKey
+		if operatorKey == "" {
+			operatorKey = os.Getenv("NUCLEUS_HEDERA_KEY")
+		}
+		hb, err := openanchor.NewHederaBackendFromConfig(
+			cfg.Anchor.Network,
+			cfg.Anchor.OperatorID,
+			operatorKey,
+			cfg.Anchor.TopicID,
+			cfg.Anchor.DIDTopicID,
+			cfg.Anchor.MirrorURL,
+			nodePrivKey,
+		)
+		if err != nil {
+			logger.Error("failed to init Hedera anchor backend", "error", err)
+			os.Exit(1)
+		}
+		anchorBackend = hb
+		logger.Info("anchor backend: hedera", "network", cfg.Anchor.Network, "topic", cfg.Anchor.TopicID)
+	} else {
+		anchorBackend = openanchor.NewStubBackend()
+		logger.Info("anchor backend: stub (no blockchain)")
+	}
+
 	anchorImpl := anchorservice.New(
-		git, stubBackend, identityEngine,
+		git, anchorBackend, identityEngine,
 		anchorQueue, anchorStore, credStore, didStore,
 		nodePrivKey,
 	)
