@@ -1,0 +1,138 @@
+@import "tailwindcss";
+
+/* ============================================================
+   Open Nucleus — Typewriter Theme
+   Black & white aesthetic with minimal accent colors.
+   ============================================================ */
+
+@theme {
+  /* --- Colors (Typewriter palette) --- */
+  --color-ink: #111111;
+  --color-paper: #FAFAF8;
+  --color-paper-dark: #1A1A1A;
+  --color-muted: #6B6B6B;
+  --color-border: #D4D4D4;
+  --color-border-dark: #333333;
+
+  /* Accent (used sparingly) */
+  --color-primary: #1A237E;
+  --color-secondary: #00897B;
+
+  /* Semantic */
+  --color-success: #2E7D32;
+  --color-warning: #F57F17;
+  --color-error: #D32F2F;
+  --color-info: #1565C0;
+
+  /* Severity badges */
+  --color-critical: #D32F2F;
+  --color-high: #E65100;
+  --color-moderate: #F57F17;
+  --color-low: #2E7D32;
+
+  /* Surface */
+  --color-surface: #FFFFFF;
+  --color-surface-hover: #F5F5F5;
+  --color-surface-dark: #242424;
+  --color-surface-dark-hover: #2E2E2E;
+
+  /* Sidebar */
+  --color-sidebar: #111111;
+  --color-sidebar-text: #E0E0E0;
+  --color-sidebar-active: #FFFFFF;
+  --color-sidebar-hover: #2A2A2A;
+
+  /* --- Spacing (8pt grid) --- */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+
+  /* --- Radius --- */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+
+  /* --- Layout --- */
+  --sidebar-width: 240px;
+  --sidebar-collapsed: 64px;
+  --topbar-height: 52px;
+}
+
+/* --- Base Styles --- */
+@layer base {
+  :root {
+    --font-sans: "Inter", "SF Pro Text", -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: "JetBrains Mono", "SF Mono", "Fira Code", "Courier New", monospace;
+    --font-serif: "Playfair Display", "Georgia", serif;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    user-select: none;
+    overflow: hidden;
+  }
+
+  .dark body,
+  .dark {
+    background-color: var(--color-paper-dark);
+    color: #E0E0E0;
+  }
+
+  /* Typewriter headings */
+  h1, h2, h3, h4 {
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-muted);
+  }
+
+  /* Code/mono text */
+  code, pre, .font-mono {
+    font-family: var(--font-mono);
+    font-size: 13px;
+  }
+}
+
+/* --- Utility classes --- */
+@layer utilities {
+  .page-padding {
+    padding: var(--spacing-lg);
+  }
+
+  .card-padding {
+    padding: var(--spacing-md);
+  }
+
+  .section-gap {
+    gap: var(--spacing-md);
+  }
+
+  .typewriter-border {
+    border: 1px solid var(--color-border);
+  }
+
+  .dark .typewriter-border {
+    border-color: var(--color-border-dark);
+  }
+}
