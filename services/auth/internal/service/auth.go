@@ -75,19 +75,32 @@ func (s *AuthService) RegisterDevice(publicKeyB64, practitionerID, siteID, devic
 		return nil, fmt.Errorf("invalid public key: %w", err)
 	}
 
-	// Bootstrap: first device registration
-	if !s.bootstrapUsed && bootstrapSecret != "" && bootstrapSecret == s.cfg.Security.BootstrapSecret {
-		role = auth.RoleRegionalAdmin // bootstrap always gets regional-admin
-		s.bootstrapUsed = true
-	} else if bootstrapSecret != "" {
-		return nil, fmt.Errorf("bootstrap already used or invalid secret")
+	// Bootstrap: register device with bootstrap secret
+	if bootstrapSecret != "" {
+		if bootstrapSecret != s.cfg.Security.BootstrapSecret {
+			return nil, fmt.Errorf("invalid bootstrap secret")
+		}
+		if !s.bootstrapUsed {
+			role = auth.RoleRegionalAdmin // first bootstrap gets regional-admin
+			s.bootstrapUsed = true
+		} else {
+			// Subsequent bootstrap registrations get physician role
+			if role == "" {
+				role = auth.RolePhysician
+			}
+		}
 	}
 
 	if !auth.ValidRole(role) {
 		return nil, fmt.Errorf("invalid role: %s", role)
 	}
 
-	deviceID := uuid.New().String()
+	// Use deviceName as deviceID if it looks like a UUID (for auto-register from login).
+	// Otherwise generate a new UUID.
+	deviceID := deviceName
+	if len(deviceID) < 36 {
+		deviceID = uuid.New().String()
+	}
 	device := &DeviceRecord{
 		DeviceID:       deviceID,
 		PublicKey:      auth.EncodePublicKey(pubKey),

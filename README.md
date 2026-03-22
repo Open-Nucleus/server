@@ -7,20 +7,29 @@ Open-source, offline-first electronic health record (EHR) system for military fo
 ## Quick Start
 
 ```bash
-# Build the monolith (single binary — all Go services in-process)
-make build-nucleus
+# 1. Seed demo data (6 patients, cholera outbreak scenario)
+go run ./cmd/seed
 
-# Run (starts on :8080, HTTPS if TLS configured)
-./bin/nucleus --config config.yaml
+# 2. Start the server (port 8080)
+NUCLEUS_BOOTSTRAP_SECRET=demo go run ./cmd/nucleus
 
-# Run Sentinel Agent separately (Python, :50056 gRPC + :8090 HTTP)
-make run-sentinel
+# 3. Start the desktop app (in a separate terminal)
+cd open-nucleus-app && pnpm install && pnpm tauri dev
+```
 
-# Test everything
-make test-all
+Login with practitioner ID `demo-clinician` (or any ID — the app auto-registers new devices via bootstrap secret).
 
-# Test Sentinel Agent (Python)
-make test-sentinel
+### Build from source
+
+```bash
+# Build server binary
+go build -o nucleus ./cmd/nucleus
+
+# Run with config
+NUCLEUS_BOOTSTRAP_SECRET=demo ./nucleus --config config.yaml
+
+# Build desktop app (macOS .app / Windows .msi)
+cd open-nucleus-app && pnpm tauri build
 ```
 
 ### Minimal config.yaml
@@ -31,51 +40,94 @@ data:
   db_path: data/nucleus.db  # SQLite search index (rebuildable)
 
 encryption:
-  enabled: true
-  # master_key_file: /path/to/master.key  # or set NUCLEUS_MASTER_KEY env var
+  enabled: false  # set true + provide master key for production
 
 tls:
-  mode: auto  # auto-generates self-signed Ed25519 cert; use "provided" for your own
+  mode: "off"  # "auto" for self-signed, "provided" for your own
+
+anchor:
+  backend: hedera  # "hedera" or "stub"
+  network: testnet
+  operator_id: "0.0.XXXXX"
+  operator_key: ""  # or set NUCLEUS_HEDERA_KEY env var
+  topic_id: "0.0.XXXXX"
 ```
+
+## Ecosystem
+
+Open Nucleus is a 5-repo ecosystem:
+
+| Repo | Language | Purpose |
+|------|----------|---------|
+| **[server](https://github.com/Open-Nucleus/server)** (this repo) | Go | Core EHR monolith — all services in-process |
+| **[open-anchor](https://github.com/Open-Nucleus/open-anchor)** | Go | Blockchain-agnostic data integrity anchoring, DIDs, VCs. Hedera HCS + IOTA backends |
+| **[open-sentinel](https://github.com/Open-Nucleus/open-sentinel)** | Python | LLM-powered sleeper agent for clinical surveillance (13 skills, IDSR outbreak detection) |
+| **[open-engram](https://github.com/Open-Nucleus/open-engram)** | TypeScript | Brain-inspired memory architecture for AI agents |
+| **[open-pharm-dosing](https://github.com/Open-Nucleus/open-pharm-dosing)** | Go | Medication dosing frequency encoding + FHIR R4 Timing conversion |
 
 ## Architecture
 
 ```
-Flutter App (HTTPS REST/JSON)
-        |
+Desktop App (Tauri + React)
+        |  REST/JSON on :8080
         v
   +------------------+
   |    nucleus        |  Single Go binary — all services in-process
-  |                   |  HTTP :8080 (TLS optional)
+  |                   |
   |  +-----------+    |
   |  | Patient   |    |  FHIR R4 write pipeline, 18 resource types
   |  | Auth      |    |  Ed25519 challenge-response, SMART on FHIR
   |  | Sync      |    |  Git-based sync, FHIR-aware merge driver
   |  | Formulary |    |  WHO essential medicines, drug interactions
-  |  | Anchor    |    |  Merkle tree, DID, Verifiable Credentials
+  |  | Anchor    |    |  Hedera HCS anchoring, DIDs, Verifiable Credentials
   |  +-----------+    |
   +--------+----------+
            |
   +--------+----------+
   |  Git repo         |  Source of truth — encrypted FHIR JSON files
-  |  SQLite index     |  Rebuildable search index (no PII in full records)
+  |  SQLite index     |  Rebuildable search index (no PII stored)
   +-------------------+
 
   Sentinel Agent (separate Python process, optional)
-  gRPC :50056 / HTTP :8090
+  Rule-based + LLM-powered clinical surveillance
 ```
 
 **Dual-layer data model:** FHIR R4 resources are stored as encrypted JSON files in a Git repository (source of truth) with SQLite as a rebuildable search index. Every clinical write validates, extracts search fields, encrypts, commits to Git, then upserts SQLite with extracted fields only. If SQLite is lost, it rebuilds from Git.
 
-**Per-patient encryption:** Each patient's data is encrypted with a unique AES-256-GCM data encryption key (DEK), wrapped by a master key. Per-provider ECDH key grants allow individual devices to receive their own wrapped DEK copy — revoking a provider's grant immediately cuts off their access without re-encrypting data. Non-patient resources (Practitioner, Organization, etc.) use a system-level key. Destroying a patient's key renders their Git data permanently unreadable — crypto-erasure for privacy law compliance.
+**Per-patient encryption:** Each patient's data is encrypted with a unique AES-256-GCM data encryption key (DEK), wrapped by a master key. Per-provider ECDH key grants allow individual devices to receive their own wrapped DEK copy — revoking a provider's grant immediately cuts off their access without re-encrypting data. Destroying a patient's key renders their Git data permanently unreadable — crypto-erasure for privacy law compliance.
 
-**Consent-based access control:** FHIR Consent resources gate patient data access. Each provider device must have an active consent grant before accessing a patient's records. The ConsentCheck middleware enforces this after JWT authentication. Break-glass emergency access creates a time-limited (4h) consent with mandatory audit logging. Consent grants can be exported as W3C Verifiable Credentials for offline verification during sync.
+**Consent-based access control:** FHIR Consent resources gate patient data access. ConsentCheck middleware enforces consent after JWT auth. Break-glass emergency access creates time-limited (4h) consents with audit. Consent grants exportable as W3C Verifiable Credentials for offline verification.
 
-**Blind indexes:** SQLite stores HMAC-SHA256 blind indexes instead of plaintext PII. Patient names are indexed as blind n-gram hashes, enabling substring search without exposing names in the database. Dates are blinded by year-month prefix. An attacker with SQLite access sees only opaque hashes.
+**Blind indexes:** SQLite stores HMAC-SHA256 blind indexes of PII. Patient names indexed as n-gram hashes for substring search without exposing plaintext.
 
-**Git-based sync:** Nodes discover each other via Wi-Fi Direct, Bluetooth, or local network and sync using Git fetch/merge/push over ECDH-encrypted channels. A FHIR-aware merge driver classifies conflicts into auto-merge (safe), review (flag for clinician), or block (clinical safety risk).
+**Hedera HCS anchoring:** Git Merkle roots submitted as messages to Hedera Consensus Service topics. Verification via Mirror Node REST API. `did:hedera` DIDs use HCS topics as append-only document logs.
 
-**Merkle anchoring:** Git Merkle roots are periodically anchored for cryptographic proof of data integrity. V1 uses a stub backend (queued, not submitted); real blockchain integration planned.
+**Git-based sync:** Nodes sync via Git fetch/merge/push over ECDH-encrypted channels. FHIR-aware merge driver classifies conflicts into auto-merge, review, or block.
+
+## Desktop App (Tauri)
+
+The desktop app lives in `open-nucleus-app/` — built with Tauri v2 + React + TypeScript.
+
+```bash
+cd open-nucleus-app
+pnpm install          # Install dependencies
+pnpm tauri dev        # Development mode (hot reload)
+pnpm tauri build      # Production build (macOS .app / Windows .msi)
+```
+
+**Tech stack:** Tauri v2, React 19, TypeScript, Vite, Tailwind CSS v4, TanStack Router/Query, Zustand, Recharts, TweetNaCl.js
+
+**Screens:** Login, Dashboard, Patient List/Detail/Form, Formulary, Sync & Conflicts, Alerts, Anchor/Integrity, Settings
+
+## Sentinel Agent
+
+```bash
+# Run outbreak detection demo (requires seeded data)
+cd ../open-sentinel
+python scripts/demo.py --repo /path/to/open-nucleus/data/repo
+```
+
+Detects cholera outbreaks using WHO IDSR thresholds. Runs in rule-based mode (no LLM required) or with Ollama for AI-powered analysis.
 
 ## Supported FHIR Resources (18 types)
 
@@ -92,30 +144,6 @@ Flutter App (HTTPS REST/JSON)
 | DetectedIssue, SupplyDelivery | System-scoped | No |
 | StructureDefinition | Read-only | No |
 
-5 custom Open Nucleus FHIR profiles for African healthcare: national IDs, WHO vaccines, growth monitoring, AI provenance, DHIS2 reporting.
-
-## Key Design Decisions
-
-- **Single binary** — All Go services run in one process. No service mesh, no gRPC between components (except optional Sentinel). Runs on a Raspberry Pi 4.
-- **Pure Go** — No CGO. SQLite via `modernc.org/sqlite`, Git via `go-git/v5`.
-- **Encryption at rest** — Per-patient AES-256-GCM envelope encryption. Master key wraps per-patient DEKs. Per-provider ECDH key grants for access delegation.
-- **Consent-gated access** — FHIR Consent resources enforce per-provider, per-patient access control. Break-glass emergency override with audit trail. Offline-verifiable consent via W3C Verifiable Credentials.
-- **TLS** — Auto-generated self-signed Ed25519 certs, or bring your own. Never plain HTTP by default.
-- **Git as source of truth** — SQLite is a rebuildable index with search fields only (no full FHIR JSON). Full records live in Git, encrypted.
-- **Offline-first** — Every feature works without network. Sync is opportunistic.
-- **FHIR R4** — Interoperable with global health systems. CapabilityStatement at `/fhir/metadata`.
-- **SMART on FHIR** — OAuth2 authorization code + PKCE with SMART v2 scopes. All flows execute locally.
-- **Crypto-erasure** — `DELETE /api/v1/patients/{id}/erase` destroys encryption key + purges index. Compliant with GDPR Art 17, SA POPIA, Kenya DPA, Nigeria NDPA.
-
-## Honest Limitations
-
-- **Sentinel is rule-based V1** — Uses WHO IDSR thresholds for outbreak detection. Not AI/LLM-powered. Ollama sidecar is future infrastructure, disabled by default.
-- **Anchor backend is stubbed** — Merkle trees are computed and queued but not submitted to any blockchain. Real IOTA Tangle integration is planned.
-- **Blind indexes reduce but don't eliminate PII exposure** — Patient names and dates are stored as HMAC blind hashes in SQLite. Gender, clinical codes, and resource IDs remain in plaintext for query performance. Deployed environments should still use disk-level encryption (LUKS, FileVault) for defense in depth.
-- **Git commit metadata is unencrypted** — Commit messages and timestamps are visible. File contents are encrypted but paths contain resource type and patient ID. Disk encryption recommended.
-- **Dosing engine is stubbed** — Returns `configured=false`. Real WHO dosing guidelines integration is planned.
-- **No WebSocket support yet** — Real-time push notifications are planned for Phase 6.
-
 ## Testing
 
 ```bash
@@ -125,7 +153,6 @@ make test-auth       # Auth service + pkg/auth
 make test-sync       # Sync service + pkg/merge
 make test-formulary  # Formulary service
 make test-anchor     # Anchor service + pkg/merge/openanchor
-make test-sentinel   # Sentinel agent (Python)
 make test-fhir       # FHIR REST API handler tests
 make smoke           # Interactive smoke test (27 steps)
 ```
@@ -134,24 +161,21 @@ make smoke           # Interactive smoke test (27 steps)
 
 ```bash
 make build-nucleus   # Build monolith binary
-make build-all       # Build monolith + legacy microservice binaries
-make build-sentinel  # Install Sentinel Agent (Python)
-make run-sentinel    # Run Sentinel Agent
-make proto-gen       # Regenerate Go protobuf code (requires buf)
+go run ./cmd/seed    # Seed demo data (6 patients + cholera outbreak)
+go run ./cmd/nucleus # Run server directly
+make proto-gen       # Regenerate protobuf code (requires buf)
 make lint            # Run golangci-lint
 make clean           # Remove build artifacts
 ```
 
 ## Middleware Pipeline
 
-Every protected request passes through:
-
 | # | Stage | What it does |
 |---|-------|--------------|
 | 1 | Rate Limiter | Per-device token bucket (200/min reads, 60/min writes, 10/min auth) |
 | 2 | Request ID | UUID v4 in `X-Request-ID` header + context |
 | 3 | JWT Validator | Ed25519 signature check, expiry, deny list. Skipped for `/auth/*` |
-| 4 | Consent Check | Verifies active FHIR Consent grant for patient-scoped routes. Supports `X-Break-Glass: true` for emergencies |
+| 4 | Consent Check | Verifies active FHIR Consent grant for patient-scoped routes. `X-Break-Glass: true` for emergencies |
 | 5 | RBAC Enforcer | Role permissions against endpoint requirements |
 | 6 | Schema Validator | JSON schema validation for POST/PUT FHIR bodies |
 | 7 | CORS | Configurable allowed origins |
@@ -167,6 +191,14 @@ Every protected request passes through:
 | Physician | All clinical, consent | All clinical, consent | conflict:resolve |
 | Site Administrator | All, consent | All, consent | sync, anchor, supply |
 | Regional Administrator | All (cross-site), consent | All (cross-site), consent | All admin |
+
+## Honest Limitations
+
+- **Sentinel has dual modes** — Rule-based (WHO IDSR thresholds) works offline. LLM mode (Ollama) adds AI reasoning but requires 8GB+ RAM.
+- **Hedera anchoring requires testnet account** — Free to create at [portal.hedera.com](https://portal.hedera.com). Mainnet costs real HBAR.
+- **Blind indexes reduce but don't eliminate PII exposure** — Gender, clinical codes, and resource IDs remain in plaintext for query performance. Use disk encryption for defense in depth.
+- **Git commit metadata is unencrypted** — Commit messages and file paths visible. Disk encryption recommended.
+- **Dosing engine is stubbed** — Returns `configured=false`. Real WHO dosing guidelines integration planned.
 
 ## License
 

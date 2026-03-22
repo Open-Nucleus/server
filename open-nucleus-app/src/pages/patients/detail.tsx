@@ -131,17 +131,28 @@ export default function PatientDetailPage() {
   const [eraseDialogOpen, setEraseDialogOpen] = useState(false);
 
   /* ---------- patient query ---------- */
+  // GET /patients/:id returns a PatientBundle: { patient, encounters, observations, ... }
+  interface PatientBundle {
+    patient: FhirPatientResource;
+    encounters?: Record<string, unknown>[];
+    observations?: Record<string, unknown>[];
+    conditions?: Record<string, unknown>[];
+    medication_requests?: Record<string, unknown>[];
+    allergy_intolerances?: Record<string, unknown>[];
+    flags?: Record<string, unknown>[];
+  }
+
   const {
-    data: patientEnvelope,
+    data: bundleEnvelope,
     isLoading: patientLoading,
     error: patientError,
-  } = useQuery<ApiEnvelope<FhirPatientResource>>({
+  } = useQuery<ApiEnvelope<PatientBundle>>({
     queryKey: ['patient', patientId],
-    queryFn: () => apiGet<FhirPatientResource>(API.patients.get(patientId)),
+    queryFn: () => apiGet<PatientBundle>(API.patients.get(patientId)),
     enabled: !!patientId,
   });
 
-  const patient = patientEnvelope?.data;
+  const patient = bundleEnvelope?.data?.patient;
   const patientName = patient ? patientDisplayName(patient) : '';
 
   /* ---------- clinical queries (per-tab) ---------- */
@@ -229,6 +240,14 @@ export default function PatientDetailPage() {
   if (patientLoading) {
     return (
       <div className="page-padding">
+        <PageHeader
+          title="Loading..."
+          breadcrumbs={[
+            { label: 'Dashboard', path: '/dashboard' },
+            { label: 'Patients', path: '/patients' },
+            { label: 'Loading...' },
+          ]}
+        />
         <LoadingSkeleton count={8} />
       </div>
     );
@@ -237,9 +256,18 @@ export default function PatientDetailPage() {
   if (patientError || !patient) {
     return (
       <div className="page-padding">
+        <PageHeader
+          title="Patient"
+          breadcrumbs={[
+            { label: 'Dashboard', path: '/dashboard' },
+            { label: 'Patients', path: '/patients' },
+            { label: 'Error' },
+          ]}
+        />
         <ErrorState
           message="Failed to load patient"
           details={patientError ? (patientError as Error).message : 'Patient not found'}
+          onRetry={() => window.location.reload()}
         />
       </div>
     );

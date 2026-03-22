@@ -21,3 +21,51 @@ Open Nucleus is an open-source, offline-first electronic health record (EHR) sys
 - Target hardware: Raspberry Pi 4 or Android tablet
 - FHIR R4 compliant for interoperability with global health systems
 - Licensed AGPLv3
+
+
+## Workflow Rules
+
+1. **Plan Mode Default**
+   - Enter plan mode for ANY non-trivial task (3+ steps or architectural decisions)
+   - If something goes sideways, STOP and re-plan immediately
+   - Use plan mode for verification steps, not just building
+
+2. **Subagent Strategy**
+   - Use multi-agents liberally to keep main context window clean
+   - Offload research, exploration, and parallel analysis to subagents
+   - One task per subagent for focused execution
+
+3. **Self-Improvement Loop**
+   - After ANY correction from the user: update `tasks/lessons.md` with the pattern
+   - Review lessons at session start
+
+4. **Verification Before Done**
+   - Never mark a task complete without proving it works
+   - Run tests, check logs, demonstrate correctness
+
+5. **Demand Elegance (Balanced)**
+   - For non-trivial changes: pause and ask "is there a more elegant way?"
+   - Skip this for simple, obvious fixes
+
+6. **Autonomous Bug Fixing**
+   - When given a bug report: just fix it. No hand-holding.
+   - Go fix failing CI tests without being told how
+
+7. **Housekeeping**
+   - Keep your name out of git commits
+   - Make a git commit after every major feature
+   - if building frontend, i prefer black and white design in typewriter format
+
+## Task Management
+
+1. Plan First: Write plan to `tasks/todo.md` with checkable items
+2. Verify Plan: Check in before starting implementation
+3. Track Progress: Mark items complete as you go
+4. Explain Changes: High-level summary at each step
+5. Document Results: Add review section to `tasks/todo.md`
+6. Capture Lessons: Update `tasks/lessons.md` after corrections
+
+## Core Principles
+
+- **Simplicity First:** Make every change as simple as possible. Impact minimal code.
+- **No Laziness:** Find root causes. No temporary fixes. Senior developer standards.

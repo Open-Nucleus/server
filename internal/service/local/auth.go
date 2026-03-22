@@ -3,6 +3,7 @@ package local
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/FibrinLab/open-nucleus/internal/model"
 	"github.com/FibrinLab/open-nucleus/internal/service"
@@ -29,7 +30,31 @@ func (a *authSvc) Login(_ context.Context, req *service.LoginRequest) (*service.
 		req.PractitionerID,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("auth: %w", err)
+		// Auto-register unknown devices when a valid bootstrap secret is provided.
+		if req.BootstrapSecret != "" && strings.Contains(err.Error(), "unknown device") {
+			_, regErr := a.real.RegisterDevice(
+				req.PublicKey,
+				req.PractitionerID,
+				"site-alpha",
+				req.DeviceID,
+				"physician",
+				req.BootstrapSecret,
+			)
+			if regErr != nil {
+				return nil, fmt.Errorf("auth: auto-register failed: %w", regErr)
+			}
+			// Retry authentication after registration.
+			accessToken, refreshToken, expiresAt, roleDef, siteID, err = a.real.Authenticate(
+				req.DeviceID,
+				sig,
+				req.PractitionerID,
+			)
+			if err != nil {
+				return nil, fmt.Errorf("auth: %w", err)
+			}
+		} else {
+			return nil, fmt.Errorf("auth: %w", err)
+		}
 	}
 
 	return &service.LoginResponse{

@@ -171,6 +171,7 @@ type LoginRequest struct {
 	PublicKey         string            `json:"public_key"`
 	ChallengeResponse ChallengeResponseDTO `json:"challenge_response"`
 	PractitionerID   string            `json:"practitioner_id"`
+	BootstrapSecret  string            `json:"bootstrap_secret,omitempty"`
 }
 
 type ChallengeResponseDTO struct {

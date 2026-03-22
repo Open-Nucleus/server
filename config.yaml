@@ -23,6 +23,9 @@ cors:
     - "https://localhost:*"
     - "http://127.0.0.1:*"
     - "https://127.0.0.1:*"
+    - "tauri://localhost"
+    - "https://tauri.localhost"
+    - "http://tauri.localhost"
 
 websocket:
   ping_interval: 30s
@@ -52,8 +55,8 @@ tls:
 anchor:
   backend: hedera        # "hedera" or "stub"
   network: testnet
-  operator_id: ""        # e.g. "0.0.12345" — set before running
-  operator_key: ""       # hex Ed25519 key, or set NUCLEUS_HEDERA_KEY env var
-  topic_id: ""           # HCS topic for anchoring, e.g. "0.0.67890"
-  # did_topic_id: ""     # optional, defaults to topic_id
+  operator_id: "0.0.4560302"        # e.g. "0.0.12345" — set before running
+  operator_key: "0x31e943e883bab5fd43071a90ab983c83e1b5cfd9981c6ac124512f012f0a5f69"       # hex Ed25519 key, or set NUCLEUS_HEDERA_KEY env var
+  topic_id: "0.0.8334822"
+  did_topic_id: "0.0.8334824"
   # mirror_url: ""       # optional, auto-detected from network

@@ -117,6 +117,10 @@ export const useAuthStore = create<AuthState>()(
 
           const data = envelope.data!;
 
+          // Write token to simple localStorage for synchronous access by api-client
+          localStorage.setItem('nucleus:token', data.token);
+          localStorage.setItem('nucleus:refresh_token', data.refresh_token);
+
           set({
             status: 'authenticated',
             token: data.token,
@@ -136,6 +140,8 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: () => {
+        localStorage.removeItem('nucleus:token');
+        localStorage.removeItem('nucleus:refresh_token');
         set({
           status: 'initial',
           token: null,
@@ -213,6 +219,17 @@ export const useAuthStore = create<AuthState>()(
         deviceId: state.deviceId,
         practitionerId: state.practitionerId,
       }),
+      onRehydrateStorage: () => {
+        return (state) => {
+          // Sync token to simple localStorage for api-client synchronous access
+          if (state?.token) {
+            localStorage.setItem('nucleus:token', state.token);
+            if (state.refreshToken) {
+              localStorage.setItem('nucleus:refresh_token', state.refreshToken);
+            }
+          }
+        };
+      },
     },
   ),
 );

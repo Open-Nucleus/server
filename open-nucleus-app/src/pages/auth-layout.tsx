@@ -1,10 +1,9 @@
-import { Outlet } from '@tanstack/react-router';
+import { AppShell } from '@/features/shell/app-shell';
 
 /**
- * Authenticated layout shell.
- * The beforeLoad guard in the router handles redirect-to-login;
- * this component just renders the Outlet (future: sidebar + topbar wrapper).
+ * Authenticated layout — wraps all protected pages in the sidebar + topbar shell.
+ * The beforeLoad guard in the router handles redirect-to-login.
  */
 export default function AuthLayout() {
-  return <Outlet />;
+  return <AppShell />;
 }
