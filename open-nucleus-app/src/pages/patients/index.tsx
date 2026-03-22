@@ -14,17 +14,30 @@ import {
   PaginationControls,
   StatusIndicator,
 } from '@/components';
-import type { PatientSummary, ApiEnvelope, Pagination } from '@/types';
+import type { ApiEnvelope, Pagination } from '@/types';
 
 /* ---------- types ---------- */
 
-interface PatientListData {
-  patients: PatientSummary[];
-}
+/** Raw FHIR Patient resource as returned by the Go backend. */
+type FhirPatient = Record<string, unknown>;
 
 interface Filters {
   gender: string;
   active: string;
+}
+
+/* ---------- FHIR helpers ---------- */
+
+function extractName(r: FhirPatient): string {
+  const nameArr = r.name as
+    | Array<{ use?: string; family?: string; given?: string[] }>
+    | undefined;
+  if (!nameArr || nameArr.length === 0) return 'Unknown';
+  const entry = nameArr[0];
+  const parts: string[] = [];
+  if (entry.family) parts.push(entry.family);
+  if (entry.given?.length) parts.push(entry.given.join(' '));
+  return parts.join(', ') || 'Unknown';
 }
 
 /* ---------- columns ---------- */
@@ -33,46 +46,53 @@ const columns = [
   {
     key: 'name',
     header: 'Name',
-    render: (p: PatientSummary) => (
-      <span className="font-medium">
-        {p.family_name}
-        {p.given_names.length > 0 ? `, ${p.given_names.join(' ')}` : ''}
-      </span>
+    render: (r: FhirPatient) => (
+      <span className="font-medium">{extractName(r)}</span>
     ),
   },
   {
     key: 'gender',
     header: 'Gender',
-    render: (p: PatientSummary) => (
-      <span className="font-mono text-xs">{capitalize(p.gender)}</span>
+    render: (r: FhirPatient) => (
+      <span className="font-mono text-xs">
+        {capitalize(String(r.gender ?? '--'))}
+      </span>
     ),
   },
   {
-    key: 'birth_date',
+    key: 'birthDate',
     header: 'Birth Date',
-    render: (p: PatientSummary) => (
-      <span className="font-mono text-xs tabular-nums">{p.birth_date}</span>
+    render: (r: FhirPatient) => (
+      <span className="font-mono text-xs tabular-nums">
+        {String(r.birthDate ?? '--')}
+      </span>
     ),
   },
   {
     key: 'active',
     header: 'Status',
-    render: (p: PatientSummary) => (
-      <StatusIndicator
-        status={p.active ? 'active' : 'inactive'}
-        label={p.active ? 'Active' : 'Inactive'}
-        size="sm"
-      />
-    ),
+    render: (r: FhirPatient) => {
+      const active = r.active as boolean | undefined;
+      return (
+        <StatusIndicator
+          status={active ? 'active' : 'inactive'}
+          label={active ? 'Active' : 'Inactive'}
+          size="sm"
+        />
+      );
+    },
   },
   {
-    key: 'last_updated',
+    key: 'lastUpdated',
     header: 'Last Updated',
-    render: (p: PatientSummary) => (
-      <span className="font-mono text-xs text-[var(--color-muted)]">
-        {p.last_updated ? timeAgo(p.last_updated) : '--'}
-      </span>
-    ),
+    render: (r: FhirPatient) => {
+      const meta = r.meta as { lastUpdated?: string } | undefined;
+      return (
+        <span className="font-mono text-xs text-[var(--color-muted)]">
+          {meta?.lastUpdated ? timeAgo(meta.lastUpdated) : '--'}
+        </span>
+      );
+    },
   },
 ];
 
@@ -121,16 +141,16 @@ export default function PatientsListPage() {
     isLoading,
     error,
     refetch,
-  } = useQuery<ApiEnvelope<PatientListData>>({
+  } = useQuery<ApiEnvelope<FhirPatient[]>>({
     queryKey: ['patients', page, search, filters],
     queryFn: () => {
       const params = buildParams();
       const path = search.trim() ? API.patients.search : API.patients.list;
-      return apiGet<PatientListData>(path, params);
+      return apiGet<FhirPatient[]>(path, params);
     },
   });
 
-  const patients = envelope?.data?.patients ?? [];
+  const patients: FhirPatient[] = envelope?.data ?? [];
   const pagination: Pagination | undefined = envelope?.pagination;
   const totalPages = pagination?.total_pages ?? 1;
 
@@ -140,8 +160,8 @@ export default function PatientsListPage() {
     setPage(1);
   };
 
-  const handleRowClick = (patient: PatientSummary) => {
-    navigate({ to: '/patients/$id', params: { id: patient.id } });
+  const handleRowClick = (r: FhirPatient) => {
+    navigate({ to: '/patients/$id', params: { id: String(r.id) } });
   };
 
   const handleFilterChange = (key: keyof Filters, value: string) => {
@@ -157,6 +177,7 @@ export default function PatientsListPage() {
           Patients
         </h1>
         <button
+          type="button"
           onClick={() => navigate({ to: '/patients/new' })}
           className={cn(
             'inline-flex items-center gap-2 px-4 py-2 text-xs font-mono uppercase tracking-wider cursor-pointer',
@@ -177,6 +198,7 @@ export default function PatientsListPage() {
         )}
       >
         <button
+          type="button"
           onClick={() => setFiltersOpen((v) => !v)}
           className={cn(
             'flex w-full items-center justify-between px-4 py-2.5 text-xs font-mono uppercase tracking-wider cursor-pointer',
@@ -240,6 +262,7 @@ export default function PatientsListPage() {
             {/* Clear */}
             {(filters.gender || filters.active) && (
               <button
+                type="button"
                 onClick={() => setFilters({ gender: '', active: '' })}
                 className={cn(
                   'self-end px-3 py-1.5 text-xs font-mono uppercase tracking-wider cursor-pointer',
@@ -255,11 +278,11 @@ export default function PatientsListPage() {
       </div>
 
       {/* Data table */}
-      <DataTableCard<PatientSummary>
+      <DataTableCard<FhirPatient>
         title="Patient Registry"
         columns={columns}
         data={patients}
-        keyExtractor={(p) => p.id}
+        keyExtractor={(r) => String(r.id)}
         onRowClick={handleRowClick}
         searchValue={search}
         onSearchChange={handleSearchChange}

@@ -69,6 +69,7 @@ export function SearchField({
       />
       {local.length > 0 && (
         <button
+          type="button"
           onClick={handleClear}
           className="shrink-0 text-[var(--color-muted)] hover:text-[var(--color-ink)] dark:hover:text-[var(--color-sidebar-text)] transition-colors cursor-pointer"
           aria-label="Clear search"

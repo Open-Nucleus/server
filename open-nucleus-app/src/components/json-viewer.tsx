@@ -22,6 +22,7 @@ export function JsonViewer({ data, collapsed = false }: JsonViewerProps) {
     >
       {/* Toggle header */}
       <button
+        type="button"
         onClick={() => setIsCollapsed(!isCollapsed)}
         className={cn(
           "flex items-center gap-1.5 w-full px-3 py-1.5 text-left cursor-pointer",

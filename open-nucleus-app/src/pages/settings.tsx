@@ -59,6 +59,7 @@ export default function SettingsPage() {
               </div>
             </div>
             <button
+              type="button"
               onClick={toggleTheme}
               className={cn(
                 'relative w-12 h-6 rounded-full transition-colors duration-200 cursor-pointer',
@@ -92,6 +93,7 @@ export default function SettingsPage() {
             </h2>
           </div>
           <button
+            type="button"
             className={cn(
               'px-3 py-1.5 text-[10px] font-mono font-semibold uppercase tracking-wider rounded-[var(--radius-sm)] cursor-pointer',
               'border border-[var(--color-border)] dark:border-[var(--color-border-dark)]',

@@ -116,6 +116,7 @@ export default function SyncPage() {
           </p>
         </div>
         <button
+          type="button"
           onClick={() => triggerMutation.mutate()}
           disabled={triggerMutation.isPending}
           className={cn(
@@ -133,6 +134,7 @@ export default function SyncPage() {
       <div className="flex gap-0 border-b border-[var(--color-border)] dark:border-[var(--color-border-dark)]">
         {tabs.map((tab) => (
           <button
+            type="button"
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
             className={cn(
@@ -361,6 +363,7 @@ function ConflictsPanel({
 
           <div className="flex gap-2 pt-1">
             <button
+              type="button"
               onClick={() => onResolve(c.id)}
               disabled={resolvingId === c.id}
               className={cn(
@@ -372,6 +375,7 @@ function ConflictsPanel({
               {resolvingId === c.id ? 'Resolving...' : 'Resolve'}
             </button>
             <button
+              type="button"
               onClick={() => onDefer(c.id)}
               disabled={deferringId === c.id}
               className={cn(

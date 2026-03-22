@@ -255,561 +255,588 @@ export default function PatientDetailPage() {
 
   /* ---------- render ---------- */
   return (
-    <div className="page-padding flex gap-6 h-full">
-      {/* ===== Left panel ===== */}
-      <div
-        className={cn(
-          'w-72 shrink-0 rounded-[var(--radius-lg)]',
-          'border border-[var(--color-border)] dark:border-[var(--color-border-dark)]',
-          'bg-[var(--color-surface)] dark:bg-[var(--color-surface-dark)]',
-          'p-5 flex flex-col gap-5 self-start',
-        )}
+    <div className="page-padding">
+      {/* Back button */}
+      <button
+        type="button"
+        onClick={() => navigate({ to: '/patients' })}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          marginBottom: '16px',
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          color: 'var(--color-muted)',
+          fontFamily: 'var(--font-mono)',
+          fontSize: '12px',
+          textTransform: 'uppercase',
+          letterSpacing: '1px',
+        }}
       >
-        {/* Name */}
-        <div>
-          <h2 className="text-xl font-bold text-[var(--color-ink)] dark:text-[var(--color-sidebar-text)] leading-tight">
-            {patientDisplayName(patient)}
-          </h2>
-          <div className="flex items-center gap-2 mt-2">
-            <span
+        &larr; Back to Patients
+      </button>
+
+      <div className="flex gap-6 h-full">
+        {/* ===== Left panel ===== */}
+        <div
+          className={cn(
+            'w-72 shrink-0 rounded-[var(--radius-lg)]',
+            'border border-[var(--color-border)] dark:border-[var(--color-border-dark)]',
+            'bg-[var(--color-surface)] dark:bg-[var(--color-surface-dark)]',
+            'p-5 flex flex-col gap-5 self-start',
+          )}
+        >
+          {/* Name */}
+          <div>
+            <h2 className="text-xl font-bold text-[var(--color-ink)] dark:text-[var(--color-sidebar-text)] leading-tight">
+              {patientDisplayName(patient)}
+            </h2>
+            <div className="flex items-center gap-2 mt-2">
+              <span
+                className={cn(
+                  'inline-flex items-center px-2 py-0.5 rounded-full',
+                  'text-[10px] font-mono font-semibold uppercase tracking-wider',
+                  'border border-[var(--color-border)] dark:border-[var(--color-border-dark)]',
+                  'text-[var(--color-muted)]',
+                )}
+              >
+                {capitalize(patient.gender ?? 'unknown')}
+              </span>
+              <StatusIndicator
+                status={patient.active !== false ? 'active' : 'inactive'}
+                label={patient.active !== false ? 'Active' : 'Inactive'}
+                size="sm"
+              />
+            </div>
+          </div>
+
+          {/* Demographics */}
+          <div className="space-y-3">
+            <DetailRow label="Birth Date" value={patient.birthDate ?? '--'} />
+            {patient.birthDate && (
+              <DetailRow label="Age" value={`${calculateAge(patient.birthDate)} years`} />
+            )}
+            {patient.address?.[0] && (
+              <DetailRow
+                label="Address"
+                value={[
+                  patient.address[0].line?.join(', '),
+                  patient.address[0].city,
+                  patient.address[0].state,
+                  patient.address[0].postalCode,
+                  patient.address[0].country,
+                ]
+                  .filter(Boolean)
+                  .join(', ') || '--'}
+              />
+            )}
+            {patient.telecom?.map((t, i) => (
+              <DetailRow
+                key={i}
+                label={capitalize(t.system ?? 'contact')}
+                value={t.value ?? '--'}
+              />
+            ))}
+            {patient.meta?.lastUpdated && (
+              <DetailRow
+                label="Last Updated"
+                value={timeAgo(patient.meta.lastUpdated)}
+              />
+            )}
+          </div>
+
+          {/* Patient ID */}
+          <div>
+            <span className="font-mono text-[10px] uppercase tracking-wider text-[var(--color-muted)]">
+              Patient ID
+            </span>
+            <p className="font-mono text-xs text-[var(--color-ink)] dark:text-[var(--color-sidebar-text)] mt-0.5 break-all">
+              {patientId}
+            </p>
+          </div>
+
+          {/* Quick actions */}
+          <div className="flex flex-col gap-2 mt-auto">
+            <button
+              type="button"
+              onClick={() =>
+                navigate({
+                  to: '/patients/$id/edit',
+                  params: { id: patientId },
+                })
+              }
               className={cn(
-                'inline-flex items-center px-2 py-0.5 rounded-full',
-                'text-[10px] font-mono font-semibold uppercase tracking-wider',
+                'flex items-center justify-center gap-2 w-full px-4 py-2 text-xs font-mono uppercase tracking-wider cursor-pointer',
                 'border border-[var(--color-border)] dark:border-[var(--color-border-dark)]',
-                'text-[var(--color-muted)]',
+                'text-[var(--color-ink)] dark:text-[var(--color-sidebar-text)]',
+                'hover:bg-[var(--color-surface-hover)] dark:hover:bg-[var(--color-surface-dark-hover)]',
+                'transition-colors duration-150 rounded-[var(--radius-sm)]',
               )}
             >
-              {capitalize(patient.gender ?? 'unknown')}
-            </span>
-            <StatusIndicator
-              status={patient.active !== false ? 'active' : 'inactive'}
-              label={patient.active !== false ? 'Active' : 'Inactive'}
-              size="sm"
-            />
+              <Edit3 size={14} />
+              Edit
+            </button>
+            <button
+              type="button"
+              onClick={() => setEraseDialogOpen(true)}
+              className={cn(
+                'flex items-center justify-center gap-2 w-full px-4 py-2 text-xs font-mono uppercase tracking-wider cursor-pointer',
+                'border border-[var(--color-error)] text-[var(--color-error)]',
+                'hover:bg-[var(--color-error)] hover:text-white',
+                'transition-colors duration-150 rounded-[var(--radius-sm)]',
+              )}
+            >
+              <Trash2 size={14} />
+              Erase
+            </button>
           </div>
         </div>
 
-        {/* Demographics */}
-        <div className="space-y-3">
-          <DetailRow label="Birth Date" value={patient.birthDate ?? '--'} />
-          {patient.birthDate && (
-            <DetailRow label="Age" value={`${calculateAge(patient.birthDate)} years`} />
-          )}
-          {patient.address?.[0] && (
-            <DetailRow
-              label="Address"
-              value={[
-                patient.address[0].line?.join(', '),
-                patient.address[0].city,
-                patient.address[0].state,
-                patient.address[0].postalCode,
-                patient.address[0].country,
-              ]
-                .filter(Boolean)
-                .join(', ') || '--'}
-            />
-          )}
-          {patient.telecom?.map((t, i) => (
-            <DetailRow
-              key={i}
-              label={capitalize(t.system ?? 'contact')}
-              value={t.value ?? '--'}
-            />
-          ))}
-          {patient.meta?.lastUpdated && (
-            <DetailRow
-              label="Last Updated"
-              value={timeAgo(patient.meta.lastUpdated)}
-            />
-          )}
-        </div>
+        {/* ===== Right panel ===== */}
+        <div className="flex-1 flex flex-col gap-4 min-w-0">
+          {/* Tab bar */}
+          <div className="flex gap-1 overflow-x-auto border-b border-[var(--color-border)] dark:border-[var(--color-border-dark)] pb-px">
+            {TABS.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  type="button"
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={cn(
+                    'flex items-center gap-1.5 px-3 py-2 text-[11px] font-mono uppercase tracking-wider whitespace-nowrap cursor-pointer',
+                    'border-b-2 transition-colors duration-150',
+                    isActive
+                      ? 'border-[var(--color-ink)] dark:border-[var(--color-sidebar-text)] text-[var(--color-ink)] dark:text-[var(--color-sidebar-text)]'
+                      : 'border-transparent text-[var(--color-muted)] hover:text-[var(--color-ink)] dark:hover:text-[var(--color-sidebar-text)]',
+                  )}
+                >
+                  <Icon size={14} />
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
 
-        {/* Patient ID */}
-        <div>
-          <span className="font-mono text-[10px] uppercase tracking-wider text-[var(--color-muted)]">
-            Patient ID
-          </span>
-          <p className="font-mono text-xs text-[var(--color-ink)] dark:text-[var(--color-sidebar-text)] mt-0.5 break-all">
-            {patientId}
-          </p>
-        </div>
-
-        {/* Quick actions */}
-        <div className="flex flex-col gap-2 mt-auto">
-          <button
-            onClick={() =>
-              navigate({
-                to: '/patients/$id/edit',
-                params: { id: patientId },
-              })
-            }
-            className={cn(
-              'flex items-center justify-center gap-2 w-full px-4 py-2 text-xs font-mono uppercase tracking-wider cursor-pointer',
-              'border border-[var(--color-border)] dark:border-[var(--color-border-dark)]',
-              'text-[var(--color-ink)] dark:text-[var(--color-sidebar-text)]',
-              'hover:bg-[var(--color-surface-hover)] dark:hover:bg-[var(--color-surface-dark-hover)]',
-              'transition-colors duration-150 rounded-[var(--radius-sm)]',
+          {/* Tab content */}
+          <div className="flex-1 overflow-y-auto">
+            {activeTab === 'overview' && (
+              <OverviewTab
+                encounters={encounterQuery.data?.data?.resources?.length ?? 0}
+                observations={observationQuery.data?.data?.resources?.length ?? 0}
+                conditions={conditionQuery.data?.data?.resources?.length ?? 0}
+                medications={medicationQuery.data?.data?.resources?.length ?? 0}
+                allergies={allergyQuery.data?.data?.resources?.length ?? 0}
+                loading={
+                  encounterQuery.isLoading ||
+                  observationQuery.isLoading ||
+                  conditionQuery.isLoading ||
+                  medicationQuery.isLoading ||
+                  allergyQuery.isLoading
+                }
+              />
             )}
-          >
-            <Edit3 size={14} />
-            Edit
-          </button>
-          <button
-            onClick={() => setEraseDialogOpen(true)}
-            className={cn(
-              'flex items-center justify-center gap-2 w-full px-4 py-2 text-xs font-mono uppercase tracking-wider cursor-pointer',
-              'border border-[var(--color-error)] text-[var(--color-error)]',
-              'hover:bg-[var(--color-error)] hover:text-white',
-              'transition-colors duration-150 rounded-[var(--radius-sm)]',
-            )}
-          >
-            <Trash2 size={14} />
-            Erase
-          </button>
-        </div>
-      </div>
 
-      {/* ===== Right panel ===== */}
-      <div className="flex-1 flex flex-col gap-4 min-w-0">
-        {/* Tab bar */}
-        <div className="flex gap-1 overflow-x-auto border-b border-[var(--color-border)] dark:border-[var(--color-border-dark)] pb-px">
-          {TABS.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={cn(
-                  'flex items-center gap-1.5 px-3 py-2 text-[11px] font-mono uppercase tracking-wider whitespace-nowrap cursor-pointer',
-                  'border-b-2 transition-colors duration-150',
-                  isActive
-                    ? 'border-[var(--color-ink)] dark:border-[var(--color-sidebar-text)] text-[var(--color-ink)] dark:text-[var(--color-sidebar-text)]'
-                    : 'border-transparent text-[var(--color-muted)] hover:text-[var(--color-ink)] dark:hover:text-[var(--color-sidebar-text)]',
-                )}
-              >
-                <Icon size={14} />
-                {tab.label}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Tab content */}
-        <div className="flex-1 overflow-y-auto">
-          {activeTab === 'overview' && (
-            <OverviewTab
-              encounters={encounterQuery.data?.data?.resources?.length ?? 0}
-              observations={observationQuery.data?.data?.resources?.length ?? 0}
-              conditions={conditionQuery.data?.data?.resources?.length ?? 0}
-              medications={medicationQuery.data?.data?.resources?.length ?? 0}
-              allergies={allergyQuery.data?.data?.resources?.length ?? 0}
-              loading={
-                encounterQuery.isLoading ||
-                observationQuery.isLoading ||
-                conditionQuery.isLoading ||
-                medicationQuery.isLoading ||
-                allergyQuery.isLoading
-              }
-            />
-          )}
-
-          {activeTab === 'encounters' && (
-            <ClinicalTable
-              title="Encounters"
-              queryResult={encounterQuery}
-              columns={[
-                {
-                  key: 'status',
-                  header: 'Status',
-                  render: (r: Record<string, unknown>) => (
-                    <span className="font-mono text-xs">
-                      {capitalize(String(r.status ?? '--'))}
-                    </span>
-                  ),
-                },
-                {
-                  key: 'class',
-                  header: 'Class',
-                  render: (r: Record<string, unknown>) => {
-                    const cls = r.class as { code?: string } | undefined;
-                    return (
+            {activeTab === 'encounters' && (
+              <ClinicalTable
+                title="Encounters"
+                queryResult={encounterQuery}
+                columns={[
+                  {
+                    key: 'status',
+                    header: 'Status',
+                    render: (r: Record<string, unknown>) => (
                       <span className="font-mono text-xs">
-                        {capitalize(cls?.code ?? '--')}
+                        {capitalize(String(r.status ?? '--'))}
                       </span>
-                    );
+                    ),
                   },
-                },
-                {
-                  key: 'period_start',
-                  header: 'Start',
-                  render: (r: Record<string, unknown>) => {
-                    const period = r.period as { start?: string } | undefined;
-                    return (
-                      <span className="font-mono text-xs tabular-nums">
-                        {period?.start ? toDisplayDate(period.start) : '--'}
-                      </span>
-                    );
-                  },
-                },
-                {
-                  key: 'period_end',
-                  header: 'End',
-                  render: (r: Record<string, unknown>) => {
-                    const period = r.period as { end?: string } | undefined;
-                    return (
-                      <span className="font-mono text-xs tabular-nums">
-                        {period?.end ? toDisplayDate(period.end) : '--'}
-                      </span>
-                    );
-                  },
-                },
-              ]}
-              addLabel="Add Encounter"
-              onAdd={() => setOpenDialog('encounter')}
-              emptyTitle="No encounters"
-              emptySubtitle="Record the first encounter for this patient."
-            />
-          )}
-
-          {activeTab === 'vitals' && (
-            <ClinicalTable
-              title="Observations / Vitals"
-              queryResult={observationQuery}
-              columns={[
-                {
-                  key: 'code',
-                  header: 'Code',
-                  render: (r: Record<string, unknown>) => (
-                    <span className="text-sm">{extractCodeDisplay(r, 'code')}</span>
-                  ),
-                },
-                {
-                  key: 'value',
-                  header: 'Value',
-                  render: (r: Record<string, unknown>) => {
-                    const vq = r.valueQuantity as
-                      | { value?: number; unit?: string }
-                      | undefined;
-                    if (vq) {
+                  {
+                    key: 'class',
+                    header: 'Class',
+                    render: (r: Record<string, unknown>) => {
+                      const cls = r.class as { code?: string } | undefined;
                       return (
-                        <span className="font-mono text-xs tabular-nums">
-                          {vq.value ?? '--'} {vq.unit ?? ''}
+                        <span className="font-mono text-xs">
+                          {capitalize(cls?.code ?? '--')}
                         </span>
                       );
-                    }
-                    return (
-                      <span className="font-mono text-xs">
-                        {String(r.valueString ?? '--')}
-                      </span>
-                    );
+                    },
                   },
-                },
-                {
-                  key: 'effective',
-                  header: 'Date',
-                  render: (r: Record<string, unknown>) => {
-                    const dt =
-                      (r.effectiveDateTime as string) ??
-                      (r.effectivePeriod as { start?: string })?.start;
-                    return (
+                  {
+                    key: 'period_start',
+                    header: 'Start',
+                    render: (r: Record<string, unknown>) => {
+                      const period = r.period as { start?: string } | undefined;
+                      return (
+                        <span className="font-mono text-xs tabular-nums">
+                          {period?.start ? toDisplayDate(period.start) : '--'}
+                        </span>
+                      );
+                    },
+                  },
+                  {
+                    key: 'period_end',
+                    header: 'End',
+                    render: (r: Record<string, unknown>) => {
+                      const period = r.period as { end?: string } | undefined;
+                      return (
+                        <span className="font-mono text-xs tabular-nums">
+                          {period?.end ? toDisplayDate(period.end) : '--'}
+                        </span>
+                      );
+                    },
+                  },
+                ]}
+                addLabel="Add Encounter"
+                onAdd={() => setOpenDialog('encounter')}
+                emptyTitle="No encounters"
+                emptySubtitle="Record the first encounter for this patient."
+              />
+            )}
+
+            {activeTab === 'vitals' && (
+              <ClinicalTable
+                title="Observations / Vitals"
+                queryResult={observationQuery}
+                columns={[
+                  {
+                    key: 'code',
+                    header: 'Code',
+                    render: (r: Record<string, unknown>) => (
+                      <span className="text-sm">{extractCodeDisplay(r, 'code')}</span>
+                    ),
+                  },
+                  {
+                    key: 'value',
+                    header: 'Value',
+                    render: (r: Record<string, unknown>) => {
+                      const vq = r.valueQuantity as
+                        | { value?: number; unit?: string }
+                        | undefined;
+                      if (vq) {
+                        return (
+                          <span className="font-mono text-xs tabular-nums">
+                            {vq.value ?? '--'} {vq.unit ?? ''}
+                          </span>
+                        );
+                      }
+                      return (
+                        <span className="font-mono text-xs">
+                          {String(r.valueString ?? '--')}
+                        </span>
+                      );
+                    },
+                  },
+                  {
+                    key: 'effective',
+                    header: 'Date',
+                    render: (r: Record<string, unknown>) => {
+                      const dt =
+                        (r.effectiveDateTime as string) ??
+                        (r.effectivePeriod as { start?: string })?.start;
+                      return (
+                        <span className="font-mono text-xs tabular-nums">
+                          {dt ? toDisplayDate(dt) : '--'}
+                        </span>
+                      );
+                    },
+                  },
+                ]}
+                addLabel="Add Vital"
+                onAdd={() => setOpenDialog('observation')}
+                emptyTitle="No observations"
+                emptySubtitle="Record the first vital sign or observation."
+              />
+            )}
+
+            {activeTab === 'conditions' && (
+              <ClinicalTable
+                title="Conditions"
+                queryResult={conditionQuery}
+                columns={[
+                  {
+                    key: 'code',
+                    header: 'Condition',
+                    render: (r: Record<string, unknown>) => (
+                      <span className="text-sm">{extractCodeDisplay(r, 'code')}</span>
+                    ),
+                  },
+                  {
+                    key: 'clinicalStatus',
+                    header: 'Clinical Status',
+                    render: (r: Record<string, unknown>) => {
+                      const cs = r.clinicalStatus as
+                        | { coding?: Array<{ code?: string }> }
+                        | undefined;
+                      return (
+                        <span className="font-mono text-xs">
+                          {capitalize(cs?.coding?.[0]?.code ?? '--')}
+                        </span>
+                      );
+                    },
+                  },
+                  {
+                    key: 'recordedDate',
+                    header: 'Recorded',
+                    render: (r: Record<string, unknown>) => (
                       <span className="font-mono text-xs tabular-nums">
-                        {dt ? toDisplayDate(dt) : '--'}
+                        {r.recordedDate
+                          ? toDisplayDate(String(r.recordedDate))
+                          : '--'}
                       </span>
-                    );
+                    ),
                   },
-                },
-              ]}
-              addLabel="Add Vital"
-              onAdd={() => setOpenDialog('observation')}
-              emptyTitle="No observations"
-              emptySubtitle="Record the first vital sign or observation."
-            />
-          )}
+                ]}
+                addLabel="Add Condition"
+                onAdd={() => setOpenDialog('condition')}
+                emptyTitle="No conditions"
+                emptySubtitle="No conditions have been recorded."
+              />
+            )}
 
-          {activeTab === 'conditions' && (
-            <ClinicalTable
-              title="Conditions"
-              queryResult={conditionQuery}
-              columns={[
-                {
-                  key: 'code',
-                  header: 'Condition',
-                  render: (r: Record<string, unknown>) => (
-                    <span className="text-sm">{extractCodeDisplay(r, 'code')}</span>
-                  ),
-                },
-                {
-                  key: 'clinicalStatus',
-                  header: 'Clinical Status',
-                  render: (r: Record<string, unknown>) => {
-                    const cs = r.clinicalStatus as
-                      | { coding?: Array<{ code?: string }> }
-                      | undefined;
-                    return (
+            {activeTab === 'medications' && (
+              <ClinicalTable
+                title="Medication Requests"
+                queryResult={medicationQuery}
+                columns={[
+                  {
+                    key: 'medication',
+                    header: 'Medication',
+                    render: (r: Record<string, unknown>) => (
+                      <span className="text-sm">
+                        {extractCodeDisplay(r, 'medicationCodeableConcept')}
+                      </span>
+                    ),
+                  },
+                  {
+                    key: 'status',
+                    header: 'Status',
+                    render: (r: Record<string, unknown>) => (
                       <span className="font-mono text-xs">
-                        {capitalize(cs?.coding?.[0]?.code ?? '--')}
+                        {capitalize(String(r.status ?? '--'))}
                       </span>
-                    );
+                    ),
                   },
-                },
-                {
-                  key: 'recordedDate',
-                  header: 'Recorded',
-                  render: (r: Record<string, unknown>) => (
-                    <span className="font-mono text-xs tabular-nums">
-                      {r.recordedDate
-                        ? toDisplayDate(String(r.recordedDate))
-                        : '--'}
-                    </span>
-                  ),
-                },
-              ]}
-              addLabel="Add Condition"
-              onAdd={() => setOpenDialog('condition')}
-              emptyTitle="No conditions"
-              emptySubtitle="No conditions have been recorded."
-            />
-          )}
-
-          {activeTab === 'medications' && (
-            <ClinicalTable
-              title="Medication Requests"
-              queryResult={medicationQuery}
-              columns={[
-                {
-                  key: 'medication',
-                  header: 'Medication',
-                  render: (r: Record<string, unknown>) => (
-                    <span className="text-sm">
-                      {extractCodeDisplay(r, 'medicationCodeableConcept')}
-                    </span>
-                  ),
-                },
-                {
-                  key: 'status',
-                  header: 'Status',
-                  render: (r: Record<string, unknown>) => (
-                    <span className="font-mono text-xs">
-                      {capitalize(String(r.status ?? '--'))}
-                    </span>
-                  ),
-                },
-                {
-                  key: 'authoredOn',
-                  header: 'Authored On',
-                  render: (r: Record<string, unknown>) => (
-                    <span className="font-mono text-xs tabular-nums">
-                      {r.authoredOn
-                        ? toDisplayDate(String(r.authoredOn))
-                        : '--'}
-                    </span>
-                  ),
-                },
-              ]}
-              addLabel="Add Medication"
-              onAdd={() => setOpenDialog('medication')}
-              emptyTitle="No medication requests"
-              emptySubtitle="No medications have been prescribed."
-            />
-          )}
-
-          {activeTab === 'allergies' && (
-            <ClinicalTable
-              title="Allergy Intolerances"
-              queryResult={allergyQuery}
-              columns={[
-                {
-                  key: 'substance',
-                  header: 'Substance',
-                  render: (r: Record<string, unknown>) => (
-                    <span className="text-sm">{extractCodeDisplay(r, 'code')}</span>
-                  ),
-                },
-                {
-                  key: 'criticality',
-                  header: 'Criticality',
-                  render: (r: Record<string, unknown>) => (
-                    <span className="font-mono text-xs">
-                      {capitalize(String(r.criticality ?? '--'))}
-                    </span>
-                  ),
-                },
-                {
-                  key: 'type',
-                  header: 'Type',
-                  render: (r: Record<string, unknown>) => (
-                    <span className="font-mono text-xs">
-                      {capitalize(String(r.type ?? '--'))}
-                    </span>
-                  ),
-                },
-              ]}
-              addLabel="Add Allergy"
-              onAdd={() => setOpenDialog('allergy')}
-              emptyTitle="No allergies recorded"
-              emptySubtitle="No known allergies or intolerances."
-            />
-          )}
-
-          {activeTab === 'immunizations' && (
-            <ClinicalTable
-              title="Immunizations"
-              queryResult={immunizationQuery}
-              columns={[
-                {
-                  key: 'vaccine',
-                  header: 'Vaccine',
-                  render: (r: Record<string, unknown>) => (
-                    <span className="text-sm">
-                      {extractCodeDisplay(r, 'vaccineCode')}
-                    </span>
-                  ),
-                },
-                {
-                  key: 'status',
-                  header: 'Status',
-                  render: (r: Record<string, unknown>) => (
-                    <span className="font-mono text-xs">
-                      {capitalize(String(r.status ?? '--'))}
-                    </span>
-                  ),
-                },
-                {
-                  key: 'date',
-                  header: 'Date',
-                  render: (r: Record<string, unknown>) => (
-                    <span className="font-mono text-xs tabular-nums">
-                      {r.occurrenceDateTime
-                        ? toDisplayDate(String(r.occurrenceDateTime))
-                        : '--'}
-                    </span>
-                  ),
-                },
-              ]}
-              addLabel="Add Immunization"
-              onAdd={() => setOpenDialog('immunization')}
-              emptyTitle="No immunizations"
-              emptySubtitle="No immunizations recorded."
-            />
-          )}
-
-          {activeTab === 'procedures' && (
-            <ClinicalTable
-              title="Procedures"
-              queryResult={procedureQuery}
-              columns={[
-                {
-                  key: 'code',
-                  header: 'Procedure',
-                  render: (r: Record<string, unknown>) => (
-                    <span className="text-sm">{extractCodeDisplay(r, 'code')}</span>
-                  ),
-                },
-                {
-                  key: 'status',
-                  header: 'Status',
-                  render: (r: Record<string, unknown>) => (
-                    <span className="font-mono text-xs">
-                      {capitalize(String(r.status ?? '--'))}
-                    </span>
-                  ),
-                },
-                {
-                  key: 'date',
-                  header: 'Date',
-                  render: (r: Record<string, unknown>) => {
-                    const dt =
-                      (r.performedDateTime as string) ??
-                      (r.performedPeriod as { start?: string })?.start;
-                    return (
+                  {
+                    key: 'authoredOn',
+                    header: 'Authored On',
+                    render: (r: Record<string, unknown>) => (
                       <span className="font-mono text-xs tabular-nums">
-                        {dt ? toDisplayDate(dt) : '--'}
+                        {r.authoredOn
+                          ? toDisplayDate(String(r.authoredOn))
+                          : '--'}
                       </span>
-                    );
+                    ),
                   },
-                },
-              ]}
-              addLabel="Add Procedure"
-              onAdd={() => setOpenDialog('procedure')}
-              emptyTitle="No procedures"
-              emptySubtitle="No procedures recorded."
-            />
-          )}
+                ]}
+                addLabel="Add Medication"
+                onAdd={() => setOpenDialog('medication')}
+                emptyTitle="No medication requests"
+                emptySubtitle="No medications have been prescribed."
+              />
+            )}
 
-          {activeTab === 'consent' && (
-            <ConsentTab
-              consents={consentQuery.data?.data?.consents ?? []}
-              loading={consentQuery.isLoading}
-              error={
-                consentQuery.error
-                  ? (consentQuery.error as Error).message
-                  : undefined
-              }
-            />
-          )}
+            {activeTab === 'allergies' && (
+              <ClinicalTable
+                title="Allergy Intolerances"
+                queryResult={allergyQuery}
+                columns={[
+                  {
+                    key: 'substance',
+                    header: 'Substance',
+                    render: (r: Record<string, unknown>) => (
+                      <span className="text-sm">{extractCodeDisplay(r, 'code')}</span>
+                    ),
+                  },
+                  {
+                    key: 'criticality',
+                    header: 'Criticality',
+                    render: (r: Record<string, unknown>) => (
+                      <span className="font-mono text-xs">
+                        {capitalize(String(r.criticality ?? '--'))}
+                      </span>
+                    ),
+                  },
+                  {
+                    key: 'type',
+                    header: 'Type',
+                    render: (r: Record<string, unknown>) => (
+                      <span className="font-mono text-xs">
+                        {capitalize(String(r.type ?? '--'))}
+                      </span>
+                    ),
+                  },
+                ]}
+                addLabel="Add Allergy"
+                onAdd={() => setOpenDialog('allergy')}
+                emptyTitle="No allergies recorded"
+                emptySubtitle="No known allergies or intolerances."
+              />
+            )}
 
-          {activeTab === 'history' && (
-            <HistoryTab
-              entries={historyQuery.data?.data?.entries ?? []}
-              loading={historyQuery.isLoading}
-              error={
-                historyQuery.error
-                  ? (historyQuery.error as Error).message
-                  : undefined
-              }
-            />
-          )}
+            {activeTab === 'immunizations' && (
+              <ClinicalTable
+                title="Immunizations"
+                queryResult={immunizationQuery}
+                columns={[
+                  {
+                    key: 'vaccine',
+                    header: 'Vaccine',
+                    render: (r: Record<string, unknown>) => (
+                      <span className="text-sm">
+                        {extractCodeDisplay(r, 'vaccineCode')}
+                      </span>
+                    ),
+                  },
+                  {
+                    key: 'status',
+                    header: 'Status',
+                    render: (r: Record<string, unknown>) => (
+                      <span className="font-mono text-xs">
+                        {capitalize(String(r.status ?? '--'))}
+                      </span>
+                    ),
+                  },
+                  {
+                    key: 'date',
+                    header: 'Date',
+                    render: (r: Record<string, unknown>) => (
+                      <span className="font-mono text-xs tabular-nums">
+                        {r.occurrenceDateTime
+                          ? toDisplayDate(String(r.occurrenceDateTime))
+                          : '--'}
+                      </span>
+                    ),
+                  },
+                ]}
+                addLabel="Add Immunization"
+                onAdd={() => setOpenDialog('immunization')}
+                emptyTitle="No immunizations"
+                emptySubtitle="No immunizations recorded."
+              />
+            )}
+
+            {activeTab === 'procedures' && (
+              <ClinicalTable
+                title="Procedures"
+                queryResult={procedureQuery}
+                columns={[
+                  {
+                    key: 'code',
+                    header: 'Procedure',
+                    render: (r: Record<string, unknown>) => (
+                      <span className="text-sm">{extractCodeDisplay(r, 'code')}</span>
+                    ),
+                  },
+                  {
+                    key: 'status',
+                    header: 'Status',
+                    render: (r: Record<string, unknown>) => (
+                      <span className="font-mono text-xs">
+                        {capitalize(String(r.status ?? '--'))}
+                      </span>
+                    ),
+                  },
+                  {
+                    key: 'date',
+                    header: 'Date',
+                    render: (r: Record<string, unknown>) => {
+                      const dt =
+                        (r.performedDateTime as string) ??
+                        (r.performedPeriod as { start?: string })?.start;
+                      return (
+                        <span className="font-mono text-xs tabular-nums">
+                          {dt ? toDisplayDate(dt) : '--'}
+                        </span>
+                      );
+                    },
+                  },
+                ]}
+                addLabel="Add Procedure"
+                onAdd={() => setOpenDialog('procedure')}
+                emptyTitle="No procedures"
+                emptySubtitle="No procedures recorded."
+              />
+            )}
+
+            {activeTab === 'consent' && (
+              <ConsentTab
+                consents={consentQuery.data?.data?.consents ?? []}
+                loading={consentQuery.isLoading}
+                error={
+                  consentQuery.error
+                    ? (consentQuery.error as Error).message
+                    : undefined
+                }
+              />
+            )}
+
+            {activeTab === 'history' && (
+              <HistoryTab
+                entries={historyQuery.data?.data?.entries ?? []}
+                loading={historyQuery.isLoading}
+                error={
+                  historyQuery.error
+                    ? (historyQuery.error as Error).message
+                    : undefined
+                }
+              />
+            )}
+          </div>
         </div>
+
+        {/* Erase confirmation dialog */}
+        <ConfirmDialog
+          open={eraseDialogOpen}
+          onOpenChange={setEraseDialogOpen}
+          title="Erase Patient"
+          description="This will permanently crypto-erase all data for this patient. The encryption key will be destroyed and all index entries purged. This action cannot be undone."
+          confirmLabel="Erase Permanently"
+          variant="destructive"
+          onConfirm={() => eraseMutation.mutate()}
+        />
+
+        {/* Clinical form dialogs */}
+        <EncounterDialog
+          open={openDialog === 'encounter'}
+          onClose={() => setOpenDialog(null)}
+          patientId={patientId}
+        />
+        <ObservationDialog
+          open={openDialog === 'observation'}
+          onClose={() => setOpenDialog(null)}
+          patientId={patientId}
+        />
+        <ConditionDialog
+          open={openDialog === 'condition'}
+          onClose={() => setOpenDialog(null)}
+          patientId={patientId}
+        />
+        <MedicationRequestDialog
+          open={openDialog === 'medication'}
+          onClose={() => setOpenDialog(null)}
+          patientId={patientId}
+        />
+        <AllergyDialog
+          open={openDialog === 'allergy'}
+          onClose={() => setOpenDialog(null)}
+          patientId={patientId}
+        />
+        <ImmunizationDialog
+          open={openDialog === 'immunization'}
+          onClose={() => setOpenDialog(null)}
+          patientId={patientId}
+        />
+        <ProcedureDialog
+          open={openDialog === 'procedure'}
+          onClose={() => setOpenDialog(null)}
+          patientId={patientId}
+        />
       </div>
-
-      {/* Erase confirmation dialog */}
-      <ConfirmDialog
-        open={eraseDialogOpen}
-        onOpenChange={setEraseDialogOpen}
-        title="Erase Patient"
-        description="This will permanently crypto-erase all data for this patient. The encryption key will be destroyed and all index entries purged. This action cannot be undone."
-        confirmLabel="Erase Permanently"
-        variant="destructive"
-        onConfirm={() => eraseMutation.mutate()}
-      />
-
-      {/* Clinical form dialogs */}
-      <EncounterDialog
-        open={openDialog === 'encounter'}
-        onClose={() => setOpenDialog(null)}
-        patientId={id}
-      />
-      <ObservationDialog
-        open={openDialog === 'observation'}
-        onClose={() => setOpenDialog(null)}
-        patientId={id}
-      />
-      <ConditionDialog
-        open={openDialog === 'condition'}
-        onClose={() => setOpenDialog(null)}
-        patientId={id}
-      />
-      <MedicationRequestDialog
-        open={openDialog === 'medication'}
-        onClose={() => setOpenDialog(null)}
-        patientId={id}
-      />
-      <AllergyDialog
-        open={openDialog === 'allergy'}
-        onClose={() => setOpenDialog(null)}
-        patientId={id}
-      />
-      <ImmunizationDialog
-        open={openDialog === 'immunization'}
-        onClose={() => setOpenDialog(null)}
-        patientId={id}
-      />
-      <ProcedureDialog
-        open={openDialog === 'procedure'}
-        onClose={() => setOpenDialog(null)}
-        patientId={id}
-      />
     </div>
   );
 }
@@ -946,6 +973,7 @@ function ClinicalTable({
       emptySubtitle={emptySubtitle}
       actions={
         <button
+          type="button"
           onClick={handleAdd}
           className={cn(
             'inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-mono uppercase tracking-wider cursor-pointer',

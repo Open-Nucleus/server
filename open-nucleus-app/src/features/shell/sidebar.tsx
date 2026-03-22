@@ -9,8 +9,11 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
+  LogOut,
+  User,
 } from "lucide-react";
 import { useUIStore } from "@/stores/ui-store";
+import { useAuthStore } from "@/stores/auth-store";
 import { cn } from "@/lib/utils";
 
 /* ---------- nav config ---------- */
@@ -59,8 +62,16 @@ export function Sidebar() {
   const expanded = useUIStore((s) => s.sidebarExpanded);
   const toggle = useUIStore((s) => s.toggleSidebar);
   const alertCount = useUIStore((s) => s.unacknowledgedAlerts);
+  const practitionerId = useAuthStore((s) => s.practitionerId);
+  const role = useAuthStore((s) => s.role);
+  const logout = useAuthStore((s) => s.logout);
   const navigate = useNavigate();
   const location = useLocation();
+
+  const handleLogout = () => {
+    logout();
+    navigate({ to: '/login' });
+  };
 
   const isActive = (path: string) => location.pathname.startsWith(path);
 
@@ -99,6 +110,7 @@ export function Sidebar() {
 
               return (
                 <button
+                  type="button"
                   key={item.path}
                   onClick={() => navigate({ to: item.path })}
                   className={cn(
@@ -138,9 +150,48 @@ export function Sidebar() {
         ))}
       </nav>
 
+      {/* User section */}
+      <div className="border-t border-white/10 px-3 py-3">
+        {expanded ? (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <div className="flex items-center justify-center w-7 h-7 rounded-full bg-white/10 shrink-0">
+                <User size={14} className="text-white/70" />
+              </div>
+              <div className="min-w-0">
+                <p className="font-mono text-xs text-[var(--color-sidebar-active)] truncate">
+                  {practitionerId || 'Unknown'}
+                </p>
+                <p className="font-mono text-[10px] text-white/40 uppercase tracking-wider">
+                  {role?.code || 'No role'}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="flex items-center gap-2 w-full px-2 py-1.5 text-white/50 hover:text-[var(--color-error)] hover:bg-white/5 rounded transition-colors duration-150 cursor-pointer"
+            >
+              <LogOut size={14} />
+              <span className="font-mono text-[11px] uppercase tracking-wider">Logout</span>
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="flex items-center justify-center w-full py-1.5 text-white/50 hover:text-[var(--color-error)] transition-colors duration-150 cursor-pointer"
+            title="Logout"
+          >
+            <LogOut size={16} />
+          </button>
+        )}
+      </div>
+
       {/* Collapse toggle */}
       <div className="border-t border-white/10">
         <button
+          type="button"
           onClick={toggle}
           className="flex items-center justify-center w-full py-3 text-white/50 hover:text-white/80 hover:bg-[var(--color-sidebar-hover)] transition-colors duration-150 cursor-pointer"
           title={expanded ? "Collapse sidebar" : "Expand sidebar"}

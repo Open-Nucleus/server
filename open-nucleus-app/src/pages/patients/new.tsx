@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { useMutation } from '@tanstack/react-query';
-import { Save, X } from 'lucide-react';
+import { ArrowLeft, Save, X } from 'lucide-react';
 import { apiPost } from '@/lib/api-client';
 import { API } from '@/lib/api-paths';
 import { useUIStore } from '@/stores/ui-store';
@@ -133,12 +133,27 @@ export default function PatientNewPage() {
 
   return (
     <div className="page-padding max-w-2xl">
+      {/* Back link */}
+      <button
+        type="button"
+        onClick={() => navigate({ to: '/patients' })}
+        className={cn(
+          'inline-flex items-center gap-1.5 mb-4 text-xs font-mono uppercase tracking-wider cursor-pointer',
+          'text-[var(--color-muted)] hover:text-[var(--color-ink)] dark:hover:text-[var(--color-sidebar-text)]',
+          'transition-colors duration-150',
+        )}
+      >
+        <ArrowLeft size={14} />
+        Back to Patients
+      </button>
+
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="font-mono text-lg font-bold uppercase tracking-wider text-[var(--color-ink)] dark:text-[var(--color-sidebar-text)]">
           New Patient
         </h1>
         <button
+          type="button"
           onClick={() => navigate({ to: '/patients' })}
           className={cn(
             'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono uppercase tracking-wider cursor-pointer',

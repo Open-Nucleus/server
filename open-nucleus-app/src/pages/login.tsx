@@ -1,13 +1,13 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { useAuthStore, getServerUrl, setServerUrl } from '../stores/auth-store.ts';
+import { useAuthStore, getServerUrl, setServerUrl } from '../stores/auth-store';
 import {
   loadStoredKeypair,
   generateKeypair,
   saveKeypair,
   fingerprint,
   type StoredKeypair,
-} from '../lib/ed25519.ts';
+} from '../lib/ed25519';
 import { encodeBase64 } from 'tweetnacl-util';
 
 type ConnectionStatus = 'idle' | 'testing' | 'connected' | 'failed';
@@ -22,19 +22,16 @@ export default function LoginPage() {
   const [keypair, setKeypair] = useState<StoredKeypair | null>(loadStoredKeypair());
   const [practitionerId, setPractitionerId] = useState('');
 
-  // Redirect if already authenticated
   useEffect(() => {
     if (status === 'authenticated') {
       navigate({ to: '/dashboard' });
     }
   }, [status, navigate]);
 
-  /* ---- connection test ---- */
   const testConnection = useCallback(async () => {
     setConnStatus('testing');
     setConnMessage('');
     clearError();
-
     const base = serverUrl.replace(/\/+$/, '');
     try {
       const res = await fetch(`${base}/health`, { signal: AbortSignal.timeout(5000) });
@@ -52,7 +49,6 @@ export default function LoginPage() {
     }
   }, [serverUrl, clearError]);
 
-  /* ---- keypair generation ---- */
   const handleGenerateKeypair = useCallback(() => {
     const raw = generateKeypair();
     saveKeypair(raw);
@@ -63,7 +59,6 @@ export default function LoginPage() {
     setKeypair(stored);
   }, []);
 
-  /* ---- sign in ---- */
   const canSignIn =
     connStatus === 'connected' &&
     keypair !== null &&
@@ -75,126 +70,232 @@ export default function LoginPage() {
     await login(serverUrl, practitionerId.trim());
   }, [canSignIn, login, serverUrl, practitionerId]);
 
-  /* ---- connection indicator ---- */
   const dotColor =
-    connStatus === 'connected'
-      ? 'bg-[var(--color-success)]'
-      : connStatus === 'failed'
-        ? 'bg-[var(--color-error)]'
-        : connStatus === 'testing'
-          ? 'bg-[var(--color-warning)]'
-          : 'bg-[var(--color-muted)]';
+    connStatus === 'connected' ? '#2E7D32'
+    : connStatus === 'failed' ? '#D32F2F'
+    : connStatus === 'testing' ? '#F57F17'
+    : '#999999';
 
   const statusLabel =
-    connStatus === 'connected'
-      ? 'Connected'
-      : connStatus === 'failed'
-        ? 'Failed'
-        : connStatus === 'testing'
-          ? 'Testing...'
-          : 'Not tested';
+    connStatus === 'connected' ? 'Connected'
+    : connStatus === 'failed' ? 'Failed'
+    : connStatus === 'testing' ? 'Testing...'
+    : 'Not tested';
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-[var(--color-paper)] dark:bg-[var(--color-paper-dark)]">
-      <div className="w-full max-w-md typewriter-border rounded-[var(--radius-md)] p-8 bg-[var(--color-surface)] dark:bg-[var(--color-surface-dark)]">
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: '100vh',
+      backgroundColor: 'var(--color-paper)',
+      color: 'var(--color-ink)',
+      padding: '24px',
+    }}>
+      <div style={{
+        width: '100%',
+        maxWidth: '420px',
+        border: '1px solid var(--color-border)',
+        borderRadius: '8px',
+        padding: '40px 32px',
+        backgroundColor: 'var(--color-surface)',
+      }}>
         {/* Header */}
-        <h1 className="text-3xl font-bold tracking-tight text-center font-mono">
+        <h1 style={{
+          fontSize: '28px',
+          fontWeight: 700,
+          textAlign: 'center',
+          fontFamily: 'var(--font-mono)',
+          margin: '0 0 4px 0',
+          letterSpacing: '-0.5px',
+        }}>
           Open Nucleus
         </h1>
-        <p className="text-center text-[var(--color-muted)] text-sm mt-1">
+        <p style={{
+          textAlign: 'center',
+          color: 'var(--color-muted)',
+          fontSize: '14px',
+          margin: '0 0 32px 0',
+        }}>
           Electronic Health Record
         </p>
 
         {/* Server URL */}
-        <div className="mt-8 space-y-2">
-          <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--color-muted)]">
-            Server URL
-          </label>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={serverUrl}
-              onChange={(e) => {
-                setUrl(e.target.value);
-                setConnStatus('idle');
-              }}
-              placeholder="http://localhost:8080"
-              className="flex-1 px-3 py-2 text-sm typewriter-border rounded-[var(--radius-sm)] bg-transparent focus:outline-none focus:border-[var(--color-ink)] dark:focus:border-[var(--color-sidebar-text)]"
-            />
-            <button
-              onClick={testConnection}
-              disabled={connStatus === 'testing' || !serverUrl.trim()}
-              className="px-3 py-2 text-xs font-semibold uppercase typewriter-border rounded-[var(--radius-sm)] hover:bg-[var(--color-surface-hover)] dark:hover:bg-[var(--color-surface-dark-hover)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-            >
-              Test
-            </button>
-          </div>
-
-          {/* Connection indicator */}
-          <div className="flex items-center gap-2 text-xs text-[var(--color-muted)]">
-            <span className={`inline-block w-2 h-2 rounded-full ${dotColor}`} />
-            <span>{statusLabel}</span>
-            {connMessage && (
-              <span className="ml-1 text-[var(--color-muted)]">
-                — {connMessage}
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Separator */}
-        <hr className="my-6 border-[var(--color-border)] dark:border-[var(--color-border-dark)]" />
-
-        {/* Device / Keypair */}
-        <div className="space-y-2">
-          <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--color-muted)]">
-            Device Keypair
-          </label>
-          {keypair ? (
-            <div className="flex items-center gap-3">
-              <span className="font-mono text-sm tracking-widest">
-                {fingerprint(keypair.publicKey)}
-              </span>
-              <span className="text-xs text-[var(--color-muted)]">
-                Ed25519 keypair loaded
-              </span>
-            </div>
-          ) : (
-            <button
-              onClick={handleGenerateKeypair}
-              className="w-full px-3 py-2 text-sm font-semibold typewriter-border rounded-[var(--radius-sm)] hover:bg-[var(--color-surface-hover)] dark:hover:bg-[var(--color-surface-dark-hover)] transition-colors"
-            >
-              Generate Keypair
-            </button>
-          )}
-        </div>
-
-        {/* Practitioner ID */}
-        <div className="mt-6 space-y-2">
-          <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--color-muted)]">
-            Practitioner ID
-          </label>
+        <label style={{
+          display: 'block',
+          fontSize: '11px',
+          fontWeight: 600,
+          textTransform: 'uppercase',
+          letterSpacing: '1px',
+          color: 'var(--color-muted)',
+          marginBottom: '6px',
+        }}>
+          Server URL
+        </label>
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
           <input
             type="text"
-            value={practitionerId}
-            onChange={(e) => setPractitionerId(e.target.value)}
-            placeholder="e.g. practitioner-001"
-            className="w-full px-3 py-2 text-sm typewriter-border rounded-[var(--radius-sm)] bg-transparent focus:outline-none focus:border-[var(--color-ink)] dark:focus:border-[var(--color-sidebar-text)]"
+            value={serverUrl}
+            onChange={(e) => { setUrl(e.target.value); setConnStatus('idle'); }}
+            placeholder="http://localhost:8080"
+            style={{
+              flex: 1,
+              padding: '8px 12px',
+              fontSize: '14px',
+              border: '1px solid var(--color-border)',
+              borderRadius: '4px',
+              backgroundColor: 'transparent',
+              color: 'var(--color-ink)',
+              outline: 'none',
+              fontFamily: 'var(--font-mono)',
+            }}
           />
+          <button
+            type="button"
+            onClick={testConnection}
+            disabled={connStatus === 'testing' || !serverUrl.trim()}
+            style={{
+              padding: '8px 16px',
+              fontSize: '12px',
+              fontWeight: 600,
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px',
+              border: '1px solid var(--color-border)',
+              borderRadius: '4px',
+              backgroundColor: 'transparent',
+              color: 'var(--color-ink)',
+              cursor: connStatus === 'testing' ? 'wait' : 'pointer',
+              opacity: !serverUrl.trim() ? 0.4 : 1,
+            }}
+          >
+            Test
+          </button>
         </div>
+
+        {/* Connection status */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--color-muted)', marginBottom: '24px' }}>
+          <span style={{
+            width: '8px',
+            height: '8px',
+            borderRadius: '50%',
+            backgroundColor: dotColor,
+            display: 'inline-block',
+          }} />
+          <span>{statusLabel}</span>
+          {connMessage && <span style={{ marginLeft: '4px' }}>— {connMessage}</span>}
+        </div>
+
+        {/* Divider */}
+        <hr style={{ border: 'none', borderTop: '1px solid var(--color-border)', margin: '0 0 24px 0' }} />
+
+        {/* Device Keypair */}
+        <label style={{
+          display: 'block',
+          fontSize: '11px',
+          fontWeight: 600,
+          textTransform: 'uppercase',
+          letterSpacing: '1px',
+          color: 'var(--color-muted)',
+          marginBottom: '6px',
+        }}>
+          Device Keypair
+        </label>
+        {keypair ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '24px' }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '14px', letterSpacing: '2px' }}>
+              {fingerprint(keypair.publicKey)}
+            </span>
+            <span style={{ fontSize: '12px', color: 'var(--color-muted)' }}>
+              Ed25519 loaded
+            </span>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={handleGenerateKeypair}
+            style={{
+              display: 'block',
+              width: '100%',
+              padding: '10px',
+              fontSize: '14px',
+              fontWeight: 600,
+              border: '1px solid var(--color-border)',
+              borderRadius: '4px',
+              backgroundColor: 'transparent',
+              color: 'var(--color-ink)',
+              cursor: 'pointer',
+              marginBottom: '24px',
+            }}
+          >
+            Generate Keypair
+          </button>
+        )}
+
+        {/* Practitioner ID */}
+        <label style={{
+          display: 'block',
+          fontSize: '11px',
+          fontWeight: 600,
+          textTransform: 'uppercase',
+          letterSpacing: '1px',
+          color: 'var(--color-muted)',
+          marginBottom: '6px',
+        }}>
+          Practitioner ID
+        </label>
+        <input
+          type="text"
+          value={practitionerId}
+          onChange={(e) => setPractitionerId(e.target.value)}
+          placeholder="e.g. demo-clinician"
+          style={{
+            display: 'block',
+            width: '100%',
+            padding: '8px 12px',
+            fontSize: '14px',
+            border: '1px solid var(--color-border)',
+            borderRadius: '4px',
+            backgroundColor: 'transparent',
+            color: 'var(--color-ink)',
+            outline: 'none',
+            marginBottom: '24px',
+          }}
+        />
 
         {/* Sign In */}
         <button
+          type="button"
           onClick={handleSignIn}
           disabled={!canSignIn}
-          className="mt-6 w-full py-2.5 text-sm font-bold uppercase tracking-wider bg-[var(--color-ink)] text-[var(--color-paper)] dark:bg-[var(--color-sidebar-text)] dark:text-[var(--color-paper-dark)] rounded-[var(--radius-sm)] hover:opacity-90 disabled:opacity-30 disabled:cursor-not-allowed transition-opacity"
+          style={{
+            display: 'block',
+            width: '100%',
+            padding: '12px',
+            fontSize: '14px',
+            fontWeight: 700,
+            textTransform: 'uppercase',
+            letterSpacing: '1px',
+            backgroundColor: '#111111',
+            color: '#FAFAF8',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: canSignIn ? 'pointer' : 'not-allowed',
+            opacity: canSignIn ? 1 : 0.3,
+          }}
         >
           {status === 'loading' ? 'Signing in...' : 'Sign In'}
         </button>
 
-        {/* Error display */}
+        {/* Error */}
         {errorMessage && (
-          <div className="mt-4 p-3 text-sm text-[var(--color-error)] typewriter-border border-[var(--color-error)] rounded-[var(--radius-sm)]">
+          <div style={{
+            marginTop: '16px',
+            padding: '12px',
+            fontSize: '13px',
+            color: '#D32F2F',
+            border: '1px solid #D32F2F',
+            borderRadius: '4px',
+          }}>
             {errorMessage}
           </div>
         )}

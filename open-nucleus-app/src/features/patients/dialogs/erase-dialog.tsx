@@ -105,6 +105,7 @@ export function EraseDialog({ open, onClose, patientId, patientName }: EraseDial
 
         <div className="flex justify-end gap-3 mt-6">
           <button
+            type="button"
             onClick={onClose}
             disabled={mutation.isPending}
             className={cn(
@@ -118,6 +119,7 @@ export function EraseDialog({ open, onClose, patientId, patientName }: EraseDial
             Cancel
           </button>
           <button
+            type="button"
             onClick={() => mutation.mutate()}
             disabled={mutation.isPending}
             className={cn(

@@ -19,6 +19,7 @@ import { cn } from '@/lib/utils';
 import { LoadingSkeleton } from '@/components/loading-skeleton';
 import { ErrorState } from '@/components/error-state';
 import { StatusIndicator } from '@/components/status-indicator';
+import { useConnection } from '@/hooks/use-connection';
 import type { PatientSummary } from '@/types/patient';
 import type { AlertSummary } from '@/types/alert';
 import type { SyncStatusResponse } from '@/types/sync';
@@ -53,6 +54,15 @@ function Card({
         </h2>
       </div>
       <div className="card-padding">{children}</div>
+    </div>
+  );
+}
+
+function HealthRow({ label, status, statusLabel }: { label: string; status: 'active' | 'inactive' | 'pending' | 'error'; statusLabel: string }) {
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-xs font-mono uppercase tracking-wider text-[var(--color-muted)]">{label}</span>
+      <StatusIndicator status={status} label={statusLabel} size="sm" />
     </div>
   );
 }
@@ -129,6 +139,7 @@ export default function DashboardPage() {
   const sync = syncStatus.data?.data;
   const anchor = anchorStatus.data?.data;
 
+  const { connected: apiConnected } = useConnection();
   const syncConnected = sync?.state?.toLowerCase() === 'connected' || sync?.state?.toLowerCase() === 'idle';
   const anchorActive = anchor?.has_been_anchored ?? false;
 
@@ -184,6 +195,7 @@ export default function DashboardPage() {
                 Total Patients
               </p>
               <button
+                type="button"
                 onClick={() => navigate({ to: '/patients' })}
                 className={cn(
                   'mt-4 px-4 py-1.5 text-[10px] font-mono uppercase tracking-wider cursor-pointer',
@@ -289,6 +301,7 @@ export default function DashboardPage() {
                 </span>
               </div>
               <button
+                type="button"
                 onClick={handleSyncNow}
                 className={cn(
                   'w-full mt-1 px-4 py-2 text-[10px] font-mono uppercase tracking-wider cursor-pointer',
@@ -358,6 +371,7 @@ export default function DashboardPage() {
                 </span>
               </div>
               <button
+                type="button"
                 onClick={handleAnchorNow}
                 className={cn(
                   'w-full mt-1 px-4 py-2 text-[10px] font-mono uppercase tracking-wider cursor-pointer',
@@ -381,6 +395,7 @@ export default function DashboardPage() {
         <Card title="Quick Actions" icon={<Zap size={14} />}>
           <div className="grid grid-cols-1 gap-2">
             <button
+              type="button"
               onClick={() => navigate({ to: '/patients/new' })}
               className={cn(
                 'w-full px-4 py-2.5 text-xs font-mono uppercase tracking-wider cursor-pointer',
@@ -394,6 +409,7 @@ export default function DashboardPage() {
               New Patient
             </button>
             <button
+              type="button"
               onClick={handleSyncNow}
               className={cn(
                 'w-full px-4 py-2.5 text-xs font-mono uppercase tracking-wider cursor-pointer',
@@ -407,6 +423,7 @@ export default function DashboardPage() {
               Trigger Sync
             </button>
             <button
+              type="button"
               onClick={() => navigate({ to: '/alerts' })}
               className={cn(
                 'w-full px-4 py-2.5 text-xs font-mono uppercase tracking-wider cursor-pointer',
@@ -425,90 +442,26 @@ export default function DashboardPage() {
         {/* System Health */}
         <Card title="System Health" icon={<Activity size={14} />}>
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-mono uppercase tracking-wider text-[var(--color-muted)]">
-                API Connection
-              </span>
-              <StatusIndicator
-                status={
-                  patients.isError && syncStatus.isError
-                    ? 'disconnected'
-                    : 'connected'
-                }
-                label={
-                  patients.isError && syncStatus.isError
-                    ? 'Offline'
-                    : 'Online'
-                }
-                size="sm"
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-mono uppercase tracking-wider text-[var(--color-muted)]">
-                Sync Engine
-              </span>
-              <StatusIndicator
-                status={
-                  syncStatus.isError
-                    ? 'error'
-                    : syncConnected
-                      ? 'active'
-                      : 'inactive'
-                }
-                label={
-                  syncStatus.isError
-                    ? 'Error'
-                    : syncConnected
-                      ? 'Running'
-                      : 'Idle'
-                }
-                size="sm"
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-mono uppercase tracking-wider text-[var(--color-muted)]">
-                Anchor Service
-              </span>
-              <StatusIndicator
-                status={
-                  anchorStatus.isError
-                    ? 'error'
-                    : anchorActive
-                      ? 'active'
-                      : 'inactive'
-                }
-                label={
-                  anchorStatus.isError
-                    ? 'Error'
-                    : anchorActive
-                      ? 'Active'
-                      : 'Inactive'
-                }
-                size="sm"
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-mono uppercase tracking-wider text-[var(--color-muted)]">
-                Sentinel Agent
-              </span>
-              <StatusIndicator
-                status={
-                  alertSummary.isError
-                    ? 'error'
-                    : summary && summary.total > 0
-                      ? 'active'
-                      : 'inactive'
-                }
-                label={
-                  alertSummary.isError
-                    ? 'Error'
-                    : summary && summary.total > 0
-                      ? 'Active'
-                      : 'Idle'
-                }
-                size="sm"
-              />
-            </div>
+            <HealthRow
+              label="API Connection"
+              status={apiConnected ? 'active' : 'error'}
+              statusLabel={apiConnected ? 'Online' : 'Offline'}
+            />
+            <HealthRow
+              label="Sync Engine"
+              status={syncStatus.isLoading ? 'pending' : syncConnected ? 'active' : 'inactive'}
+              statusLabel={syncStatus.isLoading ? 'Checking...' : syncConnected ? 'Ready' : 'Idle'}
+            />
+            <HealthRow
+              label="Anchor Service"
+              status={anchorStatus.isLoading ? 'pending' : anchorActive ? 'active' : 'inactive'}
+              statusLabel={anchorStatus.isLoading ? 'Checking...' : anchorActive ? 'Active' : 'Standby'}
+            />
+            <HealthRow
+              label="Sentinel Agent"
+              status="inactive"
+              statusLabel="Standby"
+            />
           </div>
         </Card>
       </div>

@@ -72,6 +72,7 @@ export default function FormularyPage() {
             {CATEGORIES.map((cat) => (
               <li key={cat}>
                 <button
+                  type="button"
                   onClick={() => setSelectedCategory(cat)}
                   className={cn(
                     'w-full text-left px-4 py-2.5 text-sm font-mono transition-colors duration-100 cursor-pointer',
@@ -116,6 +117,7 @@ export default function FormularyPage() {
               {medications.map((med) => (
                 <li key={med.code}>
                   <button
+                    type="button"
                     onClick={() => setSelectedMedication(med)}
                     className={cn(
                       'w-full text-left px-4 py-3 border-b border-[var(--color-border)]/50 dark:border-[var(--color-border-dark)]/50 transition-colors duration-100 cursor-pointer',

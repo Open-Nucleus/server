@@ -80,15 +80,22 @@ export const useAuthStore = create<AuthState>()(
           const nonce = new Date().toISOString();
           const signature = signWithB64(nonce, kp.secretKey);
 
+          // Convert public key to base64url (no padding) — Go backend uses base64.RawURLEncoding
+          const pubKeyB64Url = kp.publicKey
+            .replace(/\+/g, '-')
+            .replace(/\//g, '_')
+            .replace(/=+$/, '');
+
           const body: LoginRequest = {
             device_id: deviceId,
-            public_key: kp.publicKey,
+            public_key: pubKeyB64Url,
             challenge_response: {
               nonce,
               signature,
               timestamp: nonce,
             },
             practitioner_id: practitionerId,
+            bootstrap_secret: 'demo',
           };
 
           // 5. POST login (raw fetch — api-client depends on this store)

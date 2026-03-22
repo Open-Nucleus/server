@@ -87,6 +87,7 @@ export function ClinicalDialog({
         {/* Footer */}
         <div className="flex justify-end gap-3 px-6 py-4 border-t border-[var(--color-border)] dark:border-[var(--color-border-dark)]">
           <button
+            type="button"
             onClick={onClose}
             disabled={submitting}
             className={cn(
@@ -100,6 +101,7 @@ export function ClinicalDialog({
             Cancel
           </button>
           <button
+            type="button"
             onClick={onSubmit}
             disabled={submitting}
             className={cn(

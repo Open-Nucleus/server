@@ -8,6 +8,7 @@ export function TopBar() {
   const pageTitle = useUIStore((s) => s.pageTitle);
   const nodeId = useAuthStore((s) => s.nodeId);
   const siteId = useAuthStore((s) => s.siteId);
+  const practitionerId = useAuthStore((s) => s.practitionerId);
   const { connected } = useConnection();
 
   return (
@@ -31,6 +32,11 @@ export function TopBar() {
           label={connected ? "Connected" : "Disconnected"}
           size="sm"
         />
+
+        {/* Practitioner */}
+        {practitionerId && (
+          <Chip label="User" value={practitionerId} />
+        )}
 
         {/* Node ID */}
         {nodeId && (

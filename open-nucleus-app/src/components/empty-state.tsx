@@ -25,6 +25,7 @@ export function EmptyState({ icon, title, subtitle, action }: EmptyStateProps) {
       )}
       {action && (
         <button
+          type="button"
           onClick={action.onClick}
           className={cn(
             "mt-4 px-4 py-2 text-xs font-mono uppercase tracking-wider",

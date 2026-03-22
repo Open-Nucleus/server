@@ -23,6 +23,7 @@ export function ErrorState({ message, details, onRetry }: ErrorStateProps) {
       )}
       {onRetry && (
         <button
+          type="button"
           onClick={onRetry}
           className={cn(
             "mt-4 px-4 py-2 text-xs font-mono uppercase tracking-wider cursor-pointer",

@@ -353,6 +353,7 @@ export default function AlertsPage() {
                           >
                             {!alert.acknowledged && (
                               <button
+                                type="button"
                                 onClick={() =>
                                   acknowledgeMutation.mutate(alert.id)
                                 }
@@ -371,6 +372,7 @@ export default function AlertsPage() {
                               </button>
                             )}
                             <button
+                              type="button"
                               onClick={() =>
                                 dismissMutation.mutate(alert.id)
                               }

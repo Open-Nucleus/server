@@ -11,6 +11,7 @@ export interface LoginRequest {
   public_key: string;
   challenge_response: ChallengeResponse;
   practitioner_id: string;
+  bootstrap_secret?: string;
 }
 
 /** Role descriptor returned by the backend. */

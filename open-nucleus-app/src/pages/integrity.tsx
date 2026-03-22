@@ -102,6 +102,7 @@ export default function IntegrityPage() {
           </p>
         </div>
         <button
+          type="button"
           onClick={() => triggerMutation.mutate()}
           disabled={triggerMutation.isPending}
           className={cn(
@@ -119,6 +120,7 @@ export default function IntegrityPage() {
       <div className="flex gap-0 border-b border-[var(--color-border)] dark:border-[var(--color-border-dark)]">
         {tabs.map((tab) => (
           <button
+            type="button"
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
             className={cn(
@@ -285,6 +287,7 @@ function VerificationPanel() {
             onKeyDown={(e) => e.key === 'Enter' && handleVerify()}
           />
           <button
+            type="button"
             onClick={handleVerify}
             disabled={!commitHash.trim() || verifyMutation.isPending}
             className={cn(

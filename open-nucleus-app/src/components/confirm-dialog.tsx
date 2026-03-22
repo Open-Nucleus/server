@@ -78,6 +78,7 @@ export function ConfirmDialog({
 
         <div className="flex justify-end gap-3 mt-6">
           <button
+            type="button"
             onClick={() => onOpenChange(false)}
             className={cn(
               "px-4 py-2 text-xs font-mono uppercase tracking-wider rounded-[var(--radius-sm)] cursor-pointer",
@@ -90,6 +91,7 @@ export function ConfirmDialog({
             {cancelLabel}
           </button>
           <button
+            type="button"
             onClick={() => {
               onConfirm();
               onOpenChange(false);

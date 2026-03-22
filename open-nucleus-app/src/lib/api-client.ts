@@ -103,11 +103,8 @@ export async function apiRequest<T>(
       });
       return handleResponse<T>(retryRes);
     }
-    // Refresh failed — clear tokens and redirect to login
+    // Refresh failed — clear tokens (router auth guard will redirect to /login)
     clearTokens();
-    if (typeof window !== 'undefined') {
-      window.location.href = '/login';
-    }
     throw new AppError('Session expired', 'AUTH_EXPIRED', 401);
   }
 

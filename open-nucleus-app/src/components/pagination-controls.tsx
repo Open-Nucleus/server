@@ -17,6 +17,7 @@ export function PaginationControls({
   return (
     <div className="flex items-center justify-center gap-4 py-3">
       <button
+        type="button"
         onClick={() => onPageChange(page - 1)}
         disabled={isFirst}
         className={cn(
@@ -36,6 +37,7 @@ export function PaginationControls({
       </span>
 
       <button
+        type="button"
         onClick={() => onPageChange(page + 1)}
         disabled={isLast}
         className={cn(
