@@ -19,6 +19,7 @@ import { LoadingSkeleton } from '@/components/loading-skeleton';
 import { ErrorState } from '@/components/error-state';
 import { SeverityBadge } from '@/components/severity-badge';
 import { PaginationControls } from '@/components/pagination-controls';
+import { PageHeader } from '@/components/page-header';
 import type { AlertDetail, AlertSummary } from '@/types/alert';
 
 // ---------------------------------------------------------------------------
@@ -70,7 +71,6 @@ function SummaryCard({
 // ---------------------------------------------------------------------------
 
 export default function AlertsPage() {
-  const setPageTitle = useUIStore((s) => s.setPageTitle);
   const setAlertCount = useUIStore((s) => s.setAlertCount);
   const queryClient = useQueryClient();
 
@@ -80,9 +80,6 @@ export default function AlertsPage() {
 
   const perPage = 20;
 
-  useEffect(() => {
-    setPageTitle('Alerts');
-  }, [setPageTitle]);
 
   // ---- Alert summary ----
   const summaryQuery = useQuery({
@@ -157,6 +154,14 @@ export default function AlertsPage() {
 
   return (
     <div className="page-padding space-y-4">
+      <PageHeader
+        title="Alerts"
+        breadcrumbs={[
+          { label: 'Dashboard', path: '/dashboard' },
+          { label: 'Alerts' },
+        ]}
+      />
+
       {/* Summary cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
         {summaryQuery.isLoading ? (

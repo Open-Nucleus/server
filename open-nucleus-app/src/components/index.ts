@@ -4,6 +4,7 @@ export { EmptyState } from "./empty-state";
 export { ErrorState } from "./error-state";
 export { JsonViewer } from "./json-viewer";
 export { LoadingSkeleton } from "./loading-skeleton";
+export { PageHeader } from "./page-header";
 export { PaginationControls } from "./pagination-controls";
 export { RoleBadge } from "./role-badge";
 export { SearchField } from "./search-field";

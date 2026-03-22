@@ -1,50 +1,16 @@
 import type { ApiEnvelope } from '../types/api-envelope';
-import { API } from './api-paths';
+import { useAuthStore, getServerUrl } from '@/stores/auth-store';
 
 // ---------------------------------------------------------------------------
-// Configuration
+// Token & URL helpers — read directly from Zustand (same store login writes to)
 // ---------------------------------------------------------------------------
 
-const BASE_URL_KEY = 'nucleus:base_url';
-const TOKEN_KEY = 'nucleus:token';
-const REFRESH_TOKEN_KEY = 'nucleus:refresh_token';
-
-/** Returns the API base URL from localStorage or the default. */
-export function getBaseUrl(): string {
-  if (typeof window !== 'undefined') {
-    return localStorage.getItem(BASE_URL_KEY) || 'http://localhost:8080';
-  }
-  return 'http://localhost:8080';
+function getToken(): string | null {
+  return useAuthStore.getState().token;
 }
 
-/** Persists the API base URL to localStorage. */
-export function setBaseUrl(url: string): void {
-  localStorage.setItem(BASE_URL_KEY, url);
-}
-
-// ---------------------------------------------------------------------------
-// Token helpers (simple localStorage store — zustand store may wrap these)
-// ---------------------------------------------------------------------------
-
-export function getToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY);
-}
-
-export function setToken(token: string): void {
-  localStorage.setItem(TOKEN_KEY, token);
-}
-
-export function getRefreshToken(): string | null {
-  return localStorage.getItem(REFRESH_TOKEN_KEY);
-}
-
-export function setRefreshToken(token: string): void {
-  localStorage.setItem(REFRESH_TOKEN_KEY, token);
-}
-
-export function clearTokens(): void {
-  localStorage.removeItem(TOKEN_KEY);
-  localStorage.removeItem(REFRESH_TOKEN_KEY);
+function getBaseUrl(): string {
+  return getServerUrl() || 'http://localhost:8080';
 }
 
 // ---------------------------------------------------------------------------
@@ -71,7 +37,7 @@ export class AppError extends Error {
 
 /**
  * Low-level fetch wrapper that:
- * 1. Attaches the Bearer token
+ * 1. Attaches the Bearer token from Zustand auth store
  * 2. Handles 401 with a single refresh-and-retry
  * 3. Unwraps ApiEnvelope<T>
  * 4. Throws AppError on failure
@@ -93,7 +59,7 @@ export async function apiRequest<T>(
 
   // Attempt a single token refresh on 401
   if (res.status === 401) {
-    const refreshed = await attemptRefresh();
+    const refreshed = await useAuthStore.getState().refresh();
     if (refreshed) {
       const retryHeaders = buildHeaders();
       const retryRes = await fetch(url, {
@@ -103,8 +69,8 @@ export async function apiRequest<T>(
       });
       return handleResponse<T>(retryRes);
     }
-    // Refresh failed — clear tokens (router auth guard will redirect to /login)
-    clearTokens();
+    // Refresh failed — force logout (router auth guard will redirect to /login)
+    useAuthStore.getState().logout();
     throw new AppError('Session expired', 'AUTH_EXPIRED', 401);
   }
 
@@ -192,34 +158,4 @@ async function handleResponse<T>(res: Response): Promise<ApiEnvelope<T>> {
   }
 
   return envelope;
-}
-
-async function attemptRefresh(): Promise<boolean> {
-  const refreshToken = getRefreshToken();
-  if (!refreshToken) return false;
-
-  try {
-    const url = buildUrl(API.auth.refresh);
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refresh_token: refreshToken }),
-    });
-
-    if (!res.ok) return false;
-
-    const envelope = (await res.json()) as ApiEnvelope<{
-      token: string;
-      refresh_token: string;
-    }>;
-
-    if (envelope.status === 'success' && envelope.data) {
-      setToken(envelope.data.token);
-      setRefreshToken(envelope.data.refresh_token);
-      return true;
-    }
-    return false;
-  } catch {
-    return false;
-  }
 }

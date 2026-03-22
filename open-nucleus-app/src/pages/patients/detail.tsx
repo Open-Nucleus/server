@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useParams, useNavigate } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -26,7 +26,6 @@ import { ImmunizationDialog } from '@/features/patients/dialogs/immunization-dia
 import { ProcedureDialog } from '@/features/patients/dialogs/procedure-dialog';
 // EraseDialog available at '@/features/patients/dialogs/erase-dialog' if needed
 import { API } from '@/lib/api-paths';
-import { useUIStore } from '@/stores/ui-store';
 import { timeAgo, toDisplayDate } from '@/lib/date-utils';
 import { capitalize } from '@/lib/string-utils';
 import { cn } from '@/lib/utils';
@@ -35,6 +34,7 @@ import {
   ConfirmDialog,
   LoadingSkeleton,
   ErrorState,
+  PageHeader,
   StatusIndicator,
 } from '@/components';
 import type { ApiEnvelope, ClinicalListResponse, ConsentSummary } from '@/types';
@@ -125,7 +125,6 @@ export default function PatientDetailPage() {
   const patientId = id as string;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const setPageTitle = useUIStore((s) => s.setPageTitle);
 
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [openDialog, setOpenDialog] = useState<string | null>(null);
@@ -143,14 +142,7 @@ export default function PatientDetailPage() {
   });
 
   const patient = patientEnvelope?.data;
-
-  useEffect(() => {
-    if (patient) {
-      setPageTitle(patientDisplayName(patient));
-    } else {
-      setPageTitle('Patient Detail');
-    }
-  }, [patient, setPageTitle]);
+  const patientName = patient ? patientDisplayName(patient) : '';
 
   /* ---------- clinical queries (per-tab) ---------- */
   const encounterQuery = useQuery<ApiEnvelope<ClinicalListResponse>>({
@@ -256,27 +248,35 @@ export default function PatientDetailPage() {
   /* ---------- render ---------- */
   return (
     <div className="page-padding">
-      {/* Back button */}
-      <button
-        type="button"
-        onClick={() => navigate({ to: '/patients' })}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          marginBottom: '16px',
-          background: 'none',
-          border: 'none',
-          cursor: 'pointer',
-          color: 'var(--color-muted)',
-          fontFamily: 'var(--font-mono)',
-          fontSize: '12px',
-          textTransform: 'uppercase',
-          letterSpacing: '1px',
-        }}
-      >
-        &larr; Back to Patients
-      </button>
+      <PageHeader
+        title={patientName || 'Patient Detail'}
+        breadcrumbs={[
+          { label: 'Dashboard', path: '/dashboard' },
+          { label: 'Patients', path: '/patients' },
+          { label: patientName || 'Detail' },
+        ]}
+        actions={
+          <button
+            type="button"
+            onClick={() =>
+              navigate({
+                to: '/patients/$id/edit',
+                params: { id: patientId },
+              })
+            }
+            className={cn(
+              'inline-flex items-center gap-2 px-4 py-2 text-xs font-mono uppercase tracking-wider cursor-pointer',
+              'border border-[var(--color-border)] dark:border-[var(--color-border-dark)]',
+              'text-[var(--color-ink)] dark:text-[var(--color-sidebar-text)]',
+              'hover:bg-[var(--color-surface-hover)] dark:hover:bg-[var(--color-surface-dark-hover)]',
+              'transition-colors duration-150 rounded-[var(--radius-sm)]',
+            )}
+          >
+            <Edit3 size={14} />
+            Edit
+          </button>
+        }
+      />
 
       <div className="flex gap-6 h-full">
         {/* ===== Left panel ===== */}

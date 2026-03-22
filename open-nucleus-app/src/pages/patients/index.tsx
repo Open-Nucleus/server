@@ -4,13 +4,13 @@ import { useQuery } from '@tanstack/react-query';
 import { Users, Plus, ChevronDown, ChevronUp } from 'lucide-react';
 import { apiGet } from '@/lib/api-client';
 import { API } from '@/lib/api-paths';
-import { useUIStore } from '@/stores/ui-store';
 import { timeAgo } from '@/lib/date-utils';
 import { capitalize } from '@/lib/string-utils';
 import { cn } from '@/lib/utils';
 import { ADMINISTRATIVE_GENDERS } from '@/lib/fhir-codes';
 import {
   DataTableCard,
+  PageHeader,
   PaginationControls,
   StatusIndicator,
 } from '@/components';
@@ -100,16 +100,11 @@ const columns = [
 
 export default function PatientsListPage() {
   const navigate = useNavigate();
-  const setPageTitle = useUIStore((s) => s.setPageTitle);
 
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [filters, setFilters] = useState<Filters>({ gender: '', active: '' });
   const [filtersOpen, setFiltersOpen] = useState(false);
-
-  useEffect(() => {
-    setPageTitle('Patients');
-  }, [setPageTitle]);
 
   /* Keyboard shortcut: Ctrl+N -> new patient */
   useEffect(() => {
@@ -171,24 +166,27 @@ export default function PatientsListPage() {
 
   return (
     <div className="page-padding space-y-4">
-      {/* Header row */}
-      <div className="flex items-center justify-between">
-        <h1 className="font-mono text-lg font-bold uppercase tracking-wider text-[var(--color-ink)] dark:text-[var(--color-sidebar-text)]">
-          Patients
-        </h1>
-        <button
-          type="button"
-          onClick={() => navigate({ to: '/patients/new' })}
-          className={cn(
-            'inline-flex items-center gap-2 px-4 py-2 text-xs font-mono uppercase tracking-wider cursor-pointer',
-            'bg-[var(--color-ink)] text-[var(--color-paper)] dark:bg-[var(--color-sidebar-text)] dark:text-[var(--color-paper-dark)]',
-            'hover:opacity-90 transition-opacity duration-150 rounded-[var(--radius-sm)]',
-          )}
-        >
-          <Plus size={14} />
-          New Patient
-        </button>
-      </div>
+      <PageHeader
+        title="Patients"
+        breadcrumbs={[
+          { label: 'Dashboard', path: '/dashboard' },
+          { label: 'Patients' },
+        ]}
+        actions={
+          <button
+            type="button"
+            onClick={() => navigate({ to: '/patients/new' })}
+            className={cn(
+              'inline-flex items-center gap-2 px-4 py-2 text-xs font-mono uppercase tracking-wider cursor-pointer',
+              'bg-[var(--color-ink)] text-[var(--color-paper)] dark:bg-[var(--color-sidebar-text)] dark:text-[var(--color-paper-dark)]',
+              'hover:opacity-90 transition-opacity duration-150 rounded-[var(--radius-sm)]',
+            )}
+          >
+            <Plus size={14} />
+            New Patient
+          </button>
+        }
+      />
 
       {/* Filter panel (collapsible) */}
       <div

@@ -1,8 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiGet, apiPost } from '@/lib/api-client';
 import { API } from '@/lib/api-paths';
-import { useUIStore } from '@/stores/ui-store';
 import {
   LoadingSkeleton,
   EmptyState,
@@ -11,6 +10,7 @@ import {
   SeverityBadge,
   PaginationControls,
 } from '@/components';
+import { PageHeader } from '@/components/page-header';
 import { cn } from '@/lib/utils';
 import { timeAgo, toDisplayDateTime } from '@/lib/date-utils';
 import { RefreshCw, Users, AlertTriangle, Clock } from 'lucide-react';
@@ -31,9 +31,6 @@ interface SyncEvent {
 }
 
 export default function SyncPage() {
-  const setPageTitle = useUIStore((s) => s.setPageTitle);
-  useEffect(() => setPageTitle('Sync & Conflicts'), [setPageTitle]);
-
   const [activeTab, setActiveTab] = useState<SyncTab>('status');
   const [historyPage, setHistoryPage] = useState(1);
   const queryClient = useQueryClient();
@@ -105,16 +102,14 @@ export default function SyncPage() {
 
   return (
     <div className="page-padding space-y-4">
-      {/* header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-mono text-lg font-bold uppercase tracking-wider text-[var(--color-ink)] dark:text-[var(--color-sidebar-text)]">
-            Sync & Conflicts
-          </h1>
-          <p className="text-xs text-[var(--color-muted)] mt-1">
-            Manage peer synchronization and resolve merge conflicts
-          </p>
-        </div>
+        <PageHeader
+          title="Sync & Conflicts"
+          breadcrumbs={[
+            { label: 'Dashboard', path: '/dashboard' },
+            { label: 'Sync' },
+          ]}
+        />
         <button
           type="button"
           onClick={() => triggerMutation.mutate()}

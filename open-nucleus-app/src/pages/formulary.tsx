@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiGet } from '@/lib/api-client';
 import { API } from '@/lib/api-paths';
-import { useUIStore } from '@/stores/ui-store';
 import { LoadingSkeleton, EmptyState, ErrorState } from '@/components';
+import { PageHeader } from '@/components/page-header';
 import { cn } from '@/lib/utils';
 import { Pill, Star, Package } from 'lucide-react';
 import type { MedicationDetail } from '@/types';
@@ -26,9 +26,6 @@ const CATEGORIES = [
 ] as const;
 
 export default function FormularyPage() {
-  const setPageTitle = useUIStore((s) => s.setPageTitle);
-  useEffect(() => setPageTitle('Formulary'), [setPageTitle]);
-
   const [selectedCategory, setSelectedCategory] = useState<string>(CATEGORIES[0]);
   const [selectedMedication, setSelectedMedication] = useState<MedicationDetail | null>(null);
 
@@ -49,15 +46,13 @@ export default function FormularyPage() {
 
   return (
     <div className="page-padding h-full flex flex-col">
-      {/* header */}
-      <div className="mb-4">
-        <h1 className="font-mono text-lg font-bold uppercase tracking-wider text-[var(--color-ink)] dark:text-[var(--color-sidebar-text)]">
-          Formulary
-        </h1>
-        <p className="text-xs text-[var(--color-muted)] mt-1">
-          Browse medications by therapeutic category
-        </p>
-      </div>
+      <PageHeader
+        title="Formulary"
+        breadcrumbs={[
+          { label: 'Dashboard', path: '/dashboard' },
+          { label: 'Formulary' },
+        ]}
+      />
 
       {/* 3-pane layout */}
       <div className="flex-1 flex gap-0 rounded-[var(--radius-lg)] border border-[var(--color-border)] dark:border-[var(--color-border-dark)] overflow-hidden min-h-0">

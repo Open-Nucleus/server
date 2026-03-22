@@ -1,17 +1,14 @@
-import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiGet } from '@/lib/api-client';
 import { API } from '@/lib/api-paths';
 import { useUIStore } from '@/stores/ui-store';
 import { LoadingSkeleton, EmptyState, ErrorState } from '@/components';
+import { PageHeader } from '@/components/page-header';
 import { cn } from '@/lib/utils';
 import { Sun, Moon, Globe, Info } from 'lucide-react';
 import type { SmartClient } from '@/types';
 
 export default function SettingsPage() {
-  const setPageTitle = useUIStore((s) => s.setPageTitle);
-  useEffect(() => setPageTitle('Settings'), [setPageTitle]);
-
   const { theme, toggleTheme } = useUIStore();
 
   /* ---- SMART clients ---- */
@@ -24,15 +21,13 @@ export default function SettingsPage() {
 
   return (
     <div className="page-padding space-y-6 max-w-3xl">
-      {/* header */}
-      <div>
-        <h1 className="font-mono text-lg font-bold uppercase tracking-wider text-[var(--color-ink)] dark:text-[var(--color-sidebar-text)]">
-          Settings
-        </h1>
-        <p className="text-xs text-[var(--color-muted)] mt-1">
-          Application preferences and configuration
-        </p>
-      </div>
+      <PageHeader
+        title="Settings"
+        breadcrumbs={[
+          { label: 'Dashboard', path: '/dashboard' },
+          { label: 'Settings' },
+        ]}
+      />
 
       {/* ---- Appearance ---- */}
       <section className="rounded-[var(--radius-lg)] border border-[var(--color-border)] dark:border-[var(--color-border-dark)] bg-[var(--color-surface)] dark:bg-[var(--color-surface-dark)]">

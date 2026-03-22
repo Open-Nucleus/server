@@ -1,14 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Save, X } from 'lucide-react';
+import { Save, X } from 'lucide-react';
 import { apiGet, apiPut } from '@/lib/api-client';
 import { API } from '@/lib/api-paths';
-import { useUIStore } from '@/stores/ui-store';
 import { cn } from '@/lib/utils';
 import { ADMINISTRATIVE_GENDERS } from '@/lib/fhir-codes';
 import { capitalize } from '@/lib/string-utils';
-import { LoadingSkeleton, ErrorState } from '@/components';
+import { LoadingSkeleton, ErrorState, PageHeader } from '@/components';
 import type { ApiEnvelope, WriteResponse } from '@/types';
 
 /* ---------- types ---------- */
@@ -133,12 +132,7 @@ export default function PatientEditPage() {
   const patientId = id as string;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const setPageTitle = useUIStore((s) => s.setPageTitle);
   const [form, setForm] = useState<PatientFormState | null>(null);
-
-  useEffect(() => {
-    setPageTitle('Edit Patient');
-  }, [setPageTitle]);
 
   /* ---------- fetch existing patient ---------- */
   const {
@@ -218,42 +212,30 @@ export default function PatientEditPage() {
   /* ---------- render ---------- */
   return (
     <div className="page-padding max-w-2xl">
-      {/* Back link */}
-      <button
-        type="button"
-        onClick={() =>
-          navigate({ to: '/patients/$id', params: { id: patientId } })
+      <PageHeader
+        title="Edit Patient"
+        breadcrumbs={[
+          { label: 'Dashboard', path: '/dashboard' },
+          { label: 'Patients', path: '/patients' },
+          { label: 'Edit' },
+        ]}
+        actions={
+          <button
+            type="button"
+            onClick={() =>
+              navigate({ to: '/patients/$id', params: { id: patientId } })
+            }
+            className={cn(
+              'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono uppercase tracking-wider cursor-pointer',
+              'text-[var(--color-muted)] hover:text-[var(--color-ink)] dark:hover:text-[var(--color-sidebar-text)]',
+              'transition-colors duration-150',
+            )}
+          >
+            <X size={14} />
+            Cancel
+          </button>
         }
-        className={cn(
-          'inline-flex items-center gap-1.5 mb-4 text-xs font-mono uppercase tracking-wider cursor-pointer',
-          'text-[var(--color-muted)] hover:text-[var(--color-ink)] dark:hover:text-[var(--color-sidebar-text)]',
-          'transition-colors duration-150',
-        )}
-      >
-        <ArrowLeft size={14} />
-        Back
-      </button>
-
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="font-mono text-lg font-bold uppercase tracking-wider text-[var(--color-ink)] dark:text-[var(--color-sidebar-text)]">
-          Edit Patient
-        </h1>
-        <button
-          type="button"
-          onClick={() =>
-            navigate({ to: '/patients/$id', params: { id: patientId } })
-          }
-          className={cn(
-            'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono uppercase tracking-wider cursor-pointer',
-            'text-[var(--color-muted)] hover:text-[var(--color-ink)] dark:hover:text-[var(--color-sidebar-text)]',
-            'transition-colors duration-150',
-          )}
-        >
-          <X size={14} />
-          Cancel
-        </button>
-      </div>
+      />
 
       {/* Patient ID banner */}
       <div

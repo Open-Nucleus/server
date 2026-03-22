@@ -1,19 +1,15 @@
-import { useQuery } from "@tanstack/react-query";
-
-function getBaseUrl(): string {
-  if (typeof window !== "undefined") {
-    return localStorage.getItem("nucleus-server-url") || "http://localhost:8080";
-  }
-  return "http://localhost:8080";
-}
+import { useQuery } from '@tanstack/react-query';
+import { getServerUrl } from '@/stores/auth-store';
 
 export function useConnection() {
   const { data, isError } = useQuery({
-    queryKey: ["health"],
-    queryFn: () =>
-      fetch(getBaseUrl() + "/health").then((r) =>
-        r.ok ? r.json() : Promise.reject(new Error("Health check failed")),
-      ),
+    queryKey: ['health'],
+    queryFn: async () => {
+      const base = getServerUrl() || 'http://localhost:8080';
+      const res = await fetch(base + '/health');
+      if (!res.ok) throw new Error('Health check failed');
+      return res.json();
+    },
     refetchInterval: 10_000,
     retry: false,
   });

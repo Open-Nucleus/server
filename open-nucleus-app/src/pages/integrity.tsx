@@ -1,8 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiGet, apiPost } from '@/lib/api-client';
 import { API } from '@/lib/api-paths';
-import { useUIStore } from '@/stores/ui-store';
 import {
   LoadingSkeleton,
   EmptyState,
@@ -10,6 +9,7 @@ import {
   StatusIndicator,
   PaginationControls,
 } from '@/components';
+import { PageHeader } from '@/components/page-header';
 import { cn } from '@/lib/utils';
 import { toDisplayDateTime } from '@/lib/date-utils';
 import { Shield, CheckCircle, XCircle, History, Server, Anchor } from 'lucide-react';
@@ -35,9 +35,6 @@ interface VerifyResult {
 }
 
 export default function IntegrityPage() {
-  const setPageTitle = useUIStore((s) => s.setPageTitle);
-  useEffect(() => setPageTitle('Integrity & Anchor'), [setPageTitle]);
-
   const [activeTab, setActiveTab] = useState<IntegrityTab>('status');
   const [historyPage, setHistoryPage] = useState(1);
   const queryClient = useQueryClient();
@@ -91,16 +88,14 @@ export default function IntegrityPage() {
 
   return (
     <div className="page-padding space-y-4">
-      {/* header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-mono text-lg font-bold uppercase tracking-wider text-[var(--color-ink)] dark:text-[var(--color-sidebar-text)]">
-            Integrity & Anchor
-          </h1>
-          <p className="text-xs text-[var(--color-muted)] mt-1">
-            Cryptographic anchoring and data integrity verification
-          </p>
-        </div>
+        <PageHeader
+          title="Data Integrity"
+          breadcrumbs={[
+            { label: 'Dashboard', path: '/dashboard' },
+            { label: 'Integrity' },
+          ]}
+        />
         <button
           type="button"
           onClick={() => triggerMutation.mutate()}

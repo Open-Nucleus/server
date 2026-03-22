@@ -19,6 +19,7 @@ import { cn } from '@/lib/utils';
 import { LoadingSkeleton } from '@/components/loading-skeleton';
 import { ErrorState } from '@/components/error-state';
 import { StatusIndicator } from '@/components/status-indicator';
+import { PageHeader } from '@/components/page-header';
 import { useConnection } from '@/hooks/use-connection';
 import type { PatientSummary } from '@/types/patient';
 import type { AlertSummary } from '@/types/alert';
@@ -72,15 +73,10 @@ function HealthRow({ label, status, statusLabel }: { label: string; status: 'act
 // ---------------------------------------------------------------------------
 
 export default function DashboardPage() {
-  const setPageTitle = useUIStore((s) => s.setPageTitle);
   const setAlertCount = useUIStore((s) => s.setAlertCount);
   const navigate = useNavigate();
 
   const { nodeId, siteId, deviceId } = useAuthStore();
-
-  useEffect(() => {
-    setPageTitle('Dashboard');
-  }, [setPageTitle]);
 
   // ---- Patient count ----
   const patients = useQuery({
@@ -145,6 +141,8 @@ export default function DashboardPage() {
 
   return (
     <div className="page-padding space-y-4">
+      <PageHeader title="Dashboard" />
+
       {/* Row 1: 3 columns */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {/* Node Identity */}
