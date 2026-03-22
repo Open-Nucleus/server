@@ -1,7 +1,7 @@
 # Open Nucleus — Architectural Memory
 
 > Living document. Updated after every major feature or structural change.
-> Last updated: Demo Readiness — open-anchor + open-pharm-dosing integration (2026-03-21)
+> Last updated: Hedera HCS integration + Sentinel outbreak detection (2026-03-22)
 
 ---
 
@@ -23,9 +23,9 @@ Open Nucleus is an open-source, offline-first electronic health record (EHR) sys
 
 **Git-based sync:** Nodes sync using Git fetch/merge/push over ECDH-encrypted channels. A FHIR-aware merge driver classifies conflicts into auto-merge (safe), review (flag for clinician), or block (clinical safety risk).
 
-**Sentinel Agent:** Rule-based V1 using WHO IDSR thresholds for outbreak detection. Not AI/LLM-powered. Ollama sidecar is future infrastructure.
+**Sentinel Agent:** LLM-powered sleeper agent with 13 pluggable skills (5 IDSR epidemic detectors, 8 clinical). Dual-engine: LLM reasoning with rule-based fallback. Can run offline on Raspberry Pi 4 with Ollama (phi3:mini) or in rule-only mode without any LLM.
 
-**Merkle anchoring:** Git Merkle roots queued for anchoring. V1 uses a stub backend; real blockchain integration planned.
+**Hedera HCS Anchoring:** Git Merkle roots are submitted as messages to Hedera Consensus Service topics. Verification queries the Hedera Mirror Node REST API. `did:hedera` DIDs use HCS topics as append-only DID document logs. Config selects "hedera" or "stub" backend.
 
 ```
 Flutter App (HTTPS REST/JSON)
