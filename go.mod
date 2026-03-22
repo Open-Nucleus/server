@@ -77,4 +77,4 @@ require (
 
 replace github.com/Open-Nucleus/open-pharm-dosing => github.com/Open-Nucleus/open-pharm-dosing/go v0.0.0-20260301010952-3667dbf18cf6
 
-replace github.com/Open-Nucleus/open-anchor/go => /Users/akanimohosutuk/Documents/open-anchor/go
+replace github.com/Open-Nucleus/open-anchor/go => github.com/Open-Nucleus/open-anchor/go v0.0.0-20260322201432-c10da15d974a
