@@ -53,10 +53,15 @@ tls:
   mode: "off"
 
 anchor:
-  backend: hedera        # "hedera" or "stub"
+  backend: hedera        # "hedera", "iota", or "stub"
   network: testnet
-  operator_id: "0.0.4560302"        # e.g. "0.0.12345" — set before running
-  operator_key: "0x31e943e883bab5fd43071a90ab983c83e1b5cfd9981c6ac124512f012f0a5f69"       # hex Ed25519 key, or set NUCLEUS_HEDERA_KEY env var
+  # --- Hedera HCS config ---
+  operator_id: "0.0.4560302"
+  operator_key: "0x31e943e883bab5fd43071a90ab983c83e1b5cfd9981c6ac124512f012f0a5f69"
   topic_id: "0.0.8334822"
   did_topic_id: "0.0.8334824"
   # mirror_url: ""       # optional, auto-detected from network
+  # --- IOTA Rebased config (set backend: iota to use) ---
+  # rpc_url: "https://api.testnet.iota.cafe"
+  # anchor_package_id: "0x..."    # Move package for anchoring
+  # identity_package_id: "0x..."  # Move package for did:iota

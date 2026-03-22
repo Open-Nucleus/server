@@ -100,7 +100,7 @@ Desktop App (Tauri + React)
 
 **Blind indexes:** SQLite stores HMAC-SHA256 blind indexes of PII. Patient names indexed as n-gram hashes for substring search without exposing plaintext.
 
-**Hedera HCS anchoring:** Git Merkle roots submitted as messages to Hedera Consensus Service topics. Verification via Mirror Node REST API. `did:hedera` DIDs use HCS topics as append-only document logs.
+**Blockchain-agnostic anchoring:** Git Merkle roots anchored to **Hedera HCS** (Consensus Service) or **IOTA Rebased** (Move smart contracts) — switchable via config. Hedera uses HCS topic messages with Mirror Node verification. IOTA uses Move `anchor_root()` calls with on-chain event verification. Both support `did:hedera` / `did:iota` DIDs and W3C Verifiable Credentials.
 
 **Git-based sync:** Nodes sync via Git fetch/merge/push over ECDH-encrypted channels. FHIR-aware merge driver classifies conflicts into auto-merge, review, or block.
 

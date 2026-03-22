@@ -192,6 +192,20 @@ func main() {
 		}
 		anchorBackend = hb
 		logger.Info("anchor backend: hedera", "network", cfg.Anchor.Network, "topic", cfg.Anchor.TopicID)
+	} else if cfg.Anchor.Backend == "iota" {
+		ib, err := openanchor.NewIotaBackendFromConfig(
+			cfg.Anchor.Network,
+			cfg.Anchor.RPCURL,
+			cfg.Anchor.AnchorPackageID,
+			cfg.Anchor.IdentityPackageID,
+			nodePrivKey,
+		)
+		if err != nil {
+			logger.Error("failed to init IOTA anchor backend", "error", err)
+			os.Exit(1)
+		}
+		anchorBackend = ib
+		logger.Info("anchor backend: iota", "network", cfg.Anchor.Network, "rpc", cfg.Anchor.RPCURL)
 	} else {
 		anchorBackend = openanchor.NewStubBackend()
 		logger.Info("anchor backend: stub (no blockchain)")
