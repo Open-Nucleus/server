@@ -192,6 +192,16 @@ func main() {
 		}
 		anchorBackend = hb
 		logger.Info("anchor backend: hedera", "network", cfg.Anchor.Network, "topic", cfg.Anchor.TopicID)
+
+		// Initialize HTS credential NFT service (non-fatal if it fails)
+		hederaCfg := openanchor.HederaConfigForTokens(cfg.Anchor.Network, cfg.Anchor.OperatorID, operatorKey)
+		credNFT, credErr := openanchor.NewCredentialNFTService(hederaCfg, nodePrivKey, cfg.Anchor.CredentialTokenID, logger)
+		if credErr != nil {
+			logger.Warn("credential NFT service unavailable", "error", credErr)
+		} else if credNFT != nil {
+			logger.Info("credential NFT service ready", "collection", credNFT.CollectionID())
+		}
+		_ = credNFT // TODO: pass to auth service for minting on registration
 	} else if cfg.Anchor.Backend == "iota" {
 		ib, err := openanchor.NewIotaBackendFromConfig(
 			cfg.Anchor.Network,

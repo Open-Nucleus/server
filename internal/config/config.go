@@ -37,6 +37,8 @@ type AnchorConfig struct {
 	RPCURL            string `koanf:"rpc_url"`             // IOTA JSON-RPC endpoint (auto-detected from network)
 	AnchorPackageID   string `koanf:"anchor_package_id"`   // Move package ID for anchoring module
 	IdentityPackageID string `koanf:"identity_package_id"` // Move package ID for did:iota (defaults to anchor_package_id)
+	// HTS Credential NFTs
+	CredentialTokenID string `koanf:"credential_token_id"` // HTS Token ID for credential NFT collection (auto-created if empty)
 }
 
 // DataConfig specifies where the monolith stores its data.

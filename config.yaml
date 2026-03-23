@@ -61,6 +61,8 @@ anchor:
   topic_id: "0.0.8334822"
   did_topic_id: "0.0.8334824"
   # mirror_url: ""       # optional, auto-detected from network
+  # --- HTS Credential NFTs (auto-created if empty) ---
+  credential_token_id: ""  # HTS Token ID for practitioner credential NFTs
   # --- IOTA Rebased config (set backend: iota to use) ---
   # rpc_url: "https://api.testnet.iota.cafe"
   # anchor_package_id: "0x..."    # Move package for anchoring
