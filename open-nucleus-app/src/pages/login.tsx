@@ -16,7 +16,7 @@ export default function LoginPage() {
   const { status, errorMessage, login, clearError } = useAuthStore();
   const navigate = useNavigate();
 
-  const [serverUrl, setUrl] = useState(getServerUrl() || 'http://localhost:8080');
+  const [serverUrl, setUrl] = useState(getServerUrl() || 'https://server-6xbu.onrender.com');
   const [connStatus, setConnStatus] = useState<ConnectionStatus>('idle');
   const [connMessage, setConnMessage] = useState('');
   const [keypair, setKeypair] = useState<StoredKeypair | null>(loadStoredKeypair());
@@ -137,7 +137,7 @@ export default function LoginPage() {
             type="text"
             value={serverUrl}
             onChange={(e) => { setUrl(e.target.value); setConnStatus('idle'); }}
-            placeholder="http://localhost:8080"
+            placeholder="https://server-6xbu.onrender.com"
             style={{
               flex: 1,
               padding: '8px 12px',

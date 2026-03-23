@@ -11,7 +11,7 @@ function getToken(): string | null {
 }
 
 function getBaseUrl(): string {
-  return getServerUrl() || 'http://localhost:8080';
+  return getServerUrl() || 'https://server-6xbu.onrender.com';
 }
 
 // ---------------------------------------------------------------------------

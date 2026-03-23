@@ -19,7 +19,7 @@ function getOrCreateDeviceId(): string {
 }
 
 export function getServerUrl(): string {
-  return localStorage.getItem(SERVER_URL_KEY) ?? '';
+  return localStorage.getItem(SERVER_URL_KEY) || 'https://server-6xbu.onrender.com';
 }
 
 export function setServerUrl(url: string): void {
