@@ -7,13 +7,16 @@ Open-source, offline-first electronic health record (EHR) system for military fo
 ## Quick Start
 
 ```bash
-# 1. Seed demo data (6 patients, cholera outbreak scenario)
+# 1. Start the IOTA Identity Bridge
+cd ../open-anchor/identity-bridge && npm install && node index.js
+
+# 2. Seed demo data (6 patients, cholera outbreak scenario)
 go run ./cmd/seed
 
-# 2. Start the server (port 8080)
+# 3. Start the server (port 8080)
 NUCLEUS_BOOTSTRAP_SECRET=demo go run ./cmd/nucleus
 
-# 3. Start the desktop app (in a separate terminal)
+# 4. Start the desktop app (in a separate terminal)
 cd open-nucleus-app && pnpm install && pnpm tauri dev
 ```
 
@@ -46,11 +49,11 @@ tls:
   mode: "off"  # "auto" for self-signed, "provided" for your own
 
 anchor:
-  backend: hedera  # "hedera" or "stub"
+  backend: iota
   network: testnet
-  operator_id: "0.0.XXXXX"
-  operator_key: ""  # or set NUCLEUS_HEDERA_KEY env var
-  topic_id: "0.0.XXXXX"
+  rpc_url: "https://api.testnet.iota.cafe"
+  anchor_package_id: "0x..."  # deployed Move contract
+  identity_bridge_url: "http://localhost:3001"
 ```
 
 ## Ecosystem
@@ -60,7 +63,7 @@ Open Nucleus is a 5-repo ecosystem:
 | Repo | Language | Purpose |
 |------|----------|---------|
 | **[server](https://github.com/Open-Nucleus/server)** (this repo) | Go | Core EHR monolith — all services in-process |
-| **[open-anchor](https://github.com/Open-Nucleus/open-anchor)** | Go | Blockchain-agnostic data integrity anchoring, DIDs, VCs. Hedera HCS + IOTA backends |
+| **[open-anchor](https://github.com/Open-Nucleus/open-anchor)** | Go + Node.js | IOTA Move anchoring, IOTA Identity SDK (DIDs, VCs, notarisation) |
 | **[open-sentinel](https://github.com/Open-Nucleus/open-sentinel)** | Python | LLM-powered sleeper agent for clinical surveillance (13 skills, IDSR outbreak detection) |
 | **[open-engram](https://github.com/Open-Nucleus/open-engram)** | TypeScript | Brain-inspired memory architecture for AI agents |
 | **[open-pharm-dosing](https://github.com/Open-Nucleus/open-pharm-dosing)** | Go | Medication dosing frequency encoding + FHIR R4 Timing conversion |
@@ -79,7 +82,7 @@ Desktop App (Tauri + React)
   |  | Auth      |    |  Ed25519 challenge-response, SMART on FHIR
   |  | Sync      |    |  Git-based sync, FHIR-aware merge driver
   |  | Formulary |    |  WHO essential medicines, drug interactions
-  |  | Anchor    |    |  Hedera HCS anchoring, DIDs, Verifiable Credentials
+  |  | Anchor    |    |  IOTA Move anchoring, DIDs, Verifiable Credentials
   |  +-----------+    |
   +--------+----------+
            |
@@ -87,6 +90,9 @@ Desktop App (Tauri + React)
   |  Git repo         |  Source of truth — encrypted FHIR JSON files
   |  SQLite index     |  Rebuildable search index (no PII stored)
   +-------------------+
+
+  IOTA Identity Bridge (Node.js, :3001)
+  @iota/identity-wasm — DIDs, VCs, notarisation on IOTA Rebased
 
   Sentinel Agent (separate Python process, optional)
   Rule-based + LLM-powered clinical surveillance
@@ -100,9 +106,39 @@ Desktop App (Tauri + React)
 
 **Blind indexes:** SQLite stores HMAC-SHA256 blind indexes of PII. Patient names indexed as n-gram hashes for substring search without exposing plaintext.
 
-**Blockchain-agnostic anchoring:** Git Merkle roots anchored to **Hedera HCS** (Consensus Service) or **IOTA Rebased** (Move smart contracts) — switchable via config. Hedera uses HCS topic messages with Mirror Node verification. IOTA uses Move `anchor_root()` calls with on-chain event verification. Both support `did:hedera` / `did:iota` DIDs and W3C Verifiable Credentials.
+**IOTA Rebased integration:** Git Merkle roots anchored to IOTA via a deployed Move smart contract (`anchor_root()`). The IOTA Identity SDK provides `did:iota` decentralised identifiers, W3C Verifiable Credentials (EdDSA JWTs), and tamper-evident notarisation — all accessible via a Node.js bridge service wrapping `@iota/identity-wasm`.
 
 **Git-based sync:** Nodes sync via Git fetch/merge/push over ECDH-encrypted channels. FHIR-aware merge driver classifies conflicts into auto-merge, review, or block.
+
+## IOTA Integration
+
+Open Nucleus uses three IOTA services:
+
+| Service | What it does | Technology |
+|---------|-------------|------------|
+| **Move Smart Contract** | Anchors Git Merkle roots on-chain for tamper-proof data integrity | Deployed on IOTA Rebased testnet |
+| **IOTA Identity SDK** | Creates `did:iota` DIDs with Ed25519 verification methods | `@iota/identity-wasm` via Node.js bridge |
+| **Verifiable Credentials** | Issues W3C VCs as EdDSA-signed JWTs for practitioner licenses and patient consent | IOTA Identity SDK |
+| **Notarisation** | SHA-256 chained hash records for clinical audit trails | Identity bridge service |
+
+```bash
+# Start the identity bridge
+cd open-anchor/identity-bridge
+npm install
+node index.js   # Runs on :3001
+
+# Endpoints:
+POST /did/create          # Create a did:iota DID
+GET  /did/resolve/:did    # Resolve a DID document
+POST /vc/issue            # Issue a Verifiable Credential (EdDSA JWT)
+POST /vc/verify           # Verify a credential
+POST /notarize            # Notarise a data hash
+GET  /health              # Health check
+```
+
+**Move contract deployed on testnet:**
+- Package ID: `0x415ad71351d3b27cb6dfc01547204a0dfa11431c1008083b602adf84e3f4028a`
+- Module: `anchoring` with `anchor_root()` entry function
 
 ## Desktop App (Tauri)
 
@@ -127,7 +163,7 @@ cd ../open-sentinel
 python scripts/demo.py --repo /path/to/open-nucleus/data/repo
 ```
 
-Detects cholera outbreaks using WHO IDSR thresholds. Runs in rule-based mode (no LLM required) or with Ollama for AI-powered analysis.
+Detects cholera outbreaks using WHO IDSR thresholds. Runs in rule-based mode (no LLM required) or with OpenAI GPT-4o for AI-powered clinical analysis.
 
 ## Supported FHIR Resources (18 types)
 
@@ -194,8 +230,8 @@ make clean           # Remove build artifacts
 
 ## Honest Limitations
 
-- **Sentinel has dual modes** — Rule-based (WHO IDSR thresholds) works offline. LLM mode (Ollama) adds AI reasoning but requires 8GB+ RAM.
-- **Hedera anchoring requires testnet account** — Free to create at [portal.hedera.com](https://portal.hedera.com). Mainnet costs real HBAR.
+- **Sentinel has dual modes** — Rule-based (WHO IDSR thresholds) works offline. LLM mode (OpenAI/Ollama) adds AI reasoning but requires connectivity or 8GB+ RAM.
+- **IOTA DIDs are local-first** — DID documents are created with the IOTA Identity SDK but published on-chain only with a funded IOTA account. Offline `did:key` fallback always available.
 - **Blind indexes reduce but don't eliminate PII exposure** — Gender, clinical codes, and resource IDs remain in plaintext for query performance. Use disk encryption for defense in depth.
 - **Git commit metadata is unencrypted** — Commit messages and file paths visible. Disk encryption recommended.
 - **Dosing engine is stubbed** — Returns `configured=false`. Real WHO dosing guidelines integration planned.
