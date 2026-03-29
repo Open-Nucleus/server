@@ -64,6 +64,6 @@ anchor:
   # --- HTS Credential NFTs (auto-created if empty) ---
   credential_token_id: ""  # HTS Token ID for practitioner credential NFTs
   # --- IOTA Rebased config (set backend: iota to use) ---
-  # rpc_url: "https://api.testnet.iota.cafe"
-  # anchor_package_id: "0x..."    # Move package for anchoring
-  # identity_package_id: "0x..."  # Move package for did:iota
+  rpc_url: "https://api.testnet.iota.cafe"
+  anchor_package_id: "0x415ad71351d3b27cb6dfc01547204a0dfa11431c1008083b602adf84e3f4028a"
+  # identity_package_id: ""  # defaults to anchor_package_id
