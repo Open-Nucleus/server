@@ -39,6 +39,8 @@ type AnchorConfig struct {
 	IdentityPackageID string `koanf:"identity_package_id"` // Move package ID for did:iota (defaults to anchor_package_id)
 	// HTS Credential NFTs
 	CredentialTokenID string `koanf:"credential_token_id"` // HTS Token ID for credential NFT collection (auto-created if empty)
+	// Identity bridge
+	IdentityBridgeURL string `koanf:"identity_bridge_url"` // URL of the Node.js IOTA identity bridge (e.g. "http://localhost:3001")
 }
 
 // DataConfig specifies where the monolith stores its data.

@@ -165,7 +165,14 @@ func main() {
 	credStore := anchorservice.NewCredentialStore(git)
 	didStore := anchorservice.NewDIDStore(git)
 
-	identityEngine := openanchor.NewLocalIdentityEngine()
+	var identityEngine openanchor.IdentityEngine
+	if cfg.Anchor.Backend == "iota" && cfg.Anchor.IdentityBridgeURL != "" {
+		identityEngine = openanchor.NewIotaIdentityBridge(cfg.Anchor.IdentityBridgeURL)
+		logger.Info("identity engine: IOTA bridge", "url", cfg.Anchor.IdentityBridgeURL)
+	} else {
+		identityEngine = openanchor.NewLocalIdentityEngine()
+		logger.Info("identity engine: local (did:key)")
+	}
 
 	// Use the auth service's node key for anchoring
 	nodePrivKey := authImpl.NodePrivateKey()
